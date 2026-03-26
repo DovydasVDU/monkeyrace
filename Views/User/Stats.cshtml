@@ -1,0 +1,306 @@
+﻿@model UserProfileViewModel
+@using Microsoft.AspNetCore.Http
+@{
+    var username = ViewContext.HttpContext.Session.GetString("Username") ?? Model.Username;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MonkeyRacer - Profile</title>
+    <style>
+        :root{
+            --bg:#1a1a2e;
+            --surface:#16213e;
+            --accent:#e2b714;
+            --text:#ffffff;
+            --muted:#646669;
+        }
+
+        *{ margin:0; padding:0; box-sizing:border-box; }
+
+        body{
+            background:var(--bg);
+            color:var(--text);
+            font-family:'Courier New', monospace;
+            min-height:100vh;
+        }
+
+        /* NAVBAR */
+        .navbar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:1.2rem 2rem;
+            border-bottom:1px solid #2a2a3f;
+            width: 100%;
+
+        }
+
+        .logo{
+            font-size:1.4rem;
+            font-weight:bold;
+            color:var(--accent);
+            cursor:pointer;
+        }
+
+        .nav-right{
+            display:flex;
+            align-items:center;
+            gap:1rem;
+        }
+
+        .nav-btn{
+            border:1px solid var(--accent);
+            background:transparent;
+            color:var(--accent);
+            padding:0.45rem 1.3rem;
+            border-radius:5px;
+            cursor:pointer;
+            font-size:0.9rem;
+            transition:all .2s;
+        }
+
+        .nav-btn:hover{
+            background:var(--accent);
+            color:var(--bg);
+        }
+
+        .user-menu{
+            display:flex;
+            align-items:center;
+            gap:.5rem;
+            cursor:pointer;
+            position:relative;
+        }
+
+        .user-icon{
+            width:30px;
+            height:30px;
+            border-radius:50%;
+            background:var(--accent);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:#000;
+            font-weight:bold;
+        }
+
+        .username{ color:var(--text); }
+
+        .dropdown{
+            position:absolute;
+            top:40px;
+            right:0;
+            background:var(--surface);
+            border:1px solid #333;
+            border-radius:8px;
+            width:180px;
+            display:none;
+            flex-direction:column;
+        }
+
+        .dropdown a{
+            padding:.7rem 1rem;
+            color:var(--text);
+            text-decoration:none;
+            border-bottom:1px solid #2a2a2a;
+        }
+
+        .dropdown a:hover{ background:#1d2748; }
+        .dropdown.visible{ display:flex; }
+
+        /* PROFILE */
+        .profile-container{
+            max-width:1100px;
+            margin:2.5rem auto;
+            padding:0 2rem 3rem;
+        }
+
+        .hero{
+            background:var(--surface);
+            border:1px solid #333;
+            border-radius:12px;
+            padding:2.5rem;
+            display:flex;
+            flex-direction:column;
+            gap:1.5rem;
+            box-shadow:0 8px 25px rgba(0,0,0,0.35);
+        }
+
+        .hero h1{
+            color:var(--accent);
+            font-size:1.6rem;
+            letter-spacing:.08em;
+        }
+
+        .stats-row{
+            display:grid;
+            grid-template-columns:repeat(3, 1fr);
+            gap:1.2rem;
+        }
+
+        .stat-card{
+            background:#111827;
+            border:1px solid #2a2a3f;
+            border-radius:10px;
+            padding:1.2rem;
+        }
+
+        .stat-title{
+            color:var(--muted);
+            font-size:.8rem;
+            letter-spacing:.12em;
+        }
+
+        .stat-value{
+            font-size:1.6rem;
+            margin-top:.4rem;
+            color:var(--text);
+        }
+
+        .section{
+            margin-top:2rem;
+            display:grid;
+            grid-template-columns:1.2fr 1.8fr;
+            gap:1.5rem;
+        }
+
+        .panel{
+            background:var(--surface);
+            border:1px solid #333;
+            border-radius:12px;
+            padding:1.6rem;
+        }
+
+        .panel h2{
+            color:var(--accent);
+            font-size:1.1rem;
+            margin-bottom:1rem;
+            letter-spacing:.1em;
+        }
+
+        .intro{
+            color:var(--text);
+            line-height:1.6;
+        }
+
+        .past-races{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        .past-races th, .past-races td{
+            text-align:left;
+            padding:.7rem .5rem;
+            border-bottom:1px solid #2a2a3f;
+            color:var(--text);
+            font-size:.9rem;
+        }
+
+        .past-races th{
+            color:var(--muted);
+            font-weight:normal;
+            letter-spacing:.08em;
+            font-size:.75rem;
+        }
+        /**/
+        @@media (max-width: 900px){
+            .stats-row{ grid-template-columns:1fr; }
+            .section{ grid-template-columns:1fr; }
+
+        } 
+    </style>
+</head>
+<body>
+
+<header class="navbar">
+    <div class="logo" onclick="window.location='/'">MonkeyRacer</div>
+    <div class="nav-right">
+        @if(username != null)
+        {
+            <div class="user-menu" onclick="toggleMenu()">
+                <div class="user-icon">@username.Substring(0,1).ToUpper()</div>
+                <div class="username">@username</div>
+                <div class="dropdown" id="userDropdown">
+                    <a href="/User/Stats">User Stats</a>
+                    <a href="/User/Settings">Account Settings</a>
+                    <a href="/Auth/Logout">Log Out</a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <button class="nav-btn" onclick="window.location='/Auth/Login'">Login</button>
+        }
+    </div>
+</header>
+
+<div class="profile-container">
+    <div class="hero">
+        <h1>Profile overview</h1>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-title">USER</div>
+                <div class="stat-value">@Model.Username</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">AVERAGE WPM</div>
+                <div class="stat-value">@Model.AverageWpm</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">AVERAGE ACCURACY</div>
+                <div class="stat-value">@Model.AverageAccuracy.ToString("0.0")%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="panel">
+            <h2>ABOUT USER</h2>
+            <p class="intro">
+                <strong>@Model.Username</strong> is steadily improving typing rhythm and consistency.
+                With an average speed of <strong>@Model.AverageWpm WPM</strong> and
+                accuracy around <strong>@Model.AverageAccuracy.ToString("0.0")%</strong>,
+                the progress speaks for itself. Keep the focus, keep the flow.
+            </p>
+        </div>
+
+        <div class="panel">
+            <h2>PAST RACES</h2>
+            <table class="past-races">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>WPM</th>
+                        <th>ACCURACY</th>
+                        <th>ERRORS</th>
+                        <th>DIFFICULTY</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var race in Model.PastRaces)
+                {
+                    <tr>
+                        <td>@race.CompletedAt.ToString("yyyy-MM-dd")</td>
+                        <td>@race.Wpm</td>
+                        <td>@race.Accuracy.ToString("0.0")%</td>
+                        <td>@race.ErrorCount</td>
+                        <td>@race.Difficulty</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleMenu(){
+        document.getElementById("userDropdown").classList.toggle("visible");
+    }
+</script>
+
+</body>
+</html>

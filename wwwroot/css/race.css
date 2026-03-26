@@ -1,0 +1,89 @@
+﻿/* wwwroot/css/race.css */
+:root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --accent: #e2b714; /* monkeytype geltona */
+    --text: #d1d0c5;
+    --error: #ca4754;
+    --correct: #6e9e6e;
+    --muted: #646669;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Roboto Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.race-container {
+    width: 100%;
+    max-width: 800px;
+    padding: 2rem;
+}
+
+.stats-bar {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    color: var(--accent);
+}
+
+.stat span {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.stat label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: block;
+}
+
+.text-display {
+    font-size: 1.4rem;
+    line-height: 2;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+}
+
+.char.correct {
+    color: var(--correct);
+}
+
+.char.error {
+    color: var(--error);
+    text-decoration: underline;
+}
+
+.char.current {
+    border-left: 2px solid var(--accent);
+}
+
+.input-field {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 1.1rem;
+    padding: 1rem;
+    resize: none;
+    height: 80px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+    .input-field:focus {
+        border-color: var(--accent);
+    }
