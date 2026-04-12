@@ -7,7 +7,8 @@
 <html>
 <head>
 <title>MonkeyRacer</title>
-
+<script src="/js/login.js"></script>
+<link rel="stylesheet" href="/css/login.css">
 <style>
 
 :root{
@@ -31,98 +32,8 @@ font-family:'Courier New', monospace;
 min-height:100vh;
 }
 
-/* ---------------- NAVBAR ---------------- */
 
-.navbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:1.2rem 2rem;
-border-bottom:1px solid #2a2a3f;
-width: 100%;
-}
 
-.logo{
-font-size:1.4rem;
-font-weight:bold;
-color:var(--accent);
-cursor:pointer;
-}
-
-.nav-right{
-display:flex;
-align-items:center;
-gap:1rem;
-}
-
-.nav-btn{
-border:1px solid var(--accent);
-background:transparent;
-color:var(--accent);
-padding:0.45rem 1.3rem;
-border-radius:5px;
-cursor:pointer;
-font-size:0.9rem;
-transition:all .2s;
-}
-
-.nav-btn:hover{
-background:var(--accent);
-color:var(--bg);
-}
-
-/* USER MENU */
-
-.user-menu{
-display:flex;
-align-items:center;
-gap:.5rem;
-cursor:pointer;
-position:relative;
-}
-
-.user-icon{
-width:30px;
-height:30px;
-border-radius:50%;
-background:var(--accent);
-display:flex;
-align-items:center;
-justify-content:center;
-color:#000;
-font-weight:bold;
-}
-
-.username{
-color:var(--text);
-}
-
-.dropdown{
-position:absolute;
-top:40px;
-right:0;
-background:var(--surface);
-border:1px solid #333;
-border-radius:8px;
-width:180px;
-display:none;
-flex-direction:column;
-}
-
-.dropdown a{
-padding:.7rem 1rem;
-color:var(--text);
-text-decoration:none;
-border-bottom:1px solid #2a2a2a;
-}
-
-.dropdown a:hover{
-background:#1d2748;
-}
-
-.dropdown.visible{
-display:flex;
-}
 
 /* ---------------- HOME ---------------- */
 
@@ -132,6 +43,7 @@ justify-content:center;
 align-items:center;
 height:80vh;
 gap:4rem;
+margin-top: 80px;
 }
 
 /* GAME CARDS */
@@ -165,6 +77,18 @@ font-size:.85rem;
 margin-bottom:1.5rem;
 }
 
+.card-input {
+width:100%;
+margin-bottom:.8rem;
+padding:.6rem;
+background:#111;
+border:1px solid #333;
+color:white;
+border-radius:4px;
+font-family:inherit;
+text-align:center;
+}
+
 .btn{
 width:100%;
 margin-top:.6rem;
@@ -183,43 +107,6 @@ background:var(--accent);
 color:var(--bg);
 }
 
-/* LOGIN MODAL */
-
-.modal{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.75);
-display:none;
-justify-content:center;
-align-items:center;
-}
-
-.modal.visible{
-display:flex;
-}
-
-.modal-box{
-background:var(--surface);
-border:1px solid #333;
-border-radius:10px;
-padding:2rem;
-width:320px;
-}
-
-.modal-box h3{
-margin-bottom:1rem;
-color:var(--accent);
-}
-
-.modal-box input{
-width:100%;
-margin-bottom:.8rem;
-padding:.6rem;
-background:#111;
-border:1px solid #333;
-color:white;
-border-radius:4px;
-}
 
 </style>
 </head>
@@ -287,10 +174,22 @@ else
 
 <h2>ONLINE RACE</h2>
 
-<p>Race against other players in real time.</p>
+@if(username != null)
+{
+<p style="margin-bottom:.8rem;">Playing as <span style="color:var(--accent)">@username</span></p>
+<input type="hidden" id="username-input" value="@username" />
+}
+else
+{
+<input id="username-input" class="card-input" placeholder="Your name (optional)" maxlength="20" />
+}
 
-<button class="btn" onclick="joinRoom()">Join Room</button>
 <button class="btn" onclick="createRoom()">Create Room</button>
+
+<div style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">— OR —</div>
+
+<input id="room-id-input" class="card-input" placeholder="Enter Room ID" />
+<button class="btn" onclick="joinRoom()">Join Room</button>
 
 </div>
 
@@ -301,7 +200,9 @@ else
 
 <div class="modal" id="loginModal">
 
-<div class="modal-box">
+<div class="modal-box" style="position: relative;">
+
+<span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
 
 <h3>login</h3>
 
@@ -317,11 +218,10 @@ else
 
 
 
+    <script src="/js/login.js"></script>
     <script>
 
-        function openLogin(){
-            document.getElementById("loginModal").classList.add("visible");
-            }
+
 
             function toggleMenu(){
             document.getElementById("userDropdown").classList.toggle("visible");
@@ -334,93 +234,25 @@ else
         /* ROOM LOGIC */
 
         function createRoom() {
-
-            const id = Math.random().toString(36).substring(2, 8)
-
-            window.location.href = "/play/room/" + id
+            const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            redirectToRoom(roomId);
         }
 
         function joinRoom() {
-
-            const id = prompt("Enter room id")
-
-            if (id)
-                window.location.href = "/play/room/" + id
+            const roomId = document.getElementById('room-id-input').value.trim();
+            if (!roomId) return alert('Enter room id');
+            redirectToRoom(roomId);
         }
 
-        /* login */
-        async function login() {
+        function redirectToRoom(roomId) {
+            const usernameInput = document.getElementById('username-input');
+            const username = (usernameInput ? usernameInput.value.trim() : "") || 'Svečias';
 
-            const username = document.getElementById("login-user").value
-            const password = document.getElementById("login-pass").value
-            // kreipiamės į AuthController Login metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
-            const res = await fetch("/Auth/Login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-
-            })
-                // AuthController grąžiną 200 OK jei login sėkmingas, kitu atveju 400 Bad Request su klaidos pranešimu
-
-            if (res.ok)
-                location.reload()
-            else {
-      
-            let message = "login failed"
-
-            try {
-                const data = await res.json() // nuskaitome JSON iš AuthController
-                message = data.message
-            } catch {
-                // jei ne JSON (fallback)
-                message = await res.text()
-            }
-
-            alert(message)
+            sessionStorage.setItem('username', username);
+            window.location.href = `/Race/MultiPlay?roomId=${roomId}`;
         }
 
-        }
-        async function register() {
-
-    const username = document.getElementById("login-user").value
-    const password = document.getElementById("login-pass").value
-
-    if (!username || !password) {
-        alert("enter username and password")
-        return
-    }
-    // kreipiamės į AuthController Register metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
-    const res = await fetch("/Auth/Register", { 
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-
-    })
-    // AuthController grąžiną 200 OK jei registracija sėkminga, kitu atveju 400 Bad Request su klaidos pranešimu
-    if (res.ok) {
-        alert("account created")
-        location.reload()
-    }
-    else {
-
-        
-        let message = "register failed"
-
-        try {
-            const data = await res.json() // n uskaitome JSON iš AuthController
-            message = data.message
-        } catch {
-            // jei ne JSON (fallback)
-            message = await res.text()
-        }
-
-        alert(message)
-    }
-}
+       
 
 
     </script>

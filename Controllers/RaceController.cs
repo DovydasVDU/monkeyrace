@@ -51,6 +51,19 @@ public class RaceController : Controller
         return View(snippet);
     }
 
+    public IActionResult Lobby()
+    {
+        return View();
+    }
+    // GET /Race/MultiPlay?roomId=abc123
+    public IActionResult MultiPlay(string roomId)
+    {
+        ViewBag.RoomId = roomId;
+        ViewBag.Username = HttpContext.Session.GetString("Username") ?? "Svečias";
+
+        return View("MultiPlay"); // Return without a snippet model
+    }
+
     [HttpPost]
     // Šis metodas priima rezultatus iš frontend'o ir saugo juos duomenų bazėje. Taip pat tikrina, ar prisijungęs vartotojas, ir priskiria rezultatą tam vartotojui.
     public async Task<IActionResult> SaveResult([FromBody] RaceResultDto dto) 

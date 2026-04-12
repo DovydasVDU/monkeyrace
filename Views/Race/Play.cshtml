@@ -6,124 +6,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <script src="/js/login.js"></script>
+    <link rel="stylesheet" href="/css/login.css">
     <title>MonkeyRacer</title>
     <link rel="stylesheet" href="~/css/race.css" />
     <style>
-        :root {
-            --bg: #1a1a2e;
-            --surface: #16213e;
-            --accent: #e2b714;
-            --text: #ffffff;
-            --error: #ca4754;
-            --correct: #6e9e6e;
-            --muted: #646669;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Courier New', monospace;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        /* NAVBAR */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.2rem 2rem;
-            border-bottom: 1px solid #2a2a3f;
-            width: 100%;
-        }
-
-        .logo {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--accent);
-            cursor: pointer;
-        }
-
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .nav-btn {
-            border: 1px solid var(--accent);
-            background: transparent;
-            color: var(--accent);
-            padding: 0.45rem 1.3rem;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all .2s;
-        }
-
-        .nav-btn:hover {
-            background: var(--accent);
-            color: var(--bg);
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .user-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #000;
-            font-weight: bold;
-        }
-
-        .username {
-            color: var(--text);
-        }
-
-        .dropdown {
-            position: absolute;
-            top: 40px;
-            right: 0;
-            background: var(--surface);
-            border: 1px solid #333;
-            border-radius: 8px;
-            width: 180px;
-            display: none;
-            flex-direction: column;
-        }
-
-        .dropdown a {
-            padding: .7rem 1rem;
-            color: var(--text);
-            text-decoration: none;
-            border-bottom: 1px solid #2a2a2a;
-        }
-
-        .dropdown a:hover {
-            background: #1d2748;
-        }
-
-        .dropdown.visible {
-            display: flex;
-        }
-
+        
         .race-page {
             flex: 1;
             display: flex;
@@ -297,62 +185,6 @@
                 background: var(--accent);
                 color: var(--bg);
             }
-
-        /* LOGIN MODAL */
-
-.modal{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.75);
-display:none;
-justify-content:center;
-align-items:center;
-}
-
-.modal.visible{
-display:flex;
-}
-
-.modal-box{
-background:var(--surface);
-border:1px solid #333;
-border-radius:10px;
-padding:2rem;
-width:320px;
-}
-
-.modal-box h3{
-margin-bottom:1rem;
-color:var(--accent);
-}
-
-.modal-box input{
-width:100%;
-margin-bottom:.8rem;
-padding:.6rem;
-background:#111;
-border:1px solid #333;
-color:white;
-border-radius:4px;
-}
-.btn{
-width:100%;
-margin-top:.6rem;
-padding:.7rem;
-border-radius:5px;
-border:1px solid var(--accent);
-background:transparent;
-color:var(--accent);
-cursor:pointer;
-font-size:.9rem;
-transition:all .2s;
-}
-
-.btn:hover{
-background:var(--accent);
-color:var(--bg);
-}
-
 
     </style>
 </head>

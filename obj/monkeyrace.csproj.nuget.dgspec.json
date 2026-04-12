@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\134128\\Desktop\\monkeyrace baigtas\\monkeyrace baigtas\\monkeyrace\\monkeyrace.csproj": {}
+    "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj": {}
   },
   "projects": {
-    "C:\\Users\\134128\\Desktop\\monkeyrace baigtas\\monkeyrace baigtas\\monkeyrace\\monkeyrace.csproj": {
+    "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\134128\\Desktop\\monkeyrace baigtas\\monkeyrace baigtas\\monkeyrace\\monkeyrace.csproj",
+        "projectUniqueName": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj",
         "projectName": "monkeyrace",
-        "projectPath": "C:\\Users\\134128\\Desktop\\monkeyrace baigtas\\monkeyrace baigtas\\monkeyrace\\monkeyrace.csproj",
-        "packagesPath": "C:\\Users\\134128\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\134128\\Desktop\\monkeyrace baigtas\\monkeyrace baigtas\\monkeyrace\\obj\\",
+        "projectPath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj",
+        "packagesPath": "C:\\Users\\Dovydas\\.nuget\\packages\\",
+        "outputPath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\134128\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Dovydas\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -22,10 +26,12 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "netcoreapp3.1": {
+            "targetAlias": "netcoreapp3.1",
             "projectReferences": {}
           }
         },
@@ -33,11 +39,22 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "netcoreapp3.1": {
+          "targetAlias": "netcoreapp3.1",
           "dependencies": {
+            "Microsoft.AspNetCore.SignalR.Client": {
+              "target": "Package",
+              "version": "[3.1.32, )"
+            },
             "Microsoft.EntityFrameworkCore.Design": {
               "target": "Package",
               "version": "[3.1.32, )"
@@ -57,7 +74,8 @@
             "net47",
             "net471",
             "net472",
-            "net48"
+            "net48",
+            "net481"
           ],
           "assetTargetFallback": true,
           "warn": true,
@@ -69,7 +87,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.426\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201\\RuntimeIdentifierGraph.json"
         }
       }
     }

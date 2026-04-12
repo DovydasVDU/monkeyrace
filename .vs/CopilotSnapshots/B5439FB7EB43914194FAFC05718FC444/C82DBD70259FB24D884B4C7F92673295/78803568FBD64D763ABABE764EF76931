@@ -1,0 +1,259 @@
+﻿@model TextSnippet
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MonkeyRacer – @ViewBag.RoomId</title>
+    @* SignalR JS biblioteka – įtraukta su NuGet paketu *@
+    <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+    <style>
+        /* ... tas pats bazinis stilius ... */
+        .players-bar {
+            margin-bottom: 1.5rem;
+        }
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .player-name {
+            width: 120px;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        .progress-track {
+            flex: 1;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .player-row.me .player-name { color: var(--accent); }
+        .player-row.finished .progress-fill { background: var(--correct); }
+    </style>
+</head>
+<body>
+<div class="race-container">
+
+    @* Kambario informacija *@
+    <div style="color:var(--muted); font-size:0.8rem; margin-bottom:1rem;">
+        kambarys: <span style="color:var(--accent)">@ViewBag.RoomId</span>
+        — pasidalink šiuo kodu su draugais
+    </div>
+
+    @* Žaidėjų progreso juostos *@
+    <div class="players-bar" id="players-bar">
+        @* Užpildomos dinamiškai per JavaScript *@
+    </div>
+
+    @* Statistika – ta pati kaip solo *@
+    <div class="stats-bar">
+        <span class="stat">
+            <span id="wpm-display">0</span><label>wpm</label>
+        </span>
+        <span class="stat">
+            <span id="accuracy-display">100</span><label>%</label>
+        </span>
+        <span class="stat">
+            <span id="timer-display">0</span><label>sek</label>
+        </span>
+    </div>
+
+    @* Tekstas – identiškas solo versijai *@
+    <div id="text-display" class="text-display">
+        @foreach (char c in Model.Content)
+        {
+            if (c == ' ') { <span class="char space">_</span> }
+            else          { <span class="char">@c</span> }
+        }
+    </div>
+
+    <textarea id="input-field" class="input-field"
+              placeholder="Laukiama žaidėjų... pradėk spausdinti!"
+              autocomplete="off" autocorrect="off"
+              autocapitalize="off" spellcheck="false"></textarea>
+</div>
+
+<script>
+const TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
+const ROOM_ID     = "@ViewBag.RoomId";
+const USERNAME    = sessionStorage.getItem('username') || "@ViewBag.Username";
+
+// ── Solo logika (ta pati kaip Play.cshtml) ──────────────────
+let startTime   = null;
+let timerHandle = null;
+let isFinished  = false;
+const klaidosSet = new Set();
+const chars      = document.querySelectorAll('.char');
+if (chars.length > 0) chars[0].classList.add('current');
+
+// ── SignalR ryšys ────────────────────────────────────────────
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl("/racehub")
+    .withAutomaticReconnect()  // automatiškai jungiasi atgal jei ryšys nutrūksta
+    .build();
+
+// Žaidėjų progreso objektas: connectionId → { name, progress, el }
+const players = {};
+
+// ── SignalR įvykių klausymas ─────────────────────────────────
+
+// Kai prisijungia naujas žaidėjas
+connection.on("PlayerJoined", (data) => {
+    if (!players[data.connectionId]) {
+        addPlayerRow(data.connectionId, data.username, false);
+    }
+});
+
+// Gauname esamų žaidėjų sąrašą (kai mes prisijungiame)
+connection.on("RoomState", (data) => {
+    data.players.forEach(p => {
+        const isMe = p.connectionId === connection.connectionId;
+        addPlayerRow(p.connectionId, p.username, isMe);
+        updateProgressBar(p.connectionId, p.progress);
+    });
+});
+
+// Progreso atnaujinimas iš kito žaidėjo
+connection.on("ProgressUpdate", (data) => {
+    updateProgressBar(data.connectionId, data.progress);
+});
+
+// Žaidėjas baigė
+connection.on("PlayerFinished", (data) => {
+    const row = document.getElementById('player-' + data.connectionId);
+    if (row) row.classList.add('finished');
+    // Rodome vietą šalia vardo
+    const nameEl = row?.querySelector('.player-name');
+    if (nameEl) nameEl.textContent += ` #${data.place} (${data.wpm} wpm)`;
+});
+
+// Žaidėjas išėjo
+connection.on("PlayerLeft", (data) => {
+    const row = document.getElementById('player-' + data.connectionId);
+    if (row) row.remove();
+    delete players[data.connectionId];
+});
+
+// ── Pagalbinės funkcijos ──────────────────────────────────────
+
+function addPlayerRow(connectionId, username, isMe) {
+    const bar   = document.getElementById('players-bar');
+    const div   = document.createElement('div');
+    div.className = 'player-row' + (isMe ? ' me' : '');
+    div.id        = 'player-' + connectionId;
+    div.innerHTML = `
+        <span class="player-name">${username}</span>
+        <div class="progress-track">
+            <div class="progress-fill" id="fill-${connectionId}"></div>
+        </div>`;
+    bar.appendChild(div);
+    players[connectionId] = { username, progress: 0 };
+}
+
+function updateProgressBar(connectionId, progress) {
+    const fill = document.getElementById('fill-' + connectionId);
+    if (fill) fill.style.width = progress + '%';
+    if (players[connectionId])
+        players[connectionId].progress = progress;
+}
+
+// ── Spausdinimo logika ────────────────────────────────────────
+
+// Progreso siuntimas kas 300ms (ne kiekvienam klavišui!)
+let lastSentProgress = -1;
+setInterval(() => {
+    if (!startTime || isFinished) return;
+    const typed    = document.getElementById('input-field').value;
+    const progress = Math.round((typed.length / TARGET_TEXT.length) * 100);
+    if (progress !== lastSentProgress) {
+        connection.invoke("UpdateProgress", ROOM_ID, progress);
+        lastSentProgress = progress;
+    }
+}, 300);
+
+document.getElementById('input-field').addEventListener('input', function() {
+    if (isFinished) return;
+    const typed = this.value;
+
+    if (typed.length === 1 && startTime === null) {
+        startTime   = Date.now();
+        timerHandle = setInterval(updateTimer, 200);
+    }
+
+    updateCharColors(typed);
+
+    if (startTime !== null) {
+        document.getElementById('wpm-display').textContent      = calcWPM(typed.length);
+        document.getElementById('accuracy-display').textContent = calcAccuracy(typed);
+    }
+
+    if (typed === TARGET_TEXT) finishRace(typed);
+});
+
+function updateCharColors(typed) {
+    chars.forEach((span, i) => {
+        span.classList.remove('correct', 'error', 'current');
+        if (i < typed.length) {
+            if (typed[i] === TARGET_TEXT[i]) span.classList.add('correct');
+            else { span.classList.add('error'); klaidosSet.add(i); }
+        } else if (i === typed.length) {
+            span.classList.add('current');
+        }
+    });
+}
+
+function calcWPM(charsTyped) {
+    if (!startTime || charsTyped === 0) return 0;
+    return Math.round((charsTyped / 5) / ((Date.now() - startTime) / 60000));
+}
+
+function calcAccuracy(typed) {
+    if (!typed.length) return 100;
+    let correct = 0;
+    for (let i = 0; i < typed.length; i++)
+        if (typed[i] === TARGET_TEXT[i]) correct++;
+    return Math.round((correct / typed.length) * 100);
+}
+
+function updateTimer() {
+    if (!startTime) return;
+    document.getElementById('timer-display').textContent =
+        Math.floor((Date.now() - startTime) / 1000);
+}
+
+async function finishRace(typed) {
+    isFinished = true;
+    clearInterval(timerHandle);
+
+    const timeSeconds = Math.round((Date.now() - startTime) / 1000);
+    const wpm         = calcWPM(typed.length);
+    const accuracy    = calcAccuracy(typed);
+
+    // Pranešame Hub'ui kad baigėme
+    await connection.invoke("FinishRace", ROOM_ID, wpm, accuracy, timeSeconds);
+
+    // Pažymime savo progreso juostą
+    updateProgressBar(connection.connectionId, 100);
+}
+
+// ── Prisijungimas prie kambario ───────────────────────────────
+async function startConnection() {
+    await connection.start();
+    // Prisijungiame prie kambario ir prisistatome
+    await connection.invoke("JoinRoom", ROOM_ID, USERNAME);
+    // Pridedame savo progreso juostą
+    addPlayerRow(connection.connectionId, USERNAME + " (tu)", true);
+}
+
+startConnection();
+</script>
+</body>
+</html>
