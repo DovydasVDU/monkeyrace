@@ -141,7 +141,8 @@
 
 <script>
 let TARGET_TEXT = "";
-const ROOM_ID     = "@ViewBag.RoomId";
+const ROOM_ID = "@ViewBag.RoomId";
+const RACE_ID = "@ViewBag.RaceId";
 const USERNAME    = sessionStorage.getItem('username') || "@ViewBag.Username";
 
 let isHost      = false;
@@ -246,6 +247,7 @@ connection.on("PlayerFinished", (data) => {
         else if (data.place === 2) { medal = "🥈 "; placeClass = "place-2"; }
         else if (data.place === 3) { medal = "🥉 "; placeClass = "place-3"; }
         statsEl.innerHTML = `<span class="${placeClass}" style="font-size:0.9rem; text-align:right; width:100%; border:none; background:transparent;">${medal}#${data.place} (${data.wpm} WPM)</span>`;
+
     }
 });
 
@@ -461,7 +463,7 @@ function beginTypingPhase() {
             chars.forEach(c => c.classList.add('correct'));
             totalTypedChars += targetWord.length;
             document.getElementById('wpm-display').textContent = calcWPM(totalTypedChars);
-            finishRace();
+            finishRace(typed);
             return;
         }
 
@@ -520,23 +522,51 @@ function updateTimer() {
     }
 }
 
-async function finishRace() {
-    isFinished = true;
-    clearInterval(timerHandle);
-    document.getElementById('input-field').disabled = true;
+    async function finishRace() {
+        isFinished = true;
+        clearInterval(timerHandle);
+        document.getElementById('input-field').disabled = true;
 
-    const timeSeconds = Math.round((Date.now() - startTime) / 1000);
-    const wpm = calcWPM(totalTypedChars);
-    const accuracy = calcAccuracy();
+        const timeSeconds = Math.round((Date.now() - startTime) / 1000);
+        const wpm = calcWPM(totalTypedChars);
+        const accuracy = calcAccuracy();
 
-    await connection.invoke("FinishRace", ROOM_ID, wpm, accuracy, timeSeconds);
-    updateProgressBar(myConnectionId, 100);
+        // Notify SignalR (for multiplayer)
+        await connection.invoke("FinishRace", ROOM_ID, wpm, accuracy, timeSeconds);
 
-    document.getElementById('result-controls').style.display = 'block';
-    if (isHost) {
-        document.getElementById('btn-reset').style.display = 'inline-block';
+        updateProgressBar(myConnectionId, 100);
+
+        document.getElementById('result-controls').style.display = 'block';
+        if (isHost) {
+            document.getElementById('btn-reset').style.display = 'inline-block';
+        }
+
+        // ✅ SEND TO DATABASE
+        try {
+            const response = await fetch('/Race/SaveResult', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    raceId: RACE_ID,
+                    username: USERNAME,
+                    wpm: wpm,
+                    accuracy: accuracy,
+                    timeSeconds: timeSeconds
+                })
+            });
+
+            if (!response.ok) {
+                console.error("Failed to save result");
+            } else {
+                console.log("Result saved successfully");
+            }
+
+        } catch (err) {
+            console.error("Error saving result:", err);
+        }
     }
-}
 
 let lastSentProgress = -1;
 setInterval(() => {

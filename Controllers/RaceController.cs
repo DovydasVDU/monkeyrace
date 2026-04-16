@@ -82,7 +82,9 @@ public class RaceController : Controller
             RaceId = dto.RaceId,
             WPM = dto.Wpm,
             Accuracy = dto.Accuracy,
-            TimeSeconds = dto.TimeSeconds
+            TimeSeconds = dto.TimeSeconds,
+            //Place = 
+
         };
 
 

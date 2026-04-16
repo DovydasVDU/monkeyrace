@@ -10,10 +10,10 @@ public class RaceHub : Hub
     private readonly AppDbContext _db;
     private readonly RaceService _raceService;
 
-    // Statinis žodynas – gyvas kol veikia serveris
+    // 🔹 Laikome visus aktyvius kambarius atmintyje (kol veikia serveris)
     private static readonly Dictionary<string, RaceRoom> _rooms = new Dictionary<string, RaceRoom>();
 
-    // Objektas apsaugo nuo race condition kai keli žaidėjai prisijungia tuo pačiu metu
+    // 🔹 Lock naudojamas apsaugoti nuo race condition (kai keli useriai vienu metu keičia state)
     private static readonly object _lock = new object();
 
     public RaceHub(AppDbContext db, RaceService raceService)
@@ -22,14 +22,29 @@ public class RaceHub : Hub
         _raceService = raceService;
     }
 
+    // =========================
+    // JOIN ROOM
+    // =========================
     public async Task JoinRoom(string roomId, string username)
     {
+        // 🔹 Pridedam connection į SignalR grupę
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
 
+        // 🔹 Bandome pasiimti UserId iš JWT/claims
+        int? userId = null;
+        var userIdClaim = Context.User?.FindFirst("UserId")?.Value;
+
+        if (int.TryParse(userIdClaim, out var parsedId))
+        {
+            userId = parsedId;
+        }
+
+        // 🔹 Sukuriam player objektą
         var player = new RoomPlayer
         {
             ConnectionId = Context.ConnectionId,
             Username = username,
+            UserId = userId,
             Progress = 0,
             IsFinished = false,
             IsReady = false,
@@ -37,23 +52,27 @@ public class RaceHub : Hub
         };
 
         RaceRoom room;
-        bool isHost = false;
+
         lock (_lock)
         {
+            // 🔹 Jei kambario nėra – sukuriam naują
             if (!_rooms.ContainsKey(roomId))
             {
-                _rooms[roomId] = new RaceRoom 
-                { 
-                    RoomId = roomId, 
-                    HostConnectionId = Context.ConnectionId, 
-                    Difficulty = "medium" 
+                _rooms[roomId] = new RaceRoom
+                {
+                    RoomId = roomId,
+                    HostConnectionId = Context.ConnectionId,
+                    Difficulty = "medium"
                 };
             }
+
             room = _rooms[roomId];
-            if (room.HostConnectionId == Context.ConnectionId) isHost = true;
+
+            // 🔹 Pridedam player į kambario sąrašą
             room.Players.Add(player);
         }
 
+        // 🔹 Informuojam kitus žaidėjus
         await Clients.OthersInGroup(roomId).SendAsync("PlayerJoined", new
         {
             connectionId = Context.ConnectionId,
@@ -61,6 +80,7 @@ public class RaceHub : Hub
             isReady = false
         });
 
+        // 🔹 Nusiunčiam pilną kambario state naujam žaidėjui
         await Clients.Caller.SendAsync("RoomState", new
         {
             hostConnectionId = room.HostConnectionId,
@@ -78,29 +98,39 @@ public class RaceHub : Hub
         });
     }
 
+    // =========================
+    // CHANGE DIFFICULTY
+    // =========================
     public async Task ChangeDifficulty(string roomId, string difficulty)
     {
         lock (_lock)
         {
             if (_rooms.TryGetValue(roomId, out var room))
             {
+                // 🔹 Tik host gali keisti difficulty
                 if (room.HostConnectionId == Context.ConnectionId)
                 {
                     room.Difficulty = difficulty;
                 }
             }
         }
+
         await Clients.Group(roomId).SendAsync("DifficultyChanged", difficulty);
     }
 
+    // =========================
+    // READY SYSTEM
+    // =========================
     public async Task ToggleReady(string roomId)
     {
         bool isReady = false;
+
         lock (_lock)
         {
             if (_rooms.TryGetValue(roomId, out var room))
             {
                 var player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+
                 if (player != null)
                 {
                     player.IsReady = !player.IsReady;
@@ -108,35 +138,73 @@ public class RaceHub : Hub
                 }
             }
         }
-        await Clients.Group(roomId).SendAsync("PlayerReadyStatus", new { connectionId = Context.ConnectionId, isReady });
+
+        await Clients.Group(roomId).SendAsync("PlayerReadyStatus", new
+        {
+            connectionId = Context.ConnectionId,
+            isReady
+        });
     }
 
+    // =========================
+    // START RACE
+    // =========================
     public async Task StartRace(string roomId)
     {
         string textSnippet = "";
+        Race race = null;
+
         lock (_lock)
         {
             if (_rooms.TryGetValue(roomId, out var room))
             {
-                if (room.HostConnectionId != Context.ConnectionId) return; // Only host can start
-                if (!room.Players.All(p => p.IsReady)) return; // Everyone must be ready
+                // 🔹 Tik host gali startinti
+                if (room.HostConnectionId != Context.ConnectionId) return;
+
+                // 🔹 Visi turi būti ready
+                if (!room.Players.All(p => p.IsReady)) return;
+
                 room.IsStarted = true;
             }
         }
 
         if (_rooms.TryGetValue(roomId, out var validRoom))
         {
+            // 🔹 Gaunam tekstą iš service
             var snippet = await _raceService.GetRandomSnippetAsync(validRoom.Difficulty, new List<int>());
+
             validRoom.SnippetContent = snippet.Content;
+
+            // 🔹 Sukuriam race įrašą DB
+            race = new Race
+            {
+                TextSnippetId = snippet.Id,
+                StartedAt = DateTime.UtcNow
+            };
+
+            _db.Races.Add(race);
+            await _db.SaveChangesAsync();
+
+            // 🔹 Išsaugom raceId kambaryje
+            validRoom.RaceId = race.Id;
+
             textSnippet = snippet.Content;
         }
 
-        if (!string.IsNullOrEmpty(textSnippet))
+        // 🔹 Pradedam lenktynes klientuose
+        if (!string.IsNullOrEmpty(textSnippet) && race != null)
         {
-            await Clients.Group(roomId).SendAsync("RaceStarting", new { text = textSnippet });
+            await Clients.Group(roomId).SendAsync("RaceStarting", new
+            {
+                text = textSnippet,
+                raceId = race.Id
+            });
         }
     }
 
+    // =========================
+    // LIVE PROGRESS UPDATE
+    // =========================
     public async Task UpdateProgress(string roomId, int progressPercent, int currentWpm, string currentWord)
     {
         lock (_lock)
@@ -144,6 +212,7 @@ public class RaceHub : Hub
             if (!_rooms.TryGetValue(roomId, out var room)) return;
 
             var player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+
             if (player != null)
             {
                 player.Progress = progressPercent;
@@ -161,17 +230,29 @@ public class RaceHub : Hub
         });
     }
 
+    // =========================
+    // FINISH RACE
+    // =========================
     public async Task FinishRace(string roomId, int wpm, double accuracy, int timeSeconds)
     {
         int place = 1;
+        RaceRoom room = null;
+        RoomPlayer player = null;
+
         lock (_lock)
         {
-            if (_rooms.TryGetValue(roomId, out var room))
+            if (_rooms.TryGetValue(roomId, out room))
             {
+                // 🔹 Apskaičiuojam vietą (kiek jau baigė prieš tave)
                 place = room.Players.Count(p => p.IsFinished) + 1;
-                var player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+
+                player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+
                 if (player != null)
                 {
+                    // 🔹 Prevent double finish
+                    if (player.IsFinished) return;
+
                     player.IsFinished = true;
                     player.Progress = 100;
                     player.WPM = wpm;
@@ -180,22 +261,45 @@ public class RaceHub : Hub
             }
         }
 
+        // 🔹 Išsaugom rezultatą DB (NE lock viduje)
+        if (room != null && player != null && player.UserId != null)
+        {
+            var result = new RaceResult
+            {
+                UserId = player.UserId.Value,
+                RaceId = room.RaceId,
+                WPM = wpm,
+                Accuracy = accuracy,
+                TimeSeconds = timeSeconds
+                //Place = player.Place // ⭐ BONUS
+            };
+
+            _db.RaceResults.Add(result);
+            await _db.SaveChangesAsync();
+        }
+
+        // 🔹 Informuojam visus klientus
         await Clients.Group(roomId).SendAsync("PlayerFinished", new
         {
             connectionId = Context.ConnectionId,
-            place = place,
-            wpm = wpm
+            place,
+            wpm
         });
     }
 
+    // =========================
+    // RESET ROOM
+    // =========================
     public async Task ResetRoom(string roomId)
     {
         lock (_lock)
         {
             if (_rooms.TryGetValue(roomId, out var room))
             {
-                if (room.HostConnectionId != Context.ConnectionId) return; // Only host can reset
+                if (room.HostConnectionId != Context.ConnectionId) return;
+
                 room.IsStarted = false;
+
                 foreach (var p in room.Players)
                 {
                     p.IsReady = false;
@@ -208,9 +312,13 @@ public class RaceHub : Hub
                 }
             }
         }
+
         await Clients.Group(roomId).SendAsync("RoomReset");
     }
 
+    // =========================
+    // DISCONNECT
+    // =========================
     public override async Task OnDisconnectedAsync(Exception exception)
     {
         string roomToNotify = null;
@@ -222,21 +330,24 @@ public class RaceHub : Hub
             {
                 var room = kvp.Value;
                 var player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+
                 if (player != null)
                 {
                     room.Players.Remove(player);
                     roomToNotify = room.RoomId;
 
+                    // 🔹 Jei tuščias kambarys – ištrinam
                     if (room.Players.Count == 0)
                     {
                         _rooms.Remove(room.RoomId);
                     }
+                    // 🔹 Jei host išėjo – paskiriam naują
                     else if (room.HostConnectionId == Context.ConnectionId)
                     {
-                        // Assign new host
                         room.HostConnectionId = room.Players.First().ConnectionId;
                         newHostId = room.HostConnectionId;
                     }
+
                     break;
                 }
             }
@@ -247,13 +358,17 @@ public class RaceHub : Hub
             await Clients.Group(roomToNotify).SendAsync("PlayerLeft", new
             {
                 connectionId = Context.ConnectionId,
-                newHostId = newHostId
+                newHostId
             });
         }
 
         await base.OnDisconnectedAsync(exception);
     }
 }
+
+// =========================
+// DATA MODELS
+// =========================
 
 public class RaceRoom
 {
@@ -263,12 +378,17 @@ public class RaceRoom
     public List<RoomPlayer> Players { get; set; } = new List<RoomPlayer>();
     public bool IsStarted { get; set; }
     public string SnippetContent { get; set; }
+    public int RaceId { get; set; }
 }
 
 public class RoomPlayer
 {
     public string ConnectionId { get; set; }
     public string Username { get; set; }
+
+    // 🔹 Nullable – nes gali būti neprisijungęs user
+    public int? UserId { get; set; }
+
     public int Progress { get; set; }
     public bool IsReady { get; set; }
     public bool IsFinished { get; set; }

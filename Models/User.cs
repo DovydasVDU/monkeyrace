@@ -52,4 +52,6 @@ public class RaceResult
     public int TimeSeconds { get; set; }   // Kiek laiko užtruko
     public int ErrorCount { get; set; }
     public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+    //public int Place { get; set; }
+
 }
