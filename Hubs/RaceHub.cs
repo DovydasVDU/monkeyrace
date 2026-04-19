@@ -264,18 +264,7 @@ public class RaceHub : Hub
         // 🔹 Išsaugom rezultatą DB (NE lock viduje)
         if (room != null && player != null && player.UserId != null)
         {
-            var result = new RaceResult
-            {
-                UserId = player.UserId.Value,
-                RaceId = room.RaceId,
-                WPM = wpm,
-                Accuracy = accuracy,
-                TimeSeconds = timeSeconds
-                //Place = player.Place // ⭐ BONUS
-            };
-
-            _db.RaceResults.Add(result);
-            await _db.SaveChangesAsync();
+            await _raceService.SaveRaceResultAsync(player.UserId.Value, room.RaceId, wpm, accuracy, timeSeconds);
         }
 
         // 🔹 Informuojam visus klientus

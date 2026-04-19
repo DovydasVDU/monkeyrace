@@ -6,187 +6,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="/js/login.js"></script>
-    <link rel="stylesheet" href="/css/login.css">
+    <script src="~/js/login.js" asp-append-version="true"></script>
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true">
     <title>MonkeyRacer</title>
-    <link rel="stylesheet" href="~/css/race.css" />
-    <style>
-        
-        .race-page {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .race-container {
-            width: 100%;
-            max-width: 820px;
-            padding: 2rem;
-        }
-
-        .stats-bar {
-            display: flex;
-            gap: 2.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat span {
-            font-size: 2.2rem;
-            font-weight: bold;
-            color: var(--accent);
-            display: block;
-            line-height: 1;
-        }
-
-        .stat label {
-            font-size: 0.7rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: normal;
-        }
-
-        .text-display {
-            font-size: 1.4rem;
-            line-height: 1.9;
-            margin-bottom: 1.5rem;
-            letter-spacing: normal;
-            color: var(--muted);
-            word-break: break-word;
-            user-select: none;
-        }
-
-        .char.correct {
-            color: var(--correct);
-        }
-
-        .char.error {
-            color: var(--error);
-            background: rgba(202, 71, 84, 0.15);
-            border-radius: 2px;
-        }
-
-        .char.current {
-            border-left: 2px solid var(--accent);
-            margin-left: -2px;
-            animation: blink 1s step-end infinite;
-        }
-
-        /* Tarpas kaip underscore */
-        .char.space {
-            opacity: 0.35; /* pilkesnis nei raidės, kad neblaškytų */
-        }
-
-            .char.space.correct {
-                opacity: 1;
-                color: var(--correct);
-            }
-
-            .char.space.error {
-                opacity: 1;
-                color: var(--error);
-            }
-
-        @@keyframes blink {
-            0%, 100% {
-                border-color: var(--accent);
-            }
-
-            50% {
-                border-color: transparent;
-            }
-        }
-
-        .input-field {
-            width: 100%;
-            background: var(--surface);
-            border: 1px solid #333;
-            border-radius: 6px;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 1.1rem;
-            padding: 1rem;
-            resize: none;
-            height: 80px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-            .input-field:focus {
-                border-color: var(--accent);
-            }
-
-        .results-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(26, 26, 46, 0.95);
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-            .results-overlay.visible {
-                display: flex;
-            }
-
-        .results-box {
-            background: var(--surface);
-            border: 1px solid #333;
-            border-radius: 10px;
-            padding: 3rem 4rem;
-            text-align: center;
-        }
-
-            .results-box h2 {
-                color: var(--accent);
-                font-size: 1rem;
-                letter-spacing: 0.2em;
-                text-transform: uppercase;
-                margin-bottom: 2rem;
-            }
-
-        .results-grid {
-            display: flex;
-            gap: 3rem;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-
-        .result-stat span {
-            font-size: 3rem;
-            font-weight: bold;
-            color: var(--accent);
-            display: block;
-        }
-
-        .result-stat label {
-            font-size: 0.75rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        .btn-restart {
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-family: inherit;
-            font-size: 0.9rem;
-            padding: 0.6rem 2rem;
-            border-radius: 4px;
-            cursor: pointer;
-            letter-spacing: 0.1em;
-            transition: background 0.2s, color 0.2s;
-        }
-
-            .btn-restart:hover {
-                background: var(--accent);
-                color: var(--bg);
-            }
-
-    </style>
+    <link rel="stylesheet" href="~/css/player.css" asp-append-version="true">
 </head>
 <body>
     <header class="navbar">
@@ -222,43 +45,18 @@
             </select>
         </form>
 
-        <div class="stats-bar">
-            <span class="stat">
-                <span id="wpm-display">0</span>
-                <label>wpm</label>
-            </span>
-            <span class="stat">
-                <span id="accuracy-display">100</span>
-                <label>tikslumas %</label>
-            </span>
-            <span class="stat">
-                <span id="timer-display">0</span>
-                <label>sek</label>
-            </span>
-        </div>
+    <div class="stats-bar" id="stats-bar">
+        <span class="stat"><span id="wpm-display">0</span><label>wpm</label></span>
+        <span class="stat"><span id="accuracy-display">100</span><label>%</label></span>
+        <span class="stat"><span id="timer-display">0</span><label>sek</label></span>
+    </div>
 
-        <div id="text-display" class="text-display">
-            @foreach (char c in Model.Content)
-            {
-                if (c == ' ')
-                {
-                    <!-- Tarpas rodomas kaip _ -->
-                    <span class="char space">_</span>
-                }
-                else
-                {
-                    <span class="char">@c</span>
-                }
-            }
-        </div>
+    <div id="text-display" class="text-display"></div>
 
-<textarea id="input-field"
-          class="input-field"
-          placeholder="Pradėk spausdinti..."
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"></textarea>
+    <div style="text-align: center;">
+        <input type="text" id="input-field" class="word-input" style="display: block;" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Pradėk spausdinti..." autofocus />
+    </div>
+
         </div>
     </div>
     <div class="results-overlay" id="results-overlay">
@@ -288,11 +86,13 @@
 
     <!-- LOGIN MODAL -->
 
-<div class="modal" id="loginModal">
+    <div class="modal" id="loginModal">
 
-<div class="modal-box">
+    <div class="modal-box" style="position: relative;">
 
-<h3>login</h3>
+    <span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
+
+    <h3>login</h3>
 
 <input id="login-user" placeholder="username">
 <input id="login-pass" type="password" placeholder="password">
@@ -311,92 +111,162 @@
             document.getElementById("userDropdown").classList.toggle("visible");
         }
 
-        const TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
+        let TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
         const RACE_ID     = @ViewBag.RaceId;
 
-        const klaidosSet = new Set(); // automatiškai ignoruoja dublikatus
+        const klaidosSet = new Set();
+        let targetWords = [];
+        let currentWordIndex = 0;
+        let totalTypedChars = 0;
 
         let startTime   = null;
         let timerHandle = null;
         let isFinished  = false;
-        
 
         const inputField      = document.getElementById('input-field');
         const wpmDisplay      = document.getElementById('wpm-display');
         const accuracyDisplay = document.getElementById('accuracy-display');
         const timerDisplay    = document.getElementById('timer-display');
-        const chars           = document.querySelectorAll('.char');
 
-        if (chars.length > 0) chars[0].classList.add('current');
+        function renderText() {
+            targetWords = TARGET_TEXT.split(' ');
+            const container = document.getElementById('text-display');
+            container.innerHTML = '';
 
-        inputField.addEventListener('input', function () {
-            if (isFinished) return;
+            targetWords.forEach((word, index) => {
+                const wordSpan = document.createElement('span');
+                wordSpan.className = 'word' + (index === 0 ? ' active' : '');
+                wordSpan.id = 'word-elem-' + index;
 
-            const typed = inputField.value;
+                for (let i = 0; i < word.length; i++) {
+                    const charSpan = document.createElement('span');
+                    charSpan.className = 'char';
+                    charSpan.textContent = word[i];
+                    wordSpan.appendChild(charSpan);
+                }
+                container.appendChild(wordSpan);
+            });
 
-            if (typed.length === 1 && startTime === null) {
-                startTime   = Date.now();
-                timerHandle = setInterval(updateTimer, 200);
-            }
+            container.style.display = 'block';
+        }
 
-            updateCharColors(typed);
+        function init() {
+            renderText();
+            inputField.focus();
 
-            if (startTime !== null) {
-                wpmDisplay.textContent      = calcWPM(typed.length);
-                accuracyDisplay.textContent = calcAccuracy(typed);
-            }
+            inputField.addEventListener('input', function(e) {
+                if (isFinished) return;
 
-            if (typed === TARGET_TEXT || typed.length == chars.length) {
-                finishRace(typed);
-            }
-        });
+                if (startTime === null) {
+                    startTime = Date.now();
+                    timerHandle = setInterval(updateTimer, 200);
+                }
 
-        function updateCharColors(typed) {
-            chars.forEach((span, i) => {
-                span.classList.remove('correct', 'error', 'current');
+                let typed = this.value;
+                const targetWord = targetWords[currentWordIndex];
+                if (!targetWord) return;
 
-                if (i < typed.length) {
-                    // Lyginame su originaliu tekstu (ne su _ simboliu)
-                    if (typed[i] === TARGET_TEXT[i]) {
-                        span.classList.add('correct');
+                const isLastWord = currentWordIndex === targetWords.length - 1;
+
+                if (typed.endsWith(' ') && !isLastWord) {
+                    const typedWord = typed.trim();
+                    if (typedWord === targetWord) {
+                        const chars = document.getElementById('word-elem-' + currentWordIndex).querySelectorAll('.char');
+                        chars.forEach(c => c.classList.add('correct'));
+                        document.getElementById('word-elem-' + currentWordIndex).classList.remove('active');
+
+                        totalTypedChars += targetWord.length + 1;
+                        currentWordIndex++;
+
+                        document.getElementById('word-elem-' + currentWordIndex).classList.add('active');
+                        this.value = '';
+                        this.classList.remove('error');
+
+                        wpmDisplay.textContent = calcWPM(totalTypedChars);
+                        return;
                     } else {
-                        span.classList.add('error');
-                        klaidosSet.add(i);
-                        
+                        this.value = typed.trim();
                     }
-                } else if (i === typed.length) {
-                    span.classList.add('current');
+                }
+
+                typed = this.value;
+
+                if (isLastWord && typed === targetWord) {
+                    const chars = document.getElementById('word-elem-' + currentWordIndex).querySelectorAll('.char');
+                    chars.forEach(c => c.classList.add('correct'));
+                    totalTypedChars += targetWord.length;
+                    wpmDisplay.textContent = calcWPM(totalTypedChars);
+                    finishRace();
+                    return;
+                }
+
+                updateCharColors(typed, targetWord);
+
+                if (startTime !== null) {
+                    wpmDisplay.textContent = calcWPM(totalTypedChars + typed.length);
+                    accuracyDisplay.textContent = calcAccuracy();
                 }
             });
+
+            document.addEventListener('click', () => { if (!isFinished) inputField.focus(); });
+        }
+
+        function updateCharColors(typed, targetWord) {
+            const wordElem = document.getElementById('word-elem-' + currentWordIndex);
+            const charElems = wordElem.querySelectorAll('.char');
+            let isError = false;
+
+            for (let i = 0; i < charElems.length; i++) {
+                charElems[i].classList.remove('correct', 'error', 'current');
+
+                if (i < typed.length) {
+                    if (typed[i] === targetWord[i]) {
+                        charElems[i].classList.add('correct');
+                    } else {
+                        charElems[i].classList.add('error');
+                        isError = true;
+                        klaidosSet.add(`${currentWordIndex}-${i}`); // track unique errors
+                    }
+                } else if (i === typed.length) {
+                    charElems[i].classList.add('current');
+                }
+            }
+
+            if (typed.length > targetWord.length || isError) {
+                inputField.classList.add('error');
+            } else {
+                inputField.classList.remove('error');
+            }
         }
 
         function calcWPM(charsTyped) {
             if (!startTime || charsTyped === 0) return 0;
-            const elapsedMin = (Date.now() - startTime) / 1000 / 60;
-            return Math.round((charsTyped / 5) / elapsedMin);
+            return Math.round((charsTyped / 5) / ((Date.now() - startTime) / 60000));
         }
 
-        function calcAccuracy(typed) {
-            if (typed.length === 0) return 100;
-            let correct = 0;
-            for (let i = 0; i < typed.length; i++) {
-                if (typed[i] === TARGET_TEXT[i]) correct++;
-            }
-            return Math.round((correct / typed.length) * 100);
+        function calcAccuracy() {
+            let totalTarget = TARGET_TEXT.length;
+            if (totalTarget === 0) return 100;
+            let accuracy = Math.round(((totalTarget - klaidosSet.size) / totalTarget) * 100);
+            return Math.max(0, accuracy);
         }
 
         function updateTimer() {
             if (!startTime) return;
             timerDisplay.textContent = Math.floor((Date.now() - startTime) / 1000);
+            if (!isFinished) {
+                accuracyDisplay.textContent = calcAccuracy();
+            }
         }
 
-        function finishRace(typed) {
+        function finishRace() {
             isFinished = true;
             clearInterval(timerHandle);
+            inputField.disabled = true;
 
             const timeSeconds = Math.round((Date.now() - startTime) / 1000);
-            const wpm         = calcWPM(typed.length);
-            const accuracy    = calcAccuracy(typed);
+            const wpm         = calcWPM(totalTypedChars);
+            const accuracy    = calcAccuracy();
 
             document.getElementById('result-wpm').textContent      = wpm;
             document.getElementById('result-accuracy').textContent = accuracy;
@@ -422,6 +292,7 @@
             window.location.href = `/Race/Play?difficulty=${difficulty}`;
         }
 
+        init();
 
         /* login */
         async function login() {

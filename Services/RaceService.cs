@@ -44,4 +44,19 @@ public class RaceService
             .Skip(index) // praleidžiame tą index kiekį tekstų iš visų gautų ir paimame išrinktąjį
             .FirstAsync();
     }
+
+    public async Task SaveRaceResultAsync(int userId, int raceId, int wpm, double accuracy, int timeSeconds)
+    {
+        var result = new RaceResult
+        {
+            UserId = userId,
+            RaceId = raceId,
+            WPM = wpm,
+            Accuracy = accuracy,
+            TimeSeconds = timeSeconds
+        };
+
+        _db.RaceResults.Add(result);
+        await _db.SaveChangesAsync();
+    }
 }

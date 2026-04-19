@@ -8,57 +8,9 @@
 <head>
     <title>MonkeyRacer – @ViewBag.RoomId</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
-    <script src="/js/login.js"></script>
-    <link rel="stylesheet" href="/css/login.css">
-    <style>
-        :root { --bg:#1a1a2e; --surface:#16213e; --accent:#e2b714; --text:#d1d0c5; --muted:#646669; --correct:#fff; --error:#ca4754; }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:var(--bg); color:var(--text); font-family:'Courier New', monospace; display:flex; align-items:center; justify-content:center; min-height:100vh; }
-        .race-container { max-width:800px; width:100%; padding:2rem; margin:auto; }
-
-        .players-bar { margin-bottom: 1.5rem; }
-        .player-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
-        .player-name { width: 150px; font-size: 0.85rem; color: var(--muted); }
-        .progress-track { flex: 1; height: 8px; background: #333; border-radius: 4px; overflow: hidden; display: none; }
-        .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; width: 0%; }
-        .player-status { width: 80px; font-size: 0.8rem; text-align: right; }
-        .player-status.ready { color: var(--correct); }
-        .player-status.not-ready { color: var(--error); }
-
-        .live-stats { display: flex; align-items: center; gap: 0.5rem; width: 140px; justify-content: flex-end; }
-        .live-wpm { font-size: 0.8rem; color: var(--accent); font-weight: bold; }
-        .live-word { font-size: 0.8rem; color: var(--text); background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80px; text-align: left; }
-        .place-1 { color: #ffd700 !important; font-weight: bold; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
-        .place-2 { color: #c0c0c0 !important; font-weight: bold; text-shadow: 0 0 5px rgba(192,192,192,0.5); }
-        .place-3 { color: #cd7f32 !important; font-weight: bold; text-shadow: 0 0 5px rgba(205,127,50,0.5); }
-
-        .player-row.me .player-name { color: var(--accent); }
-        .player-row.finished .progress-fill { background: var(--correct); }
-
-        .btn { padding:0.8rem 1.5rem; background:transparent; border:1px solid var(--accent); color:var(--accent); font-family:inherit; border-radius:4px; cursor:pointer; margin-right: 0.5rem; }
-        .btn:hover { background:var(--accent); color:var(--bg); }
-        .btn:disabled { border-color: var(--muted); color: var(--muted); cursor: not-allowed; background: transparent; }
-
-        .stats-bar { display: none; gap: 2rem; margin-bottom: 1rem; color: var(--muted); }
-        .stat { font-size: 1.2rem; }
-        .stat span { font-weight: bold; color: var(--accent); font-size: 1.5rem; }
-
-        .text-display { display: none; font-size: 1.5rem; line-height: 1.5; color: var(--muted); margin-bottom: 2rem; position: relative; }
-        .char { transition: color 0.1s; }
-        .char.correct { color: var(--correct); }
-        .char.error { color: var(--error); background: rgba(202,71,84,0.2); }
-        .char.current { color: var(--text); border-bottom: 2px solid var(--accent); }
-        .char.space.error { border-bottom: 2px solid var(--error); }
-
-        .word-input { display: none; width: 100%; max-width: 400px; margin: 0 auto; padding: 1rem; font-size: 1.5rem; background: var(--surface); color: var(--text); border: 2px solid #333; border-radius: 8px; text-align: center; font-family: 'Courier New', monospace; outline: none; transition: border-color 0.2s; }
-        .word-input:focus { border-color: var(--accent); }
-        .word-input.error { border-color: var(--error); color: var(--error); }
-
-        .word { display: inline-block; margin-right: 0.5rem; margin-bottom: 0.5rem; padding: 2px 4px; border-radius: 4px; transition: background 0.2s; }
-        .word.active { background: rgba(226, 183, 20, 0.15); border-bottom: 2px solid var(--accent); }
-
-        .countdown-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 100; font-size: 5rem; color: var(--accent); font-weight: bold; }
-    </style>
+    <script src="~/js/login.js" asp-append-version="true"></script>
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/player.css" asp-append-version="true">
 </head>
 <body>
  <header class="navbar">
@@ -142,7 +94,7 @@
 <script>
 let TARGET_TEXT = "";
 const ROOM_ID = "@ViewBag.RoomId";
-const RACE_ID = "@ViewBag.RaceId";
+let RACE_ID = 0;
 const USERNAME    = sessionStorage.getItem('username') || "@ViewBag.Username";
 
 let isHost      = false;
@@ -226,6 +178,7 @@ connection.on("PlayerReadyStatus", (data) => {
 
 connection.on("RaceStarting", (data) => {
     TARGET_TEXT = data.text;
+    window.RACE_ID = data.raceId || 0;
     startCountdown();
 });
 
@@ -539,32 +492,6 @@ function updateTimer() {
         document.getElementById('result-controls').style.display = 'block';
         if (isHost) {
             document.getElementById('btn-reset').style.display = 'inline-block';
-        }
-
-        // ✅ SEND TO DATABASE
-        try {
-            const response = await fetch('/Race/SaveResult', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    raceId: RACE_ID,
-                    username: USERNAME,
-                    wpm: wpm,
-                    accuracy: accuracy,
-                    timeSeconds: timeSeconds
-                })
-            });
-
-            if (!response.ok) {
-                console.error("Failed to save result");
-            } else {
-                console.log("Result saved successfully");
-            }
-
-        } catch (err) {
-            console.error("Error saving result:", err);
         }
     }
 

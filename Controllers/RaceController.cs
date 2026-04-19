@@ -68,6 +68,11 @@ public class RaceController : Controller
     // Šis metodas priima rezultatus iš frontend'o ir saugo juos duomenų bazėje. Taip pat tikrina, ar prisijungęs vartotojas, ir priskiria rezultatą tam vartotojui.
     public async Task<IActionResult> SaveResult([FromBody] RaceResultDto dto) 
     {
+        if (dto == null) 
+        {
+            return BadRequest("Invalid payload.");
+        }
+
         // pirmiausia reikia patikriniti, ar vartotoas prisijungęs
         var userIdStr = HttpContext.Session.GetString("UserId");
         if (string.IsNullOrEmpty(userIdStr))
@@ -75,21 +80,7 @@ public class RaceController : Controller
 
         int userId = int.Parse(userIdStr); // id skaičiukas int pavidalu
 
-
-        var result = new RaceResult // sukuriamas rezultato objektas
-        {
-            UserId = userId,
-            RaceId = dto.RaceId,
-            WPM = dto.Wpm,
-            Accuracy = dto.Accuracy,
-            TimeSeconds = dto.TimeSeconds,
-            //Place = 
-
-        };
-
-
-        _db.RaceResults.Add(result); // išsaugome rezultatą į duomenų bazę
-        await _db.SaveChangesAsync();
+        await _raceService.SaveRaceResultAsync(userId, dto.RaceId, dto.Wpm, dto.Accuracy, dto.TimeSeconds);
 
         return Json(new { success = true }); 
     }

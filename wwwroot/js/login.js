@@ -86,3 +86,8 @@ async function register() {
         alert(message)
     }
 }
+
+// NAVBAR modalas
+function toggleMenu(){
+        document.getElementById("userDropdown").classList.toggle("visible");
+    }
