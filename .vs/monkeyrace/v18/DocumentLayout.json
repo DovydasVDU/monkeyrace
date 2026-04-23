@@ -1,0 +1,235 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\views\\race\\play.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:views\\race\\play.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\views\\race\\multiplay.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:views\\race\\multiplay.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\wwwroot\\css\\player.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:wwwroot\\css\\player.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\hubs\\racehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:hubs\\racehub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\controllers\\racecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:controllers\\racecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\services\\raceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:services\\raceservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\views\\user\\stats.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:views\\user\\stats.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\wwwroot\\css\\login.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:wwwroot\\css\\login.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:views\\home\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\wwwroot\\js\\login.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:wwwroot\\js\\login.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:controllers\\homecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|e:\\dovydo\\universitetas\\iv semestras\\c#\\monkeyrace\\monkeyrace su signalr\\monkeyrace\\startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1DD627B0-D644-81BF-51ED-D43D854FBFB0}|monkeyrace.csproj|solutionrelative:startup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Play.cshtml",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\Race\\Play.cshtml",
+              "RelativeDocumentMoniker": "Views\\Race\\Play.cshtml",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\Race\\Play.cshtml",
+              "RelativeToolTip": "Views\\Race\\Play.cshtml",
+              "ViewState": "AgIAAI4AAAAAAAAAAAAQwH4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-12T09:54:53.787Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "RaceController.cs",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Controllers\\RaceController.cs",
+              "RelativeDocumentMoniker": "Controllers\\RaceController.cs",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Controllers\\RaceController.cs",
+              "RelativeToolTip": "Controllers\\RaceController.cs",
+              "ViewState": "AgIAADMAAAAAAAAAAAAowEQAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-19T07:38:16.655Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "player.css",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\wwwroot\\css\\player.css",
+              "RelativeDocumentMoniker": "wwwroot\\css\\player.css",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\wwwroot\\css\\player.css",
+              "RelativeToolTip": "wwwroot\\css\\player.css",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACgAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2026-04-19T08:51:55.152Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "RaceHub.cs",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Hubs\\RaceHub.cs",
+              "RelativeDocumentMoniker": "Hubs\\RaceHub.cs",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Hubs\\RaceHub.cs",
+              "RelativeToolTip": "Hubs\\RaceHub.cs",
+              "ViewState": "AgIAAPIAAAAAAAAAAAAkwAoBAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-19T07:21:32.923Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "login.css",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\wwwroot\\css\\login.css",
+              "RelativeDocumentMoniker": "wwwroot\\css\\login.css",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\wwwroot\\css\\login.css",
+              "RelativeToolTip": "wwwroot\\css\\login.css",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAADMAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2026-04-12T13:38:50.913Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "login.js",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\wwwroot\\js\\login.js",
+              "RelativeDocumentMoniker": "wwwroot\\js\\login.js",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\wwwroot\\js\\login.js",
+              "RelativeToolTip": "wwwroot\\js\\login.js",
+              "ViewState": "AgIAAEUAAAAAAAAAAAAAAFAAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-04-12T13:32:20.546Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "RaceService.cs",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Services\\RaceService.cs",
+              "RelativeDocumentMoniker": "Services\\RaceService.cs",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Services\\RaceService.cs",
+              "RelativeToolTip": "Services\\RaceService.cs",
+              "ViewState": "AgIAABgAAAAAAAAAAAAEwC8AAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-19T08:01:58.759Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\Home\\Index.cshtml",
+              "RelativeDocumentMoniker": "Views\\Home\\Index.cshtml",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\Home\\Index.cshtml",
+              "RelativeToolTip": "Views\\Home\\Index.cshtml",
+              "ViewState": "AgIAANQAAAAAAAAAAAAEwOEAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-12T10:00:13.307Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Stats.cshtml",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\User\\Stats.cshtml",
+              "RelativeDocumentMoniker": "Views\\User\\Stats.cshtml",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\User\\Stats.cshtml",
+              "RelativeToolTip": "Views\\User\\Stats.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-19T07:25:53.456Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "HomeController.cs",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Controllers\\HomeController.cs",
+              "RelativeDocumentMoniker": "Controllers\\HomeController.cs",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Controllers\\HomeController.cs",
+              "RelativeToolTip": "Controllers\\HomeController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAABRAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-19T07:22:56.128Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "Startup.cs",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Startup.cs",
+              "RelativeDocumentMoniker": "Startup.cs",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Startup.cs",
+              "RelativeToolTip": "Startup.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAtwBkAAAA0AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-12T09:46:37.202Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "FloatingWindowState": {
+        "Id": "64c594bf-2b31-489b-ac1d-13270fece0e7",
+        "Display": 0,
+        "X": 1105,
+        "Y": 137,
+        "Width": 1289,
+        "Height": 650,
+        "WindowState": 0
+      },
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MultiPlay.cshtml",
+              "DocumentMoniker": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\Race\\MultiPlay.cshtml",
+              "RelativeDocumentMoniker": "Views\\Race\\MultiPlay.cshtml",
+              "ToolTip": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\Views\\Race\\MultiPlay.cshtml",
+              "RelativeToolTip": "Views\\Race\\MultiPlay.cshtml",
+              "ViewState": "AgIAAMsBAAAAAAAAAAAAAPABAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-04-12T09:55:20.469Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

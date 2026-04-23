@@ -1,0 +1,501 @@
+﻿@model TextSnippet
+@using Microsoft.AspNetCore.Http
+@{
+    var username = ViewContext.HttpContext.Session.GetString("Username");
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="/js/login.js"></script>
+    <link rel="stylesheet" href="/css/login.css">
+    <title>MonkeyRacer</title>
+    <link rel="stylesheet" href="~/css/race.css" />
+    <style>
+        
+        .race-page {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .race-container {
+            width: 100%;
+            max-width: 820px;
+            padding: 2rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat span {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: block;
+            line-height: 1;
+        }
+
+        .stat label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: normal;
+        }
+
+        .text-display {
+            font-size: 1.4rem;
+            line-height: 1.9;
+            margin-bottom: 1.5rem;
+            letter-spacing: normal;
+            color: var(--muted);
+            word-break: break-word;
+            user-select: none;
+        }
+
+        .char.correct {
+            color: var(--correct);
+        }
+
+        .char.error {
+            color: var(--error);
+            background: rgba(202, 71, 84, 0.15);
+            border-radius: 2px;
+        }
+
+        .char.current {
+            border-left: 2px solid var(--accent);
+            margin-left: -2px;
+            animation: blink 1s step-end infinite;
+        }
+
+        /* Tarpas kaip underscore */
+        .char.space {
+            opacity: 0.35; /* pilkesnis nei raidės, kad neblaškytų */
+        }
+
+            .char.space.correct {
+                opacity: 1;
+                color: var(--correct);
+            }
+
+            .char.space.error {
+                opacity: 1;
+                color: var(--error);
+            }
+
+        @@keyframes blink {
+            0%, 100% {
+                border-color: var(--accent);
+            }
+
+            50% {
+                border-color: transparent;
+            }
+        }
+
+        .input-field {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1.1rem;
+            padding: 1rem;
+            resize: none;
+            height: 80px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+            .input-field:focus {
+                border-color: var(--accent);
+            }
+
+        .results-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, 0.95);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+            .results-overlay.visible {
+                display: flex;
+            }
+
+        .results-box {
+            background: var(--surface);
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 3rem 4rem;
+            text-align: center;
+        }
+
+            .results-box h2 {
+                color: var(--accent);
+                font-size: 1rem;
+                letter-spacing: 0.2em;
+                text-transform: uppercase;
+                margin-bottom: 2rem;
+            }
+
+        .results-grid {
+            display: flex;
+            gap: 3rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .result-stat span {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: block;
+        }
+
+        .result-stat label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .btn-restart {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 0.6rem 2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            letter-spacing: 0.1em;
+            transition: background 0.2s, color 0.2s;
+        }
+
+            .btn-restart:hover {
+                background: var(--accent);
+                color: var(--bg);
+            }
+
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo" onclick="window.location='/'">MonkeyRacer</div>
+        <div class="nav-right">
+            @if (username != null)
+            {
+                <div class="user-menu" onclick="toggleMenu()">
+                    <div class="user-icon">@username.Substring(0,1).ToUpper()</div>
+                    <div class="username">@username</div>
+                    <div class="dropdown" id="userDropdown">
+                        <a href="/User/Stats">User Stats</a>
+                        <a href="/User/Settings">Account Settings</a>
+                        <a href="/Auth/Logout">Log Out</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <button class="nav-btn" onclick="openLogin()">Login</button>
+            }
+        </div>
+    </header>
+
+    <div class="race-page">
+        <div class="race-container">
+        <form method="get" asp-controller="Race" asp-action="Play" style="margin-bottom: 1.5rem;">
+            <select name="difficulty" onchange="this.form.submit()"
+                    style="background:#16213e;color:#e8e8e3;padding:0.5rem;border-radius:4px;border:1px solid #333;">
+                <option value="easy" selected="@(ViewBag.SelectedDifficulty == "easy")">Easy</option>
+                <option value="medium" selected="@(ViewBag.SelectedDifficulty == "medium")">Medium</option>
+                <option value="hard" selected="@(ViewBag.SelectedDifficulty == "hard")">Hard</option>
+            </select>
+        </form>
+
+        <div class="stats-bar">
+            <span class="stat">
+                <span id="wpm-display">0</span>
+                <label>wpm</label>
+            </span>
+            <span class="stat">
+                <span id="accuracy-display">100</span>
+                <label>tikslumas %</label>
+            </span>
+            <span class="stat">
+                <span id="timer-display">0</span>
+                <label>sek</label>
+            </span>
+        </div>
+
+        <div id="text-display" class="text-display">
+            @foreach (char c in Model.Content)
+            {
+                if (c == ' ')
+                {
+                    <!-- Tarpas rodomas kaip _ -->
+                    <span class="char space">_</span>
+                }
+                else
+                {
+                    <span class="char">@c</span>
+                }
+            }
+        </div>
+
+<textarea id="input-field"
+          class="input-field"
+          placeholder="Pradėk spausdinti..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"></textarea>
+        </div>
+    </div>
+    <div class="results-overlay" id="results-overlay">
+        <div class="results-box">
+            <h2>rezultatai</h2>
+            <div class="results-grid">
+                <div class="result-stat">
+                    <span id="result-wpm">0</span>
+                    <label>wpm</label>
+                </div>
+                <div class="result-stat">
+                    <span id="result-accuracy">0</span>
+                    <label>tikslumas %</label>
+                </div>
+                <div class="result-stat">
+                    <span id="result-time">0</span>
+                    <label>sekundės</label>
+                </div>
+                <div class="result-stat">
+                    <span id="result-klaidos">0</span>
+                    <label>klaidos</label>
+                </div>
+            </div>
+            <button class="btn-restart" onclick="restartRace()">bandyti dar kartą ↺</button>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+
+<div class="modal" id="loginModal">
+
+<div class="modal-box">
+
+<h3>login</h3>
+
+<input id="login-user" placeholder="username">
+<input id="login-pass" type="password" placeholder="password">
+
+<button class="btn" onclick="login()">login</button>
+<button class="btn" onclick="register()">register</button>
+
+</div>
+
+</div>
+    <script>
+         function openLogin(){
+            document.getElementById("loginModal").classList.add("visible");
+            }
+        function toggleMenu() {
+            document.getElementById("userDropdown").classList.toggle("visible");
+        }
+
+        const TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
+        const RACE_ID     = @ViewBag.RaceId;
+
+        const klaidosSet = new Set(); // automatiškai ignoruoja dublikatus
+
+        let startTime   = null;
+        let timerHandle = null;
+        let isFinished  = false;
+        
+
+        const inputField      = document.getElementById('input-field');
+        const wpmDisplay      = document.getElementById('wpm-display');
+        const accuracyDisplay = document.getElementById('accuracy-display');
+        const timerDisplay    = document.getElementById('timer-display');
+        const chars           = document.querySelectorAll('.char');
+
+        if (chars.length > 0) chars[0].classList.add('current');
+
+        inputField.addEventListener('input', function () {
+            if (isFinished) return;
+
+            const typed = inputField.value;
+
+            if (typed.length === 1 && startTime === null) {
+                startTime   = Date.now();
+                timerHandle = setInterval(updateTimer, 200);
+            }
+
+            updateCharColors(typed);
+
+            if (startTime !== null) {
+                wpmDisplay.textContent      = calcWPM(typed.length);
+                accuracyDisplay.textContent = calcAccuracy(typed);
+            }
+
+            if (typed === TARGET_TEXT || typed.length == chars.length) {
+                finishRace(typed);
+            }
+        });
+
+        function updateCharColors(typed) {
+            chars.forEach((span, i) => {
+                span.classList.remove('correct', 'error', 'current');
+
+                if (i < typed.length) {
+                    // Lyginame su originaliu tekstu (ne su _ simboliu)
+                    if (typed[i] === TARGET_TEXT[i]) {
+                        span.classList.add('correct');
+                    } else {
+                        span.classList.add('error');
+                        klaidosSet.add(i);
+                        
+                    }
+                } else if (i === typed.length) {
+                    span.classList.add('current');
+                }
+            });
+        }
+
+        function calcWPM(charsTyped) {
+            if (!startTime || charsTyped === 0) return 0;
+            const elapsedMin = (Date.now() - startTime) / 1000 / 60;
+            return Math.round((charsTyped / 5) / elapsedMin);
+        }
+
+        function calcAccuracy(typed) {
+            if (typed.length === 0) return 100;
+            let correct = 0;
+            for (let i = 0; i < typed.length; i++) {
+                if (typed[i] === TARGET_TEXT[i]) correct++;
+            }
+            return Math.round((correct / typed.length) * 100);
+        }
+
+        function updateTimer() {
+            if (!startTime) return;
+            timerDisplay.textContent = Math.floor((Date.now() - startTime) / 1000);
+        }
+
+        function finishRace(typed) {
+            isFinished = true;
+            clearInterval(timerHandle);
+
+            const timeSeconds = Math.round((Date.now() - startTime) / 1000);
+            const wpm         = calcWPM(typed.length);
+            const accuracy    = calcAccuracy(typed);
+
+            document.getElementById('result-wpm').textContent      = wpm;
+            document.getElementById('result-accuracy').textContent = accuracy;
+            document.getElementById('result-time').textContent     = timeSeconds;
+            document.getElementById('result-klaidos').textContent  = klaidosSet.size;
+            document.getElementById('results-overlay').classList.add('visible');
+
+            fetch('/Race/SaveResult', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    raceId:      RACE_ID,
+                    wpm:         wpm,
+                    accuracy:    accuracy,
+                    timeSeconds: timeSeconds
+                })
+            });
+        }
+
+        function restartRace() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const difficulty = urlParams.get("difficulty") || "medium";
+            window.location.href = `/Race/Play?difficulty=${difficulty}`;
+        }
+
+
+        /* login */
+        async function login() {
+
+            const username = document.getElementById("login-user").value
+            const password = document.getElementById("login-pass").value
+            // kreipiamės į AuthController Login metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
+            const res = await fetch("/Auth/Login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+
+            })
+                // AuthController grąžiną 200 OK jei login sėkmingas, kitu atveju 400 Bad Request su klaidos pranešimu
+
+            if (res.ok)
+                location.reload()
+            else {
+      
+            let message = "login failed"
+
+            try {
+                const data = await res.json() // nuskaitome JSON iš AuthController
+                message = data.message
+            } catch {
+                // jei ne JSON (fallback)
+                message = await res.text()
+            }
+
+            alert(message)
+        }
+
+        }
+        async function register() {
+
+    const username = document.getElementById("login-user").value
+    const password = document.getElementById("login-pass").value
+
+    if (!username || !password) {
+        alert("enter username and password")
+        return
+    }
+    // kreipiamės į AuthController Register metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
+    const res = await fetch("/Auth/Register", { 
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+
+    })
+    // AuthController grąžiną 200 OK jei registracija sėkminga, kitu atveju 400 Bad Request su klaidos pranešimu
+    if (res.ok) {
+        alert("account created")
+        location.reload()
+    }
+    else {
+
+        
+        let message = "register failed"
+
+        try {
+            const data = await res.json() // n uskaitome JSON iš AuthController
+            message = data.message
+        } catch {
+            // jei ne JSON (fallback)
+            message = await res.text()
+        }
+
+        alert(message)
+    }
+}
+    </script>
+</body>
+</html>

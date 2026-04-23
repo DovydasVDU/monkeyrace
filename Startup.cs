@@ -23,6 +23,7 @@ public class Startup
 
         // Naudojami services: 
         services.AddScoped<RaceService>(); // atsakingas už teksto parinkimą spausdinimo metu
+        services.AddSignalR(); // Pridedame SignalR 
     }
 
     // Pagrindiniai konfigūracijos nustatymai, kurie apibrėžia, kaip bus tvarkomi užklausos.
@@ -46,6 +47,9 @@ public class Startup
             endpoints.MapControllerRoute(    
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            endpoints.MapHub<RaceHub>("/racehub"); // SignalR hub'as, kuris leidžia realiu laiku atnaujinti informaciją apie lenktynes visiems prisijungusiems vartotojams.
+
         });
 
         // užtikriname, kad duomenų bazė būtų sukurta, jei jos dar nėra. 

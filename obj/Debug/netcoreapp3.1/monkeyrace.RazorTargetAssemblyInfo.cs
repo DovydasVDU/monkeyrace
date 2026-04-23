@@ -17,7 +17,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyProductAttribute("monkeyrace")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d2afc2c451c366b1362481665e48342bd2c3f77c")]
 [assembly: System.Reflection.AssemblyTitleAttribute("monkeyrace.Views")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 

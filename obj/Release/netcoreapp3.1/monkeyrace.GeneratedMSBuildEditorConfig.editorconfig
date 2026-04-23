@@ -1,6 +1,6 @@
 is_global = true
 build_property.RootNamespace = monkeyrace
-build_property.ProjectDir = E:\Dovydo\universitetas\IV semestras\C#\monkeyrace\monkeyrace naujas su komentarais nAUJAS\monkeyrace naujas su komentarais\monkeyrace naujas su komentarais\monkeyrace\
+build_property.ProjectDir = E:\Dovydo\universitetas\IV semestras\C#\monkeyrace\monkeyrace su signalR\monkeyrace\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false

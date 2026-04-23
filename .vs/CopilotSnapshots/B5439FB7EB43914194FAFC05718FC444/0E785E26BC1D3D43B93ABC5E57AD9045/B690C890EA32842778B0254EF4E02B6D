@@ -1,0 +1,60 @@
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+public class Startup
+{
+    // Tai klasė, kuri konfigūruoja mūsų programą. 
+    // Joje nurodome, kokius servisus naudosime (ConfigureServices) ir kaip bus tvarkomi užklausos (Configure).
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddControllersWithViews();
+        
+
+        // Duomenų bazė SQLite, naudojame Entity Framework Core, kuris leidžia dirbti su duomenų baze naudojant C# objektus.
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlite("Data Source=monkeyracer.db"));
+
+        // Sesija
+        services.AddSession();
+        services.AddHttpContextAccessor();
+
+        // Naudojami services: 
+        services.AddScoped<RaceService>(); // atsakingas už teksto parinkimą spausdinimo metu
+        services.AddSignalR(); // Pridedame SignalR paslaugas
+    }
+
+    // Pagrindiniai konfigūracijos nustatymai, kurie apibrėžia, kaip bus tvarkomi užklausos.
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.UseStaticFiles(); // wwwroot aplanke css, paveiklėliai (kol kas nėra, viskas failuose)
+        app.UseSession(); // sesijos naudojimas, kur saugoma informacija apie prisijungusį vartotoją
+        // pasakome, kad naudosime routing'ą, kuris leidžia mums valdyti, kokie URL veda į kokius controller'ius ir jų metodus.
+        app.UseRouting(); 
+
+        // pasakome, kad pagrindinis maršrutas būtų HomeController ir jo Index metodas, kuris atidaro pagrindinį puslapį. 
+        app.UseEndpoints(endpoints =>
+        {
+            // Rounting'as yra toks pats, kaip ir failų struktūra, pvz. /home/index, /user/stats ir pan. 
+            // Jeigu URL yra tuščias, tai nukreipia į HomeController ir jo Index metodą.
+            endpoints.MapControllerRoute(    
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            endpoints.MapHub<RaceHub>("/racehub"); // SignalR hub'as, kuris leidžia realiu laiku atnaujinti informaciją apie lenktynes visiems prisijungusiems vartotojams.
+
+        });
+
+        // užtikriname, kad duomenų bazė būtų sukurta, jei jos dar nėra. 
+        using var scope = app.ApplicationServices.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>(); // paimama AppDbContext su lentelių duomenimis
+        db.Database.EnsureCreated();
+    }
+}
