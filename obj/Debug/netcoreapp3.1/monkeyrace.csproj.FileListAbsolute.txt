@@ -596,3 +596,4 @@ E:\Dovydo\universitetas\IV semestras\C#\monkeyrace\monkeyrace uzbaigimas\monkeyr
 E:\Dovydo\universitetas\IV semestras\C#\monkeyrace\monkeyrace uzbaigimas\monkeyrace\obj\Debug\netcoreapp3.1\monkeyrace.dll
 E:\Dovydo\universitetas\IV semestras\C#\monkeyrace\monkeyrace uzbaigimas\monkeyrace\obj\Debug\netcoreapp3.1\monkeyrace.pdb
 E:\Dovydo\universitetas\IV semestras\C#\monkeyrace\monkeyrace uzbaigimas\monkeyrace\obj\Debug\netcoreapp3.1\monkeyrace.genruntimeconfig.cache
+E:\Dovydo\universitetas\IV semestras\C#\monkeyrace\monkeyrace uzbaigimas\monkeyrace\bin\Debug\netcoreapp3.1\BCrypt.Net-Next.dll

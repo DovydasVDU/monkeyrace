@@ -1,9 +1,12 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 // Atsakingas už vartotojo profilio puslapį, kuriame rodomi vidutiniai rezultatai ir paskutinių 20 žaidimų statistika
 public class UserController : Controller
@@ -16,13 +19,14 @@ public class UserController : Controller
     }
 
     [HttpGet]
+    [Authorize]
     // Šis metodas rodo vartotojo profilio puslapį su vidutiniais rezultatais ir paskutinių 20 žaidimų statistika.
     // Pirmiausia tikrinama, ar vartotojas prisijungęs, tada gaunami visi jo žaidimai iš duomenų bazės, apskaičiuojami vidurkiai,
     // ir galiausiai sukuriamas UserProfileViewModel objektas, kuris perduodamas į View.
     public async Task<IActionResult> Stats()
     {
-        var userIdStr = HttpContext.Session.GetString("UserId"); // tikriname, ar prisijungęs
-        if (string.IsNullOrEmpty(userIdStr))
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier); // tikriname, ar prisijungęs
+        if (string.IsNullOrEmpty(userIdStr)) // dar kartą patikriname, ar tikrai yra prisijungęs, jei ne - grąžiname į pagrindinį puslapį
             return Redirect("/");
 
         var userId = int.Parse(userIdStr);

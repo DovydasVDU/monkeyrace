@@ -36,11 +36,15 @@ async function login() {
         let message = "login failed"
 
         try {
-            const data = await res.json() // nuskaitome JSON iš AuthController
-            message = data.message
-        } catch {
-            // jei ne JSON (fallback)
-            message = await res.text()
+            const tempText = await res.text();
+            try {
+                const data = JSON.parse(tempText);
+                message = data.message || message;
+            } catch {
+                message = tempText || message;
+            }
+        } catch (e) {
+            console.error("Error reading response:", e);
         }
 
         alert(message)
@@ -76,11 +80,15 @@ async function register() {
         let message = "register failed"
 
         try {
-            const data = await res.json() // n uskaitome JSON iš AuthController
-            message = data.message
-        } catch {
-            // jei ne JSON (fallback)
-            message = await res.text()
+            const tempText = await res.text();
+            try {
+                const data = JSON.parse(tempText);
+                message = data.message || message;
+            } catch {
+                message = tempText || message;
+            }
+        } catch (e) {
+            console.error("Error reading response:", e);
         }
 
         alert(message)

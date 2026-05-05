@@ -1,4 +1,6 @@
 ﻿// Hubs/RaceHub.cs
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
@@ -10,10 +12,10 @@ public class RaceHub : Hub
     private readonly AppDbContext _db;
     private readonly RaceService _raceService;
 
-    // 🔹 Laikome visus aktyvius kambarius atmintyje (kol veikia serveris)
+    // Laikome visus aktyvius kambarius atmintyje (kol veikia serveris)
     private static readonly Dictionary<string, RaceRoom> _rooms = new Dictionary<string, RaceRoom>();
 
-    // 🔹 Lock naudojamas apsaugoti nuo race condition (kai keli useriai vienu metu keičia state)
+    // Lock naudojamas apsaugoti nuo race condition (kai keli useriai vienu metu keičia state)
     private static readonly object _lock = new object();
 
     public RaceHub(AppDbContext db, RaceService raceService)
@@ -27,19 +29,19 @@ public class RaceHub : Hub
     // =========================
     public async Task JoinRoom(string roomId, string username)
     {
-        // 🔹 Pridedam connection į SignalR grupę
+        // Pridedam connection į SignalR grupę
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
 
-        // 🔹 Bandome pasiimti UserId iš JWT/claims
+        // Bandome pasiimti UserId iš JWT/claims
         int? userId = null;
-        var userIdClaim = Context.User?.FindFirst("UserId")?.Value;
+        var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
         if (int.TryParse(userIdClaim, out var parsedId))
         {
             userId = parsedId;
         }
 
-        // 🔹 Sukuriam player objektą
+        // Sukuriam player objektą
         var player = new RoomPlayer
         {
             ConnectionId = Context.ConnectionId,
@@ -68,11 +70,21 @@ public class RaceHub : Hub
 
             room = _rooms[roomId];
 
-            // 🔹 Pridedam player į kambario sąrašą
-            room.Players.Add(player);
+            // Pridedam player į kambario sąrašą
+            if (userId != null && room.Players.Any(p => p.UserId == userId))
+            {
+                // Tai reiškia, kad tas pats prisijungęs user bando prisijungti antrą kartą per kitą tab'ą
+                Clients.Caller.SendAsync("Error", "Jūs jau esate šiame kambaryje kitame lange.");
+                return; // nutraukiame vykdymą – žaidėjas nepridedamas
+            } 
+            else
+            {
+                room.Players.Add(player);
+            }
+
         }
 
-        // 🔹 Informuojam kitus žaidėjus
+        // Informuojam kitus žaidėjus
         await Clients.OthersInGroup(roomId).SendAsync("PlayerJoined", new
         {
             connectionId = Context.ConnectionId,
@@ -80,7 +92,7 @@ public class RaceHub : Hub
             isReady = false
         });
 
-        // 🔹 Nusiunčiam pilną kambario state naujam žaidėjui
+        // Nusiunčiam pilną kambario state naujam žaidėjui
         await Clients.Caller.SendAsync("RoomState", new
         {
             hostConnectionId = room.HostConnectionId,
@@ -107,7 +119,7 @@ public class RaceHub : Hub
         {
             if (_rooms.TryGetValue(roomId, out var room))
             {
-                // 🔹 Tik host gali keisti difficulty
+                // Tik host gali keisti difficulty
                 if (room.HostConnectionId == Context.ConnectionId)
                 {
                     room.Difficulty = difficulty;
@@ -119,7 +131,7 @@ public class RaceHub : Hub
     }
 
     // =========================
-    // READY SYSTEM
+    // READY
     // =========================
     public async Task ToggleReady(string roomId)
     {
@@ -158,10 +170,10 @@ public class RaceHub : Hub
         {
             if (_rooms.TryGetValue(roomId, out var room))
             {
-                // 🔹 Tik host gali startinti
+                // Tik host gali startinti
                 if (room.HostConnectionId != Context.ConnectionId) return;
 
-                // 🔹 Visi turi būti ready
+                // Visi turi būti ready
                 if (!room.Players.All(p => p.IsReady)) return;
 
                 room.IsStarted = true;
@@ -175,7 +187,7 @@ public class RaceHub : Hub
 
             validRoom.SnippetContent = snippet.Content;
 
-            // 🔹 Sukuriam race įrašą DB
+            // Sukuriam race įrašą DB
             race = new Race
             {
                 TextSnippetId = snippet.Id,
@@ -185,13 +197,13 @@ public class RaceHub : Hub
             _db.Races.Add(race);
             await _db.SaveChangesAsync();
 
-            // 🔹 Išsaugom raceId kambaryje
+            // Išsaugom raceId kambaryje
             validRoom.RaceId = race.Id;
 
             textSnippet = snippet.Content;
         }
 
-        // 🔹 Pradedam lenktynes klientuose
+        // Pradedam lenktynes klientuose
         if (!string.IsNullOrEmpty(textSnippet) && race != null)
         {
             await Clients.Group(roomId).SendAsync("RaceStarting", new
@@ -243,14 +255,14 @@ public class RaceHub : Hub
         {
             if (_rooms.TryGetValue(roomId, out room))
             {
-                // 🔹 Apskaičiuojam vietą (kiek jau baigė prieš tave)
+                // Apskaičiuojam vietą (kiek jau baigė prieš tave)
                 place = room.Players.Count(p => p.IsFinished) + 1;
 
                 player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
 
                 if (player != null)
                 {
-                    // 🔹 Prevent double finish
+                    // jeigu pakartotinai ateina IsFnished, tai mes jį atmetame
                     if (player.IsFinished) return;
 
                     player.IsFinished = true;
@@ -261,13 +273,13 @@ public class RaceHub : Hub
             }
         }
 
-        // 🔹 Išsaugom rezultatą DB (NE lock viduje)
+        // Išsaugom rezultatą DB (NE lock viduje)
         if (room != null && player != null && player.UserId != null)
         {
             await _raceService.SaveRaceResultAsync(player.UserId.Value, room.RaceId, wpm, accuracy, timeSeconds);
         }
 
-        // 🔹 Informuojam visus klientus
+        // Informuojam visus žaidėjus
         await Clients.Group(roomId).SendAsync("PlayerFinished", new
         {
             connectionId = Context.ConnectionId,
@@ -387,3 +399,5 @@ public class RoomPlayer
     public int Place { get; set; }
     public DateTime JoinedAt { get; set; }
 }
+
+

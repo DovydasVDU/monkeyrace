@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
+//saugumas ir [Authorize] 
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 // Controller, atsakingas už žaidimo logiką, tekstų parinkimą ir rezultatų saugojimą
 public class RaceController : Controller
 {
@@ -65,6 +67,7 @@ public class RaceController : Controller
     }
 
     [HttpPost]
+    [Authorize]
     // Šis metodas priima rezultatus iš frontend'o ir saugo juos duomenų bazėje. Taip pat tikrina, ar prisijungęs vartotojas, ir priskiria rezultatą tam vartotojui.
     public async Task<IActionResult> SaveResult([FromBody] RaceResultDto dto) 
     {
@@ -73,12 +76,13 @@ public class RaceController : Controller
             return BadRequest("Invalid payload.");
         }
 
-        // pirmiausia reikia patikriniti, ar vartotoas prisijungęs
-        var userIdStr = HttpContext.Session.GetString("UserId");
+        // Pirmiausia reikia patikrinti, ar vartotojas prisijungęs
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdStr))
             return Unauthorized();
 
-        int userId = int.Parse(userIdStr); // id skaičiukas int pavidalu
+        // Paverčiame prisijungusio vartotojo ID į int ir pateikiame servisui
+        var userId = int.Parse(userIdStr);
 
         await _raceService.SaveRaceResultAsync(userId, dto.RaceId, dto.Wpm, dto.Accuracy, dto.TimeSeconds);
 

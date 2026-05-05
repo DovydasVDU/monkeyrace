@@ -123,9 +123,12 @@ body {
     padding: 1.2rem 2rem;
     border-bottom: 1px solid #2a2a3f;
     width: 80%;
-    position:fixed;
-    top:0;
-    right:0;
+    position: fixed;
+    top: 0;
+    right: 0;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid #333;
+    z-index: 1000;
 }
 
 .logo {

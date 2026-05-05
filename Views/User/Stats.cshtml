@@ -133,7 +133,7 @@
         }
         else
         {
-            <button class="nav-btn" onclick="window.location='/Auth/Login'">Login</button>
+            <button class="nav-btn" onclick="window.location='/Auth/Login'">Prisijungti</button>
         }
     </div>
 </header>
@@ -144,15 +144,15 @@
 
         <div class="stats-row">
             <div class="stat-card">
-                <div class="stat-title">USER</div>
+                <div class="stat-title">VARTOTOJAS</div>
                 <div class="stat-value">@Model.Username</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">AVERAGE WPM</div>
+                <div class="stat-title">VIDUTINIS WPM</div>
                 <div class="stat-value">@Model.AverageWpm</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">AVERAGE ACCURACY</div>
+                <div class="stat-title">VIDUTINIS TIKSLUMAS</div>
                 <div class="stat-value">@Model.AverageAccuracy.ToString("0.0")%</div>
             </div>
         </div>
@@ -160,12 +160,12 @@
 
     <div class="section">
         <div class="panel">
-            <h2>ABOUT USER</h2>
+            <h2>APIE VARTOTOJĄ</h2>
             <p class="intro">
-                <strong>@Model.Username</strong> is steadily improving typing rhythm and consistency.
-                With an average speed of <strong>@Model.AverageWpm WPM</strong> and
-                accuracy around <strong>@Model.AverageAccuracy.ToString("0.0")%</strong>,
-                the progress speaks for itself. Keep the focus, keep the flow.
+                <strong>@Model.Username</strong> rimtai žiūri į spausdinimo greitį.
+                Su vidutiniu greičiu <strong>@Model.AverageWpm WPM</strong> ir
+                tikslumu apie <strong>@Model.AverageAccuracy.ToString("0.0")%</strong>,
+                pažanga kalba pati už save. Išlaikykite dėmesį, išlaikykite ritmą.
             </p>
         </div>
 
@@ -174,11 +174,11 @@
             <table class="past-races">
                 <thead>
                     <tr>
-                        <th>DATE</th>
-                        <th>WPM</th>
-                        <th>ACCURACY</th>
-                        <th>ERRORS</th>
-                        <th>DIFFICULTY</th>
+                        <th>DATA</th>
+                        <th>ŽODŽIAI PER MINUTĘ</th>
+                        <th>TIKSLUMAS</th>
+                        <th>KLAIDOS</th>
+                        <th>SUNKUMAS</th>
                     </tr>
                 </thead>
                 <tbody>

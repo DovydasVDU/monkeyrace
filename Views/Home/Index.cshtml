@@ -8,7 +8,7 @@
 <head>
 <title>MonkeyRacer</title>
 
-<link rel="stylesheet" href="/css/login.css">
+
 <style>
 
 :root{
@@ -41,7 +41,7 @@ min-height:100vh;
 display:flex;
 justify-content:center;
 align-items:center;
-height:80vh;
+height:60vh;
 gap:4rem;
 margin-top: 80px;
 }
@@ -107,8 +107,63 @@ background:var(--accent);
 color:var(--bg);
 }
 
+.leaderboard-container{
+width: 600px;
+margin: 2rem auto;
+background: var(--surface);
+border-radius: 12px;
+padding: 1.5rem;
+border: 1px solid #333;
+}
 
+.leaderboard-container h3{
+text-align:center;
+color:var(--accent);
+margin-bottom:1rem;
+letter-spacing:.1em;
+}
+
+.leaderboard-table{
+width:100%;
+border-collapse:collapse;
+font-size:.9rem;
+}
+
+.leaderboard-table th,
+.leaderboard-table td{
+padding:.6rem;
+text-align:center;
+border-bottom:1px solid #2a2a2a;
+}
+
+.leaderboard-table tr:hover{
+background:rgba(255,255,255,0.03);
+}
+
+.rank-1 { color: gold; }
+.rank-2 { color: silver; }
+.rank-3 { color: #cd7f32; }
+.quick-stats{
+font-size:.7rem;
+color:var(--muted);
+margin-top:2px;
+text-align:right;
+}
+.main-layout{
+display:flex;
+flex-direction:column;
+align-items:center;
+}
+
+/* kad kortelės būtų vienoje eilėje */
+.home-container{
+display:flex;
+justify-content:center;
+gap:4rem;
+margin-top:80px;
+}
 </style>
+<link rel="stylesheet" href="/css/login.css">
 </head>
 
 <body>
@@ -130,12 +185,12 @@ color:var(--bg);
 </div>
 
 <div class="username">@username</div>
-
+<div id="quick-stats" class="quick-stats"></div>
 <div class="dropdown" id="userDropdown">
 
-<a href="/User/Stats">User Stats</a>
-<a href="/User/Settings">Account Settings</a>
-<a href="/Auth/Logout">Log Out</a>
+<a href="/User/Stats">Statistika</a>
+<a href="/User/Settings">Paskyros nustatymai</a>
+<a href="/Auth/Logout">Atsijungti</a>
 
 </div>
 
@@ -152,18 +207,18 @@ else
 
 
 <!-- MAIN -->
-
+<div class="main-layout">
 <div class="home-container">
 
 <!-- SOLO TEST -->
 
 <div class="card" onclick="startSolo()">
 
-<h2>SOLO TEST</h2>
+<h2>SOLO ŽAIDIMAS</h2>
 
-<p>Practice your typing speed and accuracy.</p>
+<p>Treniruok savo spausdinimo greitį ir tikslumą.</p>
 
-<button class="btn">Start Race</button>
+<button class="btn">Pradėti</button>
 
 </div>
 
@@ -172,29 +227,47 @@ else
 
 <div class="card">
 
-<h2>ONLINE RACE</h2>
+<h2>ŽAISTI SU DRAUGAIS</h2>
 
 @if(username != null)
 {
-<p style="margin-bottom:.8rem;">Playing as <span style="color:var(--accent)">@username</span></p>
+<p style="margin-bottom:.8rem;">Žaidžiama kaip <span style="color:var(--accent)">@username</span></p>
 <input type="hidden" id="username-input" value="@username" />
 }
 else
 {
-<input id="username-input" class="card-input" placeholder="Your name (optional)" maxlength="20" />
+<input id="username-input" class="card-input" placeholder="Jūsų vardas (neprivaloma)" maxlength="20" />
 }
 
-<button class="btn" onclick="createRoom()">Create Room</button>
+<button class="btn" onclick="createRoom()">Sukurti kambarį</button>
 
-<div style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">— OR —</div>
+<div style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">— ARBA —</div>
 
-<input id="room-id-input" class="card-input" placeholder="Enter Room ID" />
-<button class="btn" onclick="joinRoom()">Join Room</button>
-
-</div>
+<input id="room-id-input" class="card-input" placeholder="Įveskite kambario ID" />
+<button class="btn" onclick="joinRoom()">Prisijungti prie kambario</button>
 
 </div>
 
+</div>
+</div>
+<div class="leaderboard-container">
+
+    <h3>Top 10 Žaidėjų</h3>
+
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Žaidėjas</th>
+                <th>Žodžiai per minutę</th>
+                <th>Tikslumas</th>
+            </tr>
+        </thead>
+        <tbody id="top10-body">
+        </tbody>
+    </table>
+
+</div>
 
 <!-- LOGIN MODAL -->
 
@@ -204,13 +277,13 @@ else
 
 <span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
 
-<h3>login</h3>
+<h3>Prisijungimas</h3>
 
-<input id="login-user" placeholder="username">
-<input id="login-pass" type="password" placeholder="password">
+<input id="login-user" placeholder="slapyvardis">
+<input id="login-pass" type="password" placeholder="slaptažodis">
 
-<button class="btn" onclick="login()">login</button>
-<button class="btn" onclick="register()">register</button>
+<button class="btn" onclick="login()">Prisijungti</button>
+<button class="btn" onclick="register()">Registruotis</button>
 
 </div>
 
@@ -240,7 +313,7 @@ else
 
                     function joinRoom() {
                         const roomId = document.getElementById('room-id-input').value.trim();
-                        if (!roomId) return alert('Enter room id');
+                        if (!roomId) return alert('Įveskite kambario ID');
                         redirectToRoom(roomId);
                     }
 
@@ -251,7 +324,54 @@ else
                         sessionStorage.setItem('username', username);
                         window.location.href = `/Race/MultiPlay?roomId=${roomId}`;
                     }
+                    async function loadTop10(){
+    try{
+        const res = await fetch('/api/stats/top10/');
+        const data = await res.json();
 
+        const tbody = document.getElementById('top10-body');
+        tbody.innerHTML = "";
+
+        data.forEach((user, index) => {
+            const tr = document.createElement('tr');
+
+            if(index === 0) tr.classList.add('rank-1');
+            if(index === 1) tr.classList.add('rank-2');
+            if(index === 2) tr.classList.add('rank-3');
+
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${user.username}</td>
+                <td>${user.wpm}</td>
+                <td>${user.accuracy}%</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+    }catch(err){
+        console.error("Failed to load top10", err);
+    }
+}
+
+loadTop10();
+async function loadMyStats(){
+    const username = "@username";
+    if(!username) return;
+
+    try{
+        const res = await fetch(`/api/stats/${username}`);
+        const data = await res.json();
+
+        document.getElementById('quick-stats').innerHTML =
+            `WPM: ${data.wpm} | Acc: ${data.accuracy}%`;
+
+    }catch(err){
+        console.error("Failed to load user stats", err);
+    }
+}
+
+loadMyStats();
                 </script>
             </body>
             </html>
