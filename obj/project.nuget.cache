@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "OBlLz8NnVVU=",
+  "dgSpecHash": "hxPjWZHlV5E=",
   "success": true,
-  "projectFilePath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj",
+  "projectFilePath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace uzbaigimas\\monkeyrace\\monkeyrace.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Dovydas\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\Dovydas\\.nuget\\packages\\microsoft.aspnetcore.connections.abstractions\\3.1.32\\microsoft.aspnetcore.connections.abstractions.3.1.32.nupkg.sha512",
     "C:\\Users\\Dovydas\\.nuget\\packages\\microsoft.aspnetcore.http.connections.client\\3.1.32\\microsoft.aspnetcore.http.connections.client.3.1.32.nupkg.sha512",
     "C:\\Users\\Dovydas\\.nuget\\packages\\microsoft.aspnetcore.http.connections.common\\3.1.32\\microsoft.aspnetcore.http.connections.common.3.1.32.nupkg.sha512",

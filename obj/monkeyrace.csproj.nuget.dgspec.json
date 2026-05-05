@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj": {}
+    "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace uzbaigimas\\monkeyrace\\monkeyrace.csproj": {}
   },
   "projects": {
-    "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj": {
+    "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace uzbaigimas\\monkeyrace\\monkeyrace.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj",
+        "projectUniqueName": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace uzbaigimas\\monkeyrace\\monkeyrace.csproj",
         "projectName": "monkeyrace",
-        "projectPath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\monkeyrace.csproj",
+        "projectPath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace uzbaigimas\\monkeyrace\\monkeyrace.csproj",
         "packagesPath": "C:\\Users\\Dovydas\\.nuget\\packages\\",
-        "outputPath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace su signalR\\monkeyrace\\obj\\",
+        "outputPath": "E:\\Dovydo\\universitetas\\IV semestras\\C#\\monkeyrace\\monkeyrace uzbaigimas\\monkeyrace\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -31,6 +31,7 @@
         },
         "frameworks": {
           "netcoreapp3.1": {
+            "framework": "netcoreapp3.1",
             "targetAlias": "netcoreapp3.1",
             "projectReferences": {}
           }
@@ -49,8 +50,13 @@
       },
       "frameworks": {
         "netcoreapp3.1": {
+          "framework": "netcoreapp3.1",
           "targetAlias": "netcoreapp3.1",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )"
+            },
             "Microsoft.AspNetCore.SignalR.Client": {
               "target": "Package",
               "version": "[3.1.32, )"
@@ -87,7 +93,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203\\RuntimeIdentifierGraph.json"
         }
       }
     }
