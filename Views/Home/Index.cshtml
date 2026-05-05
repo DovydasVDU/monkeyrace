@@ -1,377 +1,391 @@
 ﻿@using Microsoft.AspNetCore.Http
 @{
-    var username = ViewContext.HttpContext.Session.GetString("Username");
+var username = ViewContext.HttpContext.Session.GetString("Username");
 }
 
 <!DOCTYPE html>
 <html>
-<head>
-<title>MonkeyRacer</title>
 
+  <head>
+    <title>MonkeyRacer</title>
 
-<style>
+    <style>
+      :root {
+        --bg: #1a1a2e;
+        --surface: #16213e;
+        --accent: #e2b714;
+        --text: #ffffff;
+        --muted: #646669;
+      }
 
-:root{
---bg:#1a1a2e;
---surface:#16213e;
---accent:#e2b714;
---text:#ffffff;
---muted:#646669;
-}
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Courier New', monospace;
+        min-height: 100vh;
+      }
 
-body{
-background:var(--bg);
-color:var(--text);
-font-family:'Courier New', monospace;
-min-height:100vh;
-}
+      /* ---------------- HOME ---------------- */
+      .home-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 60vh;
+        gap: 4rem;
+        margin-top: 80px;
+      }
 
+      /* GAME CARDS */
+      .card {
+        background: var(--surface);
+        border: 1px solid #333;
+        border-radius: 12px;
+        width: 320px;
+        padding: 2.5rem;
+        text-align: center;
+        transition: transform .2s, box-shadow .2s;
+        cursor: pointer;
+      }
 
+      .card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+      }
 
+      .card h2 {
+        color: var(--accent);
+        font-size: 1.1rem;
+        letter-spacing: .15em;
+        margin-bottom: 2rem;
+      }
 
-/* ---------------- HOME ---------------- */
+      .card p {
+        color: var(--muted);
+        font-size: .85rem;
+        margin-bottom: 1.5rem;
+      }
 
-.home-container{
-display:flex;
-justify-content:center;
-align-items:center;
-height:60vh;
-gap:4rem;
-margin-top: 80px;
-}
+      .card-input {
+        width: 100%;
+        margin-bottom: .8rem;
+        padding: .6rem;
+        background: #111;
+        border: 1px solid #333;
+        color: white;
+        border-radius: 4px;
+        font-family: inherit;
+        text-align: center;
+      }
 
-/* GAME CARDS */
+      .btn {
+        width: 100%;
+        margin-top: .6rem;
+        padding: .7rem;
+        border-radius: 5px;
+        border: 1px solid var(--accent);
+        background: transparent;
+        color: var(--accent);
+        cursor: pointer;
+        font-size: .9rem;
+        transition: all .2s;
+      }
 
-.card{
-background:var(--surface);
-border:1px solid #333;
-border-radius:12px;
-width:320px;
-padding:2.5rem;
-text-align:center;
-transition:transform .2s, box-shadow .2s;
-cursor:pointer;
-}
+      .btn:hover {
+        background: var(--accent);
+        color: var(--bg);
+      }
 
-.card:hover{
-transform:translateY(-6px);
-box-shadow:0 8px 25px rgba(0,0,0,0.4);
-}
+      .leaderboard-container {
+        width: 600px;
+        margin: 2rem auto;
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #333;
+      }
 
-.card h2{
-color:var(--accent);
-font-size:1.1rem;
-letter-spacing:.15em;
-margin-bottom:2rem;
-}
+      .leaderboard-container h3 {
+        text-align: center;
+        color: var(--accent);
+        margin-bottom: 1rem;
+        letter-spacing: .1em;
+      }
 
-.card p{
-color:var(--muted);
-font-size:.85rem;
-margin-bottom:1.5rem;
-}
+      .leaderboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .9rem;
+      }
 
-.card-input {
-width:100%;
-margin-bottom:.8rem;
-padding:.6rem;
-background:#111;
-border:1px solid #333;
-color:white;
-border-radius:4px;
-font-family:inherit;
-text-align:center;
-}
+      .leaderboard-table th,
+      .leaderboard-table td {
+        padding: .6rem;
+        text-align: center;
+        border-bottom: 1px solid #2a2a2a;
+      }
 
-.btn{
-width:100%;
-margin-top:.6rem;
-padding:.7rem;
-border-radius:5px;
-border:1px solid var(--accent);
-background:transparent;
-color:var(--accent);
-cursor:pointer;
-font-size:.9rem;
-transition:all .2s;
-}
+      .leaderboard-table tr:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
 
-.btn:hover{
-background:var(--accent);
-color:var(--bg);
-}
+      .rank-1 {
+        color: gold;
+      }
 
-.leaderboard-container{
-width: 600px;
-margin: 2rem auto;
-background: var(--surface);
-border-radius: 12px;
-padding: 1.5rem;
-border: 1px solid #333;
-}
+      .rank-2 {
+        color: silver;
+      }
 
-.leaderboard-container h3{
-text-align:center;
-color:var(--accent);
-margin-bottom:1rem;
-letter-spacing:.1em;
-}
+      .rank-3 {
+        color: #cd7f32;
+      }
 
-.leaderboard-table{
-width:100%;
-border-collapse:collapse;
-font-size:.9rem;
-}
+      .quick-stats {
+        font-size: .9rem;
+        color: var(--accent);
+        text-align: center;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #333;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+      }
 
-.leaderboard-table th,
-.leaderboard-table td{
-padding:.6rem;
-text-align:center;
-border-bottom:1px solid #2a2a2a;
-}
+      .main-layout {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
 
-.leaderboard-table tr:hover{
-background:rgba(255,255,255,0.03);
-}
+      /* kad kortelės būtų vienoje eilėje */
+      .home-container {
+        display: flex;
+        justify-content: center;
+        gap: 4rem;
+        margin-top: 80px;
+      }
 
-.rank-1 { color: gold; }
-.rank-2 { color: silver; }
-.rank-3 { color: #cd7f32; }
-.quick-stats{
-font-size:.7rem;
-color:var(--muted);
-margin-top:2px;
-text-align:right;
-}
-.main-layout{
-display:flex;
-flex-direction:column;
-align-items:center;
-}
+      .icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        border-radius: 8px; /* makes it look like a nice square/circle */
+      }
+    </style>
+    <link rel="stylesheet" href="/css/login.css">
+  </head>
 
-/* kad kortelės būtų vienoje eilėje */
-.home-container{
-display:flex;
-justify-content:center;
-gap:4rem;
-margin-top:80px;
-}
-</style>
-<link rel="stylesheet" href="/css/login.css">
-</head>
+  <body>
 
-<body>
+    <!-- NAVBAR -->
 
-<!-- NAVBAR -->
+    <header class="navbar">
 
-<header class="navbar">
+      <div class="logo">MonkeyRacer</div>
 
-<div class="logo">MonkeyRacer</div>
+      <div class="nav-right">
 
-<div class="nav-right">
+        @if(username != null)
+        {
+         
 
-@if(username != null)
-{
-<div class="user-menu" onclick="toggleMenu()">
+          <div class="user-menu" onclick="toggleMenu()" style="margin-right: 15px;">
 
-<div class="user-icon">
-@username.Substring(0,1).ToUpper()
-</div>
+            <div class="user-icon">
+              @username.Substring(0,1).ToUpper()
+            </div>
 
-<div class="username">@username</div>
-<div id="quick-stats" class="quick-stats"></div>
-<div class="dropdown" id="userDropdown">
+            <div class="username">
+                @username
+            </div>
 
-<a href="/User/Stats">Statistika</a>
-<a href="/User/Settings">Paskyros nustatymai</a>
-<a href="/Auth/Logout">Atsijungti</a>
+            <div class="dropdown" id="userDropdown">
+              <div id="quick-stats" class="quick-stats"></div>
+            </div>
 
-</div>
+          </div>
 
-</div>
-}
-else
-{
-<button class="nav-btn" onclick="openLogin()">Login</button>
-}
+           <!-- Statistika Icon (Bar chart) -->
+           <button class="nav-btn icon-btn" onclick="window.location='/User/Stats'" title="Statistika">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <line x1="18" y1="20" x2="18" y2="10"></line>
+                   <line x1="12" y1="20" x2="12" y2="4"></line>
+                   <line x1="6" y1="20" x2="6" y2="14"></line>
+               </svg>
+           </button>
 
-</div>
+          <!-- Atsijungti Icon (Log out) -->
+          <button class="nav-btn icon-btn" onclick="window.location='/Auth/Logout'" title="Atsijungti" style="margin-left: 10px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+          </button>
+        }
+        else
+        {
+        <button class="nav-btn" onclick="openLogin()">Login</button>
+        }
 
-</header>
+      </div>
 
+    </header>
 
-<!-- MAIN -->
-<div class="main-layout">
-<div class="home-container">
+    <!-- MAIN -->
+    <div class="main-layout">
+      <div class="home-container">
 
-<!-- SOLO TEST -->
+        <!-- SOLO TEST -->
 
-<div class="card" onclick="startSolo()">
+        <div class="card" onclick="startSolo()">
 
-<h2>SOLO ŽAIDIMAS</h2>
+          <h2>SOLO ŽAIDIMAS</h2>
 
-<p>Treniruok savo spausdinimo greitį ir tikslumą.</p>
+          <p>Treniruok savo spausdinimo greitį ir tikslumą.</p>
 
-<button class="btn">Pradėti</button>
+          <button class="btn">Pradėti</button>
 
-</div>
+        </div>
 
+        <!-- ONLINE RACE -->
 
-<!-- ONLINE RACE -->
+        <div class="card">
 
-<div class="card">
+          <h2>ŽAISTI SU DRAUGAIS</h2>
 
-<h2>ŽAISTI SU DRAUGAIS</h2>
+          @if(username != null)
+          {
+          <p style="margin-bottom:.8rem;">Žaidžiama kaip <span style="color:var(--accent)">@username</span></p>
+          <input type="hidden" id="username-input" value="@username" />
+          }
+          else
+          {
+          <input id="username-input" class="card-input" placeholder="Jūsų vardas (neprivaloma)" maxlength="20" />
+          }
 
-@if(username != null)
-{
-<p style="margin-bottom:.8rem;">Žaidžiama kaip <span style="color:var(--accent)">@username</span></p>
-<input type="hidden" id="username-input" value="@username" />
-}
-else
-{
-<input id="username-input" class="card-input" placeholder="Jūsų vardas (neprivaloma)" maxlength="20" />
-}
+          <button class="btn" onclick="createRoom()">Sukurti kambarį</button>
 
-<button class="btn" onclick="createRoom()">Sukurti kambarį</button>
+          <div style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">— ARBA —</div>
 
-<div style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">— ARBA —</div>
+          <input id="room-id-input" class="card-input" placeholder="Įveskite kambario ID" />
+          <button class="btn" onclick="joinRoom()">Prisijungti prie kambario</button>
 
-<input id="room-id-input" class="card-input" placeholder="Įveskite kambario ID" />
-<button class="btn" onclick="joinRoom()">Prisijungti prie kambario</button>
+        </div>
 
-</div>
+      </div>
+    </div>
+    <div class="leaderboard-container">
 
-</div>
-</div>
-<div class="leaderboard-container">
+      <h3>Top 10 Žaidėjų</h3>
 
-    <h3>Top 10 Žaidėjų</h3>
-
-    <table class="leaderboard-table">
+      <table class="leaderboard-table">
         <thead>
-            <tr>
-                <th>#</th>
-                <th>Žaidėjas</th>
-                <th>Žodžiai per minutę</th>
-                <th>Tikslumas</th>
-            </tr>
+          <tr>
+            <th>#</th>
+            <th>Žaidėjas</th>
+            <th>Žodžiai per minutę</th>
+            <th>Tikslumas</th>
+            <th>Data</th>
+          </tr>
         </thead>
         <tbody id="top10-body">
         </tbody>
-    </table>
+      </table>
 
-</div>
+    </div>
 
-<!-- LOGIN MODAL -->
+    <!-- LOGIN MODAL -->
 
-<div class="modal" id="loginModal">
+    <div class="modal" id="loginModal">
 
-<div class="modal-box" style="position: relative;">
+      <div class="modal-box" style="position: relative;">
 
-<span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
+        <span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
 
-<h3>Prisijungimas</h3>
+        <h3>Prisijungimas</h3>
 
-<input id="login-user" placeholder="slapyvardis">
-<input id="login-pass" type="password" placeholder="slaptažodis">
+        <input id="login-user" placeholder="slapyvardis">
+        <input id="login-pass" type="password" placeholder="slaptažodis">
 
-<button class="btn" onclick="login()">Prisijungti</button>
-<button class="btn" onclick="register()">Registruotis</button>
+        <button class="btn" onclick="login()">Prisijungti</button>
+        <button class="btn" onclick="register()">Registruotis</button>
 
-</div>
+      </div>
 
-</div>
-
-
+    </div>
 
     <script src="/js/login.js"></script>
     <script>
+      function toggleMenu() {
+        document.getElementById("userDropdown").classList.toggle("visible");
+      }
 
+      function startSolo() {
+        window.location = "/Race/Play";
+      }
+      /* ROOM LOGIC */
+      function createRoom() {
+        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+        redirectToRoom(roomId);
+      }
 
+      function joinRoom() {
+        const roomId = document.getElementById('room-id-input').value.trim();
+        if (!roomId) return alert('Įveskite kambario ID');
+        redirectToRoom(roomId);
+      }
 
-                    function toggleMenu() {
-                        document.getElementById("userDropdown").classList.toggle("visible");
-                    }
-
-                    function startSolo(){
-                        window.location="/Race/Play";
-                    }
-
-                    /* ROOM LOGIC */
-
-                    function createRoom() {
-                        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-                        redirectToRoom(roomId);
-                    }
-
-                    function joinRoom() {
-                        const roomId = document.getElementById('room-id-input').value.trim();
-                        if (!roomId) return alert('Įveskite kambario ID');
-                        redirectToRoom(roomId);
-                    }
-
-                    function redirectToRoom(roomId) {
-                        const usernameInput = document.getElementById('username-input');
-                        const username = (usernameInput ? usernameInput.value.trim() : "") || 'Svečias';
-
-                        sessionStorage.setItem('username', username);
-                        window.location.href = `/Race/MultiPlay?roomId=${roomId}`;
-                    }
-                    async function loadTop10(){
-    try{
-        const res = await fetch('/api/stats/top10/');
-        const data = await res.json();
-
-        const tbody = document.getElementById('top10-body');
-        tbody.innerHTML = "";
-
-        data.forEach((user, index) => {
+      function redirectToRoom(roomId) {
+        const usernameInput = document.getElementById('username-input');
+        const username = (usernameInput ? usernameInput.value.trim() : "") || 'Svečias';
+        sessionStorage.setItem('username', username);
+        window.location.href = `/Race/MultiPlay?roomId=${roomId}`;
+      }
+      async function loadTop10() {
+        try {
+          const res = await fetch('/api/stats/top10/');
+          const data = await res.json();
+          const tbody = document.getElementById('top10-body');
+          tbody.innerHTML = "";
+          data.forEach((user, index) => {
             const tr = document.createElement('tr');
-
-            if(index === 0) tr.classList.add('rank-1');
-            if(index === 1) tr.classList.add('rank-2');
-            if(index === 2) tr.classList.add('rank-3');
-
+            if (index === 0) tr.classList.add('rank-1');
+            if (index === 1) tr.classList.add('rank-2');
+            if (index === 2) tr.classList.add('rank-3');
             tr.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${user.username}</td>
                 <td>${user.wpm}</td>
                 <td>${user.accuracy}%</td>
             `;
-
             tbody.appendChild(tr);
-        });
+          });
+        } catch (err) {
+          console.error("Failed to load top10", err);
+        }
+      }
+      loadTop10();
+      async function loadMyStats() {
+        var username = "@(username ?? "")";
+        if (!username) return;
+        try {
+          const res = await fetch(`/api/stats/${username}`);
+          const data = await res.json();
+          document.getElementById('quick-stats').innerHTML =
+            `PB: ${data.bestWpm} WPM | Acc: ${data.averageAccuracy}% | Races: ${data.totalRaces}`;
+        } catch (err) {
+          console.error("Failed to load user stats", err);
+        }
+      }
+      loadMyStats();
+    </script>
+  </body>
 
-    }catch(err){
-        console.error("Failed to load top10", err);
-    }
-}
-
-loadTop10();
-async function loadMyStats(){
-    const username = "@username";
-    if(!username) return;
-
-    try{
-        const res = await fetch(`/api/stats/${username}`);
-        const data = await res.json();
-
-        document.getElementById('quick-stats').innerHTML =
-            `WPM: ${data.wpm} | Acc: ${data.accuracy}%`;
-
-    }catch(err){
-        console.error("Failed to load user stats", err);
-    }
-}
-
-loadMyStats();
-                </script>
-            </body>
-            </html>
+</html>
