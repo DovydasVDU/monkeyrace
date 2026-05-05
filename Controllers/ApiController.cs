@@ -72,7 +72,8 @@ namespace monkeyrace.Controllers
                 Place = index + 1,
                 Username = race.User != null ? race.User.Username : "Unknown",
                 Wpm = race.WPM,
-                Accuracy = Math.Round(race.Accuracy, 2)
+                Accuracy = Math.Round(race.Accuracy, 2),
+                Date = race.CompletedAt.ToString("yyyy-MM-dd")
             });
 
             // 3. Return the JSON array

@@ -19,7 +19,7 @@ public class RaceController : Controller
         _raceService = raceService; // prijungiame duomenų bazę per Dependency Injection, kad galėtume saugoti rezultatus ir gauti tekstus iš duomenų bazės
     }
 
-    public async Task<IActionResult> Play(string difficulty = "medium") // pagrindinis žaidimo puslapis, kuris parenka tekstą pagal sunkumą ir rodo jį žaidėjui
+    public async Task<IActionResult> Play() // pagrindinis žaidimo puslapis, kuris parenka tekstą pagal sunkumą ir rodo jį žaidėjui
     {
         // iš sesijos gauname paskutinių parinktų tekstų Id, kad galėtume jų vengti, kai parenkame naują tekstą žaidimui (testuojant man tai nepatiko)
         var lastIdsJson = HttpContext.Session.GetString("LastSnippetIds"); 
@@ -29,7 +29,7 @@ public class RaceController : Controller
             : JsonSerializer.Deserialize<List<int>>(lastIdsJson)!;
 
         // paimame atsitiktinį tekstą iš duomenų bazės pagal sunkumą ir lastSnippets
-        var snippet = await _raceService.GetRandomSnippetAsync(difficulty, lastIds); // čia naudojame iš raceService. _ - tai yra konvencija, kad tai yra private laukas, kuris yra naudojamas tik šioje klasėje
+        var snippet = await _raceService.GetRandomSnippetAsync(lastIds); // čia naudojame iš raceService. _ - tai yra konvencija, kad tai yra private laukas, kuris yra naudojamas tik šioje klasėje
 
         // lastIds logika paprasta - saugome paskutinius tris, jei jų padaugėja - pirmąjį pašaliname
         lastIds.Add(snippet.Id);
@@ -48,7 +48,6 @@ public class RaceController : Controller
         await _db.SaveChangesAsync();
 
         ViewBag.RaceId = race.Id; // 
-        ViewBag.SelectedDifficulty = difficulty;
 
         return View(snippet);
     }

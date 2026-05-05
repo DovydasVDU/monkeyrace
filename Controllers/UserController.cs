@@ -53,8 +53,7 @@ public class UserController : Controller
                     CompletedAt = r.CompletedAt,
                     Wpm = r.WPM,
                     Accuracy = r.Accuracy,
-                    ErrorCount = r.ErrorCount,
-                    Difficulty = r.Race?.TextSnippet?.Difficulty ?? "unknown" 
+                    ErrorCount = r.ErrorCount
                 })
                 .ToList()
         };

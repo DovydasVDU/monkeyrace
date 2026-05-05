@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("monkeyrace")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+426a613224992e938aa140a2632bdffd84d0d83e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+de7c61c5cfe9d7bf9ed58e7871c02d01b5ddb8d8")]
 [assembly: System.Reflection.AssemblyProductAttribute("monkeyrace")]
 [assembly: System.Reflection.AssemblyTitleAttribute("monkeyrace")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -22,7 +22,6 @@ public class TextSnippet
     public string Content { get; set; } = string.Empty;    // Tekstas spausdinimui
     public string Language { get; set; } = "lt";           // Kalba
     public int WordCount { get; set; }
-    public string Difficulty { get; set; } = "medium";     // easy / medium / hard
 }
 
 // Models/Race.cs

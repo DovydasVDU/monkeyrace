@@ -63,8 +63,7 @@ public class RaceHub : Hub
                 _rooms[roomId] = new RaceRoom
                 {
                     RoomId = roomId,
-                    HostConnectionId = Context.ConnectionId,
-                    Difficulty = "medium"
+                    HostConnectionId = Context.ConnectionId
                 };
             }
 
@@ -97,7 +96,6 @@ public class RaceHub : Hub
         {
             hostConnectionId = room.HostConnectionId,
             isStarted = room.IsStarted,
-            difficulty = room.Difficulty,
             players = room.Players.Select(p => new
             {
                 connectionId = p.ConnectionId,
@@ -108,26 +106,6 @@ public class RaceHub : Hub
                 isReady = p.IsReady
             })
         });
-    }
-
-    // =========================
-    // CHANGE DIFFICULTY
-    // =========================
-    public async Task ChangeDifficulty(string roomId, string difficulty)
-    {
-        lock (_lock)
-        {
-            if (_rooms.TryGetValue(roomId, out var room))
-            {
-                // Tik host gali keisti difficulty
-                if (room.HostConnectionId == Context.ConnectionId)
-                {
-                    room.Difficulty = difficulty;
-                }
-            }
-        }
-
-        await Clients.Group(roomId).SendAsync("DifficultyChanged", difficulty);
     }
 
     // =========================
@@ -183,7 +161,7 @@ public class RaceHub : Hub
         if (_rooms.TryGetValue(roomId, out var validRoom))
         {
             // 🔹 Gaunam tekstą iš service
-            var snippet = await _raceService.GetRandomSnippetAsync(validRoom.Difficulty, new List<int>());
+            var snippet = await _raceService.GetRandomSnippetAsync(new List<int>());
 
             validRoom.SnippetContent = snippet.Content;
 
@@ -375,7 +353,6 @@ public class RaceRoom
 {
     public string RoomId { get; set; }
     public string HostConnectionId { get; set; }
-    public string Difficulty { get; set; }
     public List<RoomPlayer> Players { get; set; } = new List<RoomPlayer>();
     public bool IsStarted { get; set; }
     public string SnippetContent { get; set; }

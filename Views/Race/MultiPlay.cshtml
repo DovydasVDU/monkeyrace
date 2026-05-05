@@ -60,11 +60,6 @@
     </div>
 
     <div id="lobby-controls" style="margin-bottom: 1.5rem;">
-        <select id="difficulty-select" class="btn" style="width:auto; display:inline-block; margin-right:0.5rem; text-align: left; padding: 0.6rem;" disabled onchange="changeDifficulty()">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-        </select>
         <button id="btn-ready" class="btn" onclick="toggleReady()">Pasiruošęs</button>
         <button id="btn-start" class="btn" style="display:none;" disabled onclick="startRace()">Pradėti lenktynes</button>
     </div>
@@ -126,14 +121,8 @@ connection.on("RoomState", (data) => {
     myConnectionId = connection.connectionId;
     isHost = data.hostConnectionId === myConnectionId;
 
-    if (data.difficulty) {
-        const diffSelect = document.getElementById('difficulty-select');
-        if (diffSelect) diffSelect.value = data.difficulty;
-    }
-
     if (isHost) {
         document.getElementById('btn-start').style.display = 'inline-block';
-        document.getElementById('difficulty-select').disabled = false;
     }
 
     data.players.forEach(p => {
@@ -151,13 +140,6 @@ connection.on("RoomState", (data) => {
     });
 
     updateStartButtonState();
-});
-
-connection.on("DifficultyChanged", (diff) => {
-    const diffSelect = document.getElementById('difficulty-select');
-    if (diffSelect) {
-        diffSelect.value = diff;
-    }
 });
 
 connection.on("PlayerReadyStatus", (data) => {
@@ -213,7 +195,6 @@ connection.on("PlayerLeft", (data) => {
         isHost = true;
         if (!isStarted) {
             document.getElementById('btn-start').style.display = 'inline-block';
-            document.getElementById('difficulty-select').disabled = false;
         } else if (isFinished) {
             document.getElementById('btn-reset').style.display = 'inline-block';
         }
@@ -234,10 +215,6 @@ connection.on("RoomReset", () => {
     document.getElementById('stats-bar').style.display = 'none';
     document.getElementById('result-controls').style.display = 'none';
     document.getElementById('lobby-controls').style.display = 'block';
-
-    if (isHost) {
-        document.getElementById('difficulty-select').disabled = false;
-    }
 
     document.getElementById('input-field').style.display = 'none';
     document.getElementById('input-field').value = '';
@@ -504,7 +481,7 @@ setInterval(() => {
     if (!startTime || isFinished) return;
     const typed = document.getElementById('input-field').value;
     const typedLength = totalTypedChars + typed.length;
-    const progress = Math.round((typedLength / TARGET_TEXT.length) * 100);
+    const progress = Math.round((typedLength / TARGET_TEXT.length) + 0.00001);
     const currentWpm = calcWPM(typedLength);
     const currentWord = targetWords[currentWordIndex] || "";
 
@@ -513,12 +490,6 @@ setInterval(() => {
         lastSentProgress = progress;
     }
 }, 300);
-
-function changeDifficulty() {
-    if(!isHost) return;
-    const diff = document.getElementById('difficulty-select').value;
-    connection.invoke("ChangeDifficulty", ROOM_ID, diff);
-}
 
 async function startConnection() {
     await connection.start();

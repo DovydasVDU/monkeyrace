@@ -8,6 +8,13 @@ using System;
 
 public class Startup
 {
+    private readonly IWebHostEnvironment _env;
+
+    public Startup(IWebHostEnvironment env)
+    {
+        _env = env;
+    }
+
     // Tai klasė, kuri konfigūruoja mūsų programą. 
     // Joje nurodome, kokius servisus naudosime (ConfigureServices) ir kaip bus tvarkomi užklausos (Configure).
     public void ConfigureServices(IServiceCollection services)
@@ -19,9 +26,17 @@ public class Startup
         services.AddMemoryCache();
 
 
-        // Duomenų bazė SQLite, naudojame Entity Framework Core, kuris leidžia dirbti su duomenų baze naudojant C# objektus.
+        // Prisijungiame prie SQL Server duomenų bazės.
+        string connectionString = "Server=tcp:db50921.databaseasp.net,1433;Database=db50921;User ID=db50921;Password=4Dw#b!L67a%E;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite("Data Source=monkeyracer.db"));
+            options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorNumbersToAdd: null);
+            }));
 
 
         // cookies autentikavimas
@@ -53,7 +68,8 @@ public class Startup
         {
             app.UseDeveloperExceptionPage();
         }
-        else {             
+        else
+        {
             //app.UseExceptionHandler("/Home/Error");
             app.UseHsts();
         }
@@ -76,17 +92,13 @@ public class Startup
         {
             // Rounting'as yra toks pats, kaip ir failų struktūra, pvz. /home/index, /user/stats ir pan. 
             // Jeigu URL yra tuščias, tai nukreipia į HomeController ir jo Index metodą.
-            endpoints.MapControllerRoute(    
+            endpoints.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
             endpoints.MapHub<RaceHub>("/racehub"); // SignalR hub'as, kuris leidžia realiu laiku atnaujinti informaciją apie lenktynes visiems prisijungusiems vartotojams.
 
         });
-
-        // užtikriname, kad duomenų bazė būtų sukurta, jei jos dar nėra. 
-        using var scope = app.ApplicationServices.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>(); // paimama AppDbContext su lentelių duomenimis
-        db.Database.EnsureCreated();
     }
 }
+      

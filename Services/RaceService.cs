@@ -16,12 +16,9 @@ public class RaceService
         _db = db;
     }
 
-    public async Task<TextSnippet> GetRandomSnippetAsync(
-        string difficulty,
-        List<int> lastIds)
+    public async Task<TextSnippet> GetRandomSnippetAsync(List<int> lastIds)
     {
-        var query = _db.TextSnippets // kreipiamės į duomenų bazę TextSnippets lentelę, filtruojame pagal sunkumą
-            .Where(t => t.Difficulty == difficulty);
+        var query = _db.TextSnippets.AsQueryable(); // kreipiamės į duomenų bazę TextSnippets lentelę
 
         if (lastIds.Any()) // jei egzistuoja filtruojame, kad nesikartotų paskutinių 3 žaidimų tekstai
         {
@@ -32,8 +29,7 @@ public class RaceService
         if (count == 0)
         {
             // jeigu nėra, tada nuimam filtrus
-            query = _db.TextSnippets
-                .Where(t => t.Difficulty == difficulty);
+            query = _db.TextSnippets.AsQueryable();
 
             count = await query.CountAsync(); // vėl prašom tekstų skaičiaus
         }
@@ -57,6 +53,13 @@ public class RaceService
         };
 
         _db.RaceResults.Add(result);
+
+        var race = await _db.Races.FindAsync(raceId);
+        if (race != null && race.Status != "finished")
+        {
+            race.Status = "finished";
+        }
+
         await _db.SaveChangesAsync();
     }
 }

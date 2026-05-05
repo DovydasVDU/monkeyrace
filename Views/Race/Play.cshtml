@@ -37,12 +37,6 @@
     <div class="race-page">
         <div class="race-container">
         <form method="get" asp-controller="Race" asp-action="Play" style="margin-bottom: 1.5rem;">
-            <select name="difficulty" onchange="this.form.submit()"
-                    style="background:#16213e;color:#e8e8e3;padding:0.5rem;border-radius:4px;border:1px solid #333;">
-                <option value="easy" selected="@(ViewBag.SelectedDifficulty == "easy")">Easy</option>
-                <option value="medium" selected="@(ViewBag.SelectedDifficulty == "medium")">Medium</option>
-                <option value="hard" selected="@(ViewBag.SelectedDifficulty == "hard")">Hard</option>
-            </select>
         </form>
 
     <div class="stats-bar" id="stats-bar">
@@ -287,9 +281,7 @@
         }
 
         function restartRace() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const difficulty = urlParams.get("difficulty") || "medium";
-            window.location.href = `/Race/Play?difficulty=${difficulty}`;
+            window.location.href = `/Race/Play`;
         }
 
         init();
