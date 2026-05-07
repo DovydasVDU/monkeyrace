@@ -1,18 +1,26 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using Microsoft.AspNetCore.Http
+
+@{
+    var username = Context.Session.GetString("Username");
+}
+
+<!DOCTYPE html>
+<html lang="lt">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - TypingRace</title>
+
+    <title>@ViewData["Title"]</title>
+
+    <link rel="stylesheet" href="/css/login.css">
 
     <style>
         :root {
             --bg: #1a1a2e;
             --surface: #16213e;
             --accent: #e2b714;
-            --text: #d1d0c5;
-            --error: #ca4754;
-            --correct: #6e9e6e;
+            --text: #ffffff;
             --muted: #646669;
         }
 
@@ -26,207 +34,55 @@
             background: var(--bg);
             color: var(--text);
             font-family: 'Courier New', monospace;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             min-height: 100vh;
         }
 
         main {
-            width: 100%;
-            max-width: 900px;
             padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2.5rem;
-            text-align: center;
-        }
-
-        a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-            a:hover {
-                text-decoration: underline;
-            }
-
-        /* ===== Animated Start Button ===== */
-
-        .btn-start {
-            position: relative;
-            text-decoration: none;
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-family: inherit;
-            font-size: 0.9rem;
-            padding: 0.9rem 3rem;
-            border-radius: 4px;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            transition: all 0.25s ease;
-            animation: pulseGlow 2.5s ease-in-out infinite;
-        }
-
-            .btn-start:hover {
-                background: var(--accent);
-                color: var(--bg);
-                box-shadow: 0 0 18px rgba(226, 183, 20, 0.6);
-                transform: translateY(-3px);
-                animation: none;
-            }
-
-            .btn-start:active {
-                transform: translateY(0);
-                box-shadow: 0 0 8px rgba(226, 183, 20, 0.4);
-            }
-
-        @@keyframes pulseGlow {
-            0%, 100% {
-                box-shadow: 0 0 0px rgba(226, 183, 20, 0.0);
-            }
-
-            50% {
-                box-shadow: 0 0 12px rgba(226, 183, 20, 0.35);
-            }
-        }
-
-        .hero-typing {
-            font-size: 2rem;
-            line-height: 1.6;
-            max-width: 900px;
-            min-height: 120px;
-            color: var(--muted);
-            letter-spacing: 0.05em;
-        }
-
-        .char {
-            display: inline-block;
-        }
-
-            .char.correct {
-                color: var(--text);
-            }
-
-            .char.error {
-                color: var(--error);
-            }
-
-        .cursor {
-            display: inline-block;
-            width: 2px;
-            height: 1.2em;
-            background: var(--accent);
-            margin-left: 4px;
-            animation: blink 1s infinite;
-        }
-
-        @@keyframes blink {
-            0%, 50%, 100% {
-                opacity: 1;
-            }
-
-            25%, 75% {
-                opacity: 0;
-            }
-        }
-        /* ===== Animated Background Grid ===== */
-
-        .background-grid {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: linear-gradient(to right, rgba(226,183,20,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(226,183,20,0.05) 1px, transparent 1px);
-            background-size: 60px 60px;
-            animation: gridMove 40s linear infinite;
-        }
-
-            /* Subtle center glow */
-            .background-grid::after {
-                content: "";
-                position: absolute;
-                inset: 0;
-                background: radial-gradient( circle at center, rgba(226,183,20,0.08), transparent 60% );
-                pointer-events: none;
-            }
-
-        @@keyframes gridMove {
-            from {
-                background-position: 0 0, 0 0;
-            }
-
-            to {
-                background-position: 60px 60px, 60px 60px;
-            }
         }
     </style>
 </head>
+
 <body>
-    <div class="background-grid"></div>
+
+    @await Html.PartialAsync("_Navbar")
+
     <main>
         @RenderBody()
     </main>
-</body>
-<script>
-    const text = "improve your speed. master your accuracy. become unstoppable.";
-    const container = document.getElementById("typing-text");
 
-    let index = 0;
-    let isDeleting = false;
-    let mistakeMade = false;
-
-    function sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function typeLoop() {
-        container.innerHTML = "";
-
-        while (true) {
-            container.innerHTML = "";
-
-            for (index = 0; index < text.length; index++) {
-
-                const span = document.createElement("span");
-                span.classList.add("char");
-
-                // Random mistake chance
-                if (!mistakeMade && Math.random() < 0.08) {
-                    span.textContent = String.fromCharCode(97 + Math.floor(Math.random() * 26));
-                    span.classList.add("error");
-                    container.appendChild(span);
-
-                    await sleep(120);
-
-                    // delete mistake
-                    container.removeChild(span);
-                    mistakeMade = true;
-                    await sleep(150);
-                }
-
-                span.textContent = text[index];
-                span.classList.add("correct");
-                container.appendChild(span);
-
-                await sleep(60 + Math.random() * 60);
-            }
-
-            mistakeMade = false;
-
-            await sleep(1500);
-
-            // Delete everything
-            while (container.firstChild) {
-                container.removeChild(container.lastChild);
-                await sleep(20);
-            }
-
-            await sleep(500);
+    <script>
+        function toggleMenu() {
+            document.getElementById("userDropdown")
+                ?.classList.toggle("visible");
         }
-    }
 
-    window.addEventListener("DOMContentLoaded", typeLoop);
-</script>
+        async function loadMyStats() {
+
+            var username = "@(username ?? "")";
+
+            if (!username) return;
+
+            try {
+
+                const res = await fetch(`/api/stats/${username}`);
+                const data = await res.json();
+
+                document.getElementById('quick-stats').innerHTML =
+                    `PB: ${data.bestWpm} WPM |
+                     Acc: ${data.averageAccuracy}% |
+                     Races: ${data.totalRaces}`;
+
+            } catch (err) {
+
+                console.error("Failed to load user stats", err);
+
+            }
+        }
+
+        loadMyStats();
+    </script>
+
+</body>
+
 </html>
