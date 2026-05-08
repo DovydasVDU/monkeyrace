@@ -32,7 +32,7 @@ public class Race
     public TextSnippet TextSnippet { get; set; } = null!;  // Navigacinė savybė
     public DateTime StartedAt { get; set; }
     public bool IsMultiplayer { get; set; } = false;
-    public string Status { get; set; } = "waiting";        // waiting/active/finished
+    public string Status { get; set; } = "waiting";        // waiting/finished
 
     public ICollection<RaceResult> Results { get; set; } = new List<RaceResult>();
 }

@@ -223,7 +223,7 @@ public class RaceHub : Hub
     // =========================
     // FINISH RACE
     // =========================
-    public async Task FinishRace(string roomId, int wpm, double accuracy, int timeSeconds)
+    public async Task FinishRace(string roomId, int wpm, double accuracy, int timeSeconds, int errorCount)
     {
         int place = 1;
         RaceRoom room = null;
@@ -254,7 +254,7 @@ public class RaceHub : Hub
         // Išsaugom rezultatą DB (NE lock viduje)
         if (room != null && player != null && player.UserId != null)
         {
-            await _raceService.SaveRaceResultAsync(player.UserId.Value, room.RaceId, wpm, accuracy, timeSeconds);
+            await _raceService.SaveRaceResultAsync(player.UserId.Value, room.RaceId, wpm, accuracy, timeSeconds, errorCount);
         }
 
         // Informuojam visus žaidėjus

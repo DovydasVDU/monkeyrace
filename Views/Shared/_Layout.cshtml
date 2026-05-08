@@ -13,75 +13,21 @@
 
     <title>@ViewData["Title"]</title>
 
-    <link rel="stylesheet" href="/css/login.css">
-
-    <style>
-        :root {
-            --bg: #1a1a2e;
-            --surface: #16213e;
-            --accent: #e2b714;
-            --text: #ffffff;
-            --muted: #646669;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Courier New', monospace;
-            min-height: 100vh;
-        }
-
-        main {
-            padding: 2rem;
-        }
-    </style>
+    <title>MonkeyRacer – @ViewBag.RoomId</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="~/js/login.js" asp-append-version="true"></script>
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/player.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
 </head>
 
 <body>
 
     @await Html.PartialAsync("_Navbar")
-
+    <div class="background-grid"></div>
     <main>
         @RenderBody()
     </main>
-
-    <script>
-        function toggleMenu() {
-            document.getElementById("userDropdown")
-                ?.classList.toggle("visible");
-        }
-
-        async function loadMyStats() {
-
-            var username = "@(username ?? "")";
-
-            if (!username) return;
-
-            try {
-
-                const res = await fetch(`/api/stats/${username}`);
-                const data = await res.json();
-
-                document.getElementById('quick-stats').innerHTML =
-                    `PB: ${data.bestWpm} WPM |
-                     Acc: ${data.averageAccuracy}% |
-                     Races: ${data.totalRaces}`;
-
-            } catch (err) {
-
-                console.error("Failed to load user stats", err);
-
-            }
-        }
-
-        loadMyStats();
-    </script>
 
 </body>
 

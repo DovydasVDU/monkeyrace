@@ -3,36 +3,8 @@
 @{
     var username = ViewContext.HttpContext.Session.GetString("Username");
 }
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="~/js/login.js" asp-append-version="true"></script>
-    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true">
-    <title>MonkeyRacer</title>
-    <link rel="stylesheet" href="~/css/player.css" asp-append-version="true">
-</head>
-<body>
-    <header class="navbar">
-        <div class="logo" onclick="window.location='/'">MonkeyRacer</div>
-        <div class="nav-right">
-            @if (username != null)
-            {
-                <div class="user-menu" onclick="toggleMenu()">
-                    <div class="user-icon">@username.Substring(0,1).ToUpper()</div>
-                    <div class="username">@username</div>
-                    <div class="dropdown" id="userDropdown">
-                        <a href="/User/Stats">User Stats</a>
-                        <a href="/User/Settings">Account Settings</a>
-                        <a href="/Auth/Logout">Log Out</a>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <button class="nav-btn" onclick="openLogin()">Login</button>
-            }
-        </div>
-    </header>
+@{ ViewData["Title"] = "Rašyk - Monkeyrace"; }
+
 
     <div class="race-page">
         <div class="race-container">
@@ -55,56 +27,38 @@
     </div>
     <div class="results-overlay" id="results-overlay">
         <div class="results-box">
-            <h2>rezultatai</h2>
+            <h2>Rezultatai</h2>
             <div class="results-grid">
                 <div class="result-stat">
                     <span id="result-wpm">0</span>
-                    <label>wpm</label>
+                    <label>WPM</label>
                 </div>
                 <div class="result-stat">
                     <span id="result-accuracy">0</span>
-                    <label>tikslumas %</label>
+                    <label>Tikslumas %</label>
                 </div>
                 <div class="result-stat">
                     <span id="result-time">0</span>
-                    <label>sekundės</label>
+                    <label>Sekundės</label>
                 </div>
                 <div class="result-stat">
                     <span id="result-klaidos">0</span>
-                    <label>klaidos</label>
+                    <label>Klaidos</label>
                 </div>
             </div>
-            <button class="btn-restart" onclick="restartRace()">bandyti dar kartą ↺</button>
+
+            <div class="results-actions">
+                <button class="btn-restart" onclick="restartRace()">Žaisti dar kartą <span>&#9654;</span></button>
+                <button class="btn-restart" onclick="retrySameText()" style="border-color: var(--muted); color: var(--muted);">Kartoti tekstą <span>&#8634;</span></button>
+                <button class="btn-restart" onclick="window.location='/'" style="border-color: #ca4754; color: #ca4754;">Grįžti į Pradinį <span>&#10006;</span></button>
+            </div>
         </div>
     </div>
 
-    <!-- LOGIN MODAL -->
-
-    <div class="modal" id="loginModal">
-
-    <div class="modal-box" style="position: relative;">
-
-    <span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
-
-    <h3>login</h3>
-
-<input id="login-user" placeholder="username">
-<input id="login-pass" type="password" placeholder="password">
-
-<button class="btn" onclick="login()">login</button>
-<button class="btn" onclick="register()">register</button>
-
-</div>
 
 </div>
     <script>
-         function openLogin(){
-            document.getElementById("loginModal").classList.add("visible");
-            }
-        function toggleMenu() {
-            document.getElementById("userDropdown").classList.toggle("visible");
-        }
-
+         
         let TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
         const RACE_ID     = @ViewBag.RaceId;
 
@@ -261,11 +215,12 @@
             const timeSeconds = Math.round((Date.now() - startTime) / 1000);
             const wpm         = calcWPM(totalTypedChars);
             const accuracy    = calcAccuracy();
+            const klaidos     = klaidosSet.size;
 
             document.getElementById('result-wpm').textContent      = wpm;
             document.getElementById('result-accuracy').textContent = accuracy;
             document.getElementById('result-time').textContent     = timeSeconds;
-            document.getElementById('result-klaidos').textContent  = klaidosSet.size;
+            document.getElementById('result-klaidos').textContent  = klaidos;
             document.getElementById('results-overlay').classList.add('visible');
 
             fetch('/Race/SaveResult', {
@@ -275,9 +230,33 @@
                     raceId:      RACE_ID,
                     wpm:         wpm,
                     accuracy:    accuracy,
-                    timeSeconds: timeSeconds
+                    timeSeconds: timeSeconds,
+                    errorCount:  klaidos
                 })
             });
+        }
+
+        function retrySameText(){
+            document.getElementById('results-overlay').classList.remove('visible');
+
+            // Atstatome kintamuosius
+            klaidosSet.clear();
+            currentWordIndex = 0;
+            totalTypedChars = 0;
+            startTime = null;
+            timerHandle = null;
+            isFinished = false;
+
+            wpmDisplay.textContent = '0';
+            accuracyDisplay.textContent = '100';
+            timerDisplay.textContent = '0';
+
+            inputField.value = '';
+            inputField.disabled = false;
+            inputField.classList.remove('error');
+
+            renderText();
+            inputField.focus();
         }
 
         function restartRace() {
@@ -286,79 +265,5 @@
 
         init();
 
-        /* login */
-        async function login() {
-
-            const username = document.getElementById("login-user").value
-            const password = document.getElementById("login-pass").value
-            // kreipiamės į AuthController Login metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
-            const res = await fetch("/Auth/Login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-
-            })
-                // AuthController grąžiną 200 OK jei login sėkmingas, kitu atveju 400 Bad Request su klaidos pranešimu
-
-            if (res.ok)
-                location.reload()
-            else {
-      
-            let message = "login failed"
-
-            try {
-                const data = await res.json() // nuskaitome JSON iš AuthController
-                message = data.message
-            } catch {
-                // jei ne JSON (fallback)
-                message = await res.text()
-            }
-
-            alert(message)
-        }
-
-        }
-        async function register() {
-
-    const username = document.getElementById("login-user").value
-    const password = document.getElementById("login-pass").value
-
-    if (!username || !password) {
-        alert("enter username and password")
-        return
-    }
-    // kreipiamės į AuthController Register metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
-    const res = await fetch("/Auth/Register", { 
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-
-    })
-    // AuthController grąžiną 200 OK jei registracija sėkminga, kitu atveju 400 Bad Request su klaidos pranešimu
-    if (res.ok) {
-        alert("account created")
-        location.reload()
-    }
-    else {
-
-        
-        let message = "register failed"
-
-        try {
-            const data = await res.json() // n uskaitome JSON iš AuthController
-            message = data.message
-        } catch {
-            // jei ne JSON (fallback)
-            message = await res.text()
-        }
-
-        alert(message)
-    }
-}
+       
     </script>
-</body>
-</html>

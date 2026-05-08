@@ -159,3 +159,35 @@ body {
         background: var(--accent);
         color: var(--bg);
     }
+.quick-stats {
+    font-size: .95em;
+    color: var(--accent);
+    text-align: center;
+    background: var(--surface);
+    padding: 0.8rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    border-bottom: 1px solid #333;
+    border-radius: 8px 8px 0 0;
+}
+
+.btn-login {
+    width: 100%;
+    margin-top: .6rem;
+    padding: .7rem;
+    border-radius: 5px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: .9rem;
+    transition: all .2s;
+}
+
+    .btn-login:hover {
+        background: var(--accent);
+        color: var(--bg);
+    }

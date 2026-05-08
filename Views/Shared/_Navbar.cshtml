@@ -3,17 +3,6 @@
     var username = Context.Session.GetString("Username");
 }
 
-<!DOCTYPE html>
-<html lang="lt">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>@ViewData["Title"] - MonkeyRacer</title>
-
-    <link rel="stylesheet" href="~/css/site.css" />
-</head>
-<body>
     <header class="navbar">
 
         <div class="logo">
@@ -26,7 +15,8 @@
             @if (username != null)
             {
 <div class="user-menu"
-     onclick="toggleMenu()"
+     onmouseenter="openMenu()"
+     onmouseleave="closeMenu()"
      style="margin-right: 15px;">
 
     <div class="user-icon">
@@ -105,15 +95,28 @@
             <input id="login-user" placeholder="slapyvardis">
             <input id="login-pass" type="password" placeholder="slaptažodis">
 
-            <button class="btn" onclick="login()">Prisijungti</button>
-            <button class="btn" onclick="register()">Registruotis</button>
+            <button class="btn-login" onclick="login()">Prisijungti</button>
+            <button class="btn-login" onclick="register()">Registruotis</button>
 
         </div>
 
     </div>
 
 
-    <script src="~/js/site.js"></script>
-
-</body>
-</html>
+<script> 
+    async function loadMyStats() {
+        var username = "@(username ?? "")";
+        if (!username) return;
+        try {
+          const res = await fetch(`/api/stats/${username}`);
+          const data = await res.json();
+          document.getElementById('quick-stats').innerHTML =
+            `<span>Greitis (PB): <b>${data.bestWpm} WPM</b></span>
+             <span>Tikslumas: <b>${data.averageAccuracy}%</b></span>
+             <span>Žaidimai: <b>${data.totalRaces}</b></span>`;
+        } catch (err) {
+          console.error("Failed to load user stats", err);
+        }
+      }
+      loadMyStats();
+    </script>

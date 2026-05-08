@@ -96,6 +96,12 @@ async function register() {
 }
 
 // NAVBAR modalas
-function toggleMenu(){
-        document.getElementById("userDropdown").classList.toggle("visible");
-    }
+function openMenu() {
+    document.getElementById("userDropdown").classList.add("visible");
+}
+
+function closeMenu() {
+    document.getElementById("userDropdown").classList.remove("visible");
+}
+
+

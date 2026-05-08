@@ -18,30 +18,26 @@ public class RaceService
 
     public async Task<TextSnippet> GetRandomSnippetAsync(List<int> lastIds)
     {
-        var query = _db.TextSnippets.AsQueryable(); // kreipiamės į duomenų bazę TextSnippets lentelę
+        var query = _db.TextSnippets.AsQueryable(); // kreipiamės į duomenų bazę
 
-        if (lastIds.Any()) // jei egzistuoja filtruojame, kad nesikartotų paskutinių 3 žaidimų tekstai
+        if (lastIds.Any()) 
         {
+            // filtruojame, kad nesikartotų paskutiniai 3
             query = query.Where(t => !lastIds.Contains(t.Id));
         }
 
-        var count = await query.CountAsync(); // suskaičiuojame kiek yra tekstų 
-        if (count == 0)
-        {
-            // jeigu nėra, tada nuimam filtrus
-            query = _db.TextSnippets.AsQueryable();
+        var count = await query.CountAsync(); // paimame likusių skaičių (pvz., 57)
 
-            count = await query.CountAsync(); // vėl prašom tekstų skaičiaus
-        }
+        // Ištrinta perteklinė if (count == 0) apsauga, nes žinome, kad tekstų visada liks.
 
-        var index = _random.Next(count); // paimama random iš tų tekstų
+        var index = _random.Next(count); // sugeneruojame atsitiktinį indeksą
 
-        return await query // laukiam atsakymo
-            .Skip(index) // praleidžiame tą index kiekį tekstų iš visų gautų ir paimame išrinktąjį
-            .FirstAsync();
+        return await query
+            .Skip(index)
+            .FirstAsync(); // grąžiname tą konkretų tekstą
     }
 
-    public async Task SaveRaceResultAsync(int userId, int raceId, int wpm, double accuracy, int timeSeconds)
+    public async Task SaveRaceResultAsync(int userId, int raceId, int wpm, double accuracy, int timeSeconds, int errorCount)
     {
         var result = new RaceResult
         {
@@ -49,7 +45,8 @@ public class RaceService
             RaceId = raceId,
             WPM = wpm,
             Accuracy = accuracy,
-            TimeSeconds = timeSeconds
+            TimeSeconds = timeSeconds,
+            ErrorCount = errorCount
         };
 
         _db.RaceResults.Add(result);

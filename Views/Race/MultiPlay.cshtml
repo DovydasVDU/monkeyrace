@@ -3,55 +3,57 @@
 @{
     var username = ViewContext.HttpContext.Session.GetString("Username");
 }
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MonkeyRacer – @ViewBag.RoomId</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
-    <script src="~/js/login.js" asp-append-version="true"></script>
-    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true">
-    <link rel="stylesheet" href="~/css/player.css" asp-append-version="true">
-</head>
-<body>
- <header class="navbar">
-        <div class="logo" onclick="window.location='/'">MonkeyRacer</div>
-        <div class="nav-right">
-            @if (username != null)
-            {
-                <div class="user-menu" onclick="toggleMenu()">
-                    <div class="user-icon">@username.Substring(0,1).ToUpper()</div>
-                    <div class="username">@username</div>
-                    <div class="dropdown" id="userDropdown">
-                        <a href="/User/Stats">Statistika</a>
-                        <a href="/User/Settings">Paskyros nustatymai</a>
-                        <a href="/Auth/Logout">Atsijungti</a>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <button class="nav-btn" onclick="openLogin()">Prisijungti</button>
-            }
-        </div>
-    </header>
-    <!-- LOGIN MODAL -->
+@{ ViewData["Title"] = "Rašyk - Monkeyrace"; }
 
-<div class="modal" id="loginModal">
+<style>
+    .player-hover {
+    position: relative;
+    display: inline-block;
+}
 
-<div class="modal-box" style="position: relative;">
+.stats-dropdown {
+    position: absolute;
+    top: 130%;
+    left: 0;
 
-<span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
+    min-width: 180px;
 
-<h3>Prisijungimas</h3>
+    background: #1e1f26;
+    border: 1px solid #333;
+    border-radius: 10px;
 
-<input id="login-user" placeholder="slapyvardis">
-<input id="login-pass" type="password" placeholder="slaptažodis">
+    padding: 0.8rem;
 
-<button class="btn" onclick="login()">Prisijungti</button>
-<button class="btn" onclick="register()">Registruotis</button>
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
 
-</div>
+    z-index: 999;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+}
 
+.player-hover:hover .stats-dropdown {
+    display: flex;
+}
+
+.stats-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.stats-item strong {
+    color: white;
+}
+
+.stats-loading {
+    color: #777;
+    font-size: 0.85rem;
+}
+    </style>
 </div>
 <div class="race-container">
     <div style="color:var(--muted); font-size:0.8rem; margin-bottom:1rem;">
@@ -59,9 +61,11 @@
         — pasidalink šiuo kodu su draugais
     </div>
 
-    <div id="lobby-controls" style="margin-bottom: 1.5rem;">
-        <button id="btn-ready" class="btn" onclick="toggleReady()">Pasiruošęs</button>
-        <button id="btn-start" class="btn" style="display:none;" disabled onclick="startRace()">Pradėti lenktynes</button>
+    <div id="lobby-controls" style="margin-bottom: 1.5rem;">                
+        <button id="btn-restart" class="btn-player" style="border-color:#ca4754; color:#ca4754;" onclick="window.location='/'">Grįžti į Pradinį</button>
+        <button id="btn-ready" class="btn-player" onclick="toggleReady()">Pasiruošęs</button>
+        <button id="btn-start" class="btn-player" style="display:none;" disabled onclick="startRace()">Pradėti lenktynes</button>
+
     </div>
 
     <div class="players-bar" id="players-bar"></div>
@@ -79,6 +83,7 @@
     </div>
 
     <div id="result-controls" style="display:none; text-align:center; margin-top: 1.5rem;">
+        <div style="color:var(--muted); font-size:0.8rem; margin-bottom:1rem;">  Palauk, kol kambario kūrėjas paleis žaidimą.</div>
         <button id="btn-reset" class="btn" style="display:none;" onclick="resetRoom()">Grįžti į laukiamąjį (Host)</button>
         <button class="btn" onclick="window.location.href='/'">Išeiti</button>
     </div>
@@ -87,6 +92,8 @@
 <div id="countdown-overlay" class="countdown-overlay">3</div>
 
 <script>
+const isLoggedIn = @(User.Identity.IsAuthenticated.ToString().ToLower());
+
 let TARGET_TEXT = "";
 const ROOM_ID = "@ViewBag.RoomId";
 let RACE_ID = 0;
@@ -102,10 +109,12 @@ let targetWords = [];
 let currentWordIndex = 0;
 let totalTypedChars = 0;
 
-const players = {};
+const players = {};  // visi žaidėjai
+
+const playersStats = {}; // saugosime žaidėjų PB ir kitą statistiką, kad galėtume rodyti ją gyvai
 let myConnectionId = null;
 
-const connection = new signalR.HubConnectionBuilder()
+const connection = new signalR.HubConnectionBuilder() // sukuriamas SignalR ryšys su serveriu
     .withUrl("/racehub")
     .withAutomaticReconnect()
     .build();
@@ -256,26 +265,113 @@ connection.on("Error", function(msg) {
     window.location.href = "/"; // pvz. ištremti atgal į Pradžią
 });
 
-function addPlayerRow(connectionId, username, isMe, isReady) {
+async function addPlayerRow(connectionId, username, isMe, isReady) {
     const bar = document.getElementById('players-bar');
+
     const div = document.createElement('div');
     div.className = 'player-row' + (isMe ? ' me' : '');
     div.id = 'player-' + connectionId;
+
     div.innerHTML = `
-        <span class="player-name">${username}</span>
+        <div class="player-hover">
+            <span class="player-name">${username}</span>
+
+            <div class="stats-dropdown" id="stats-${connectionId}">
+                <div class="stats-loading">Loading...</div>
+            </div>
+        </div>
+
         <div class="progress-track" id="track-${connectionId}">
             <div class="progress-fill" id="fill-${connectionId}"></div>
         </div>
+
         <div class="live-stats" id="live-stats-${connectionId}" style="display:none;">
             <span class="live-wpm" id="wpm-${connectionId}">0 WPM</span>
             <span class="live-word" id="word-${connectionId}">...</span>
         </div>
+
         <span class="player-status ${isReady ? 'ready' : 'not-ready'}" id="status-${connectionId}">
             ${isReady ? 'Pasiruošęs' : 'Laukiama'}
-        </span>`;
+        </span>
+    `;
+
     bar.appendChild(div);
-    players[connectionId] = { username, progress: 0, isReady: isReady };
+
+    players[connectionId] = {
+        username,
+        progress: 0,
+        isReady: isReady
+    };
+
+    if (username !== "Svečias") {
+        try {
+            // pašalinam "(tu)" jei yra
+            const cleanUsername = username.replace(" (tu)", "");
+
+            const res = await fetch(`/api/stats/${cleanUsername}`);
+
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            // išsaugom stats
+            playersStats[connectionId] = {
+                PB: data.bestWpm,
+                acc: data.averageAccuracy,
+                races: data.totalRaces
+            };
+
+            // atnaujinam dropdown
+            const dropdown = document.getElementById(`stats-${connectionId}`);
+
+            if (dropdown) {
+                dropdown.innerHTML = `
+                    <div class="stats-item">
+                        <span>PB:</span>
+                        <strong>${data.bestWpm}</strong>
+                    </div>
+
+                    <div class="stats-item">
+                        <span>Tikslumas:</span>
+                        <strong>${Math.round(data.averageAccuracy)}%</strong>
+                    </div>
+
+                    <div class="stats-item">
+                        <span>Žaidimų:</span>
+                        <strong>${data.totalRaces}</strong>
+                    </div>
+                `;
+            }
+
+        } catch (err) {
+            console.error("Failed to load user stats", err);
+
+            const dropdown = document.getElementById(`stats-${connectionId}`);
+
+            if (dropdown) {
+                dropdown.innerHTML = `
+                    <div class="stats-loading">
+                        Nėra duomenų.
+                    </div>
+                `;
+            }
+        }
+    } else {
+        // guest fallback
+        const dropdown = document.getElementById(`stats-${connectionId}`);
+
+        if (dropdown) {
+            dropdown.innerHTML = `
+                <div class="stats-loading">
+                    Nėra duomenų.
+                </div>
+            `;
+        }
+    }
 }
+
 
 function resetRoom() {
     connection.invoke("ResetRoom", ROOM_ID);
@@ -464,9 +560,10 @@ function updateTimer() {
         const timeSeconds = Math.round((Date.now() - startTime) / 1000);
         const wpm = calcWPM(totalTypedChars);
         const accuracy = calcAccuracy();
+        const klaidos = klaidosSet.size;
 
         // Notify SignalR (for multiplayer)
-        await connection.invoke("FinishRace", ROOM_ID, wpm, accuracy, timeSeconds);
+        await connection.invoke("FinishRace", ROOM_ID, wpm, accuracy, timeSeconds, klaidos);
 
         updateProgressBar(myConnectionId, 100);
 
@@ -481,7 +578,7 @@ setInterval(() => {
     if (!startTime || isFinished) return;
     const typed = document.getElementById('input-field').value;
     const typedLength = totalTypedChars + typed.length;
-    const progress = Math.round((typedLength / TARGET_TEXT.length) + 0.00001);
+    const progress = Math.round((typedLength / TARGET_TEXT.length) * 100);
     const currentWpm = calcWPM(typedLength);
     const currentWord = targetWords[currentWordIndex] || "";
 
@@ -498,5 +595,3 @@ async function startConnection() {
 
 startConnection();
 </script>
-</body>
-</html>

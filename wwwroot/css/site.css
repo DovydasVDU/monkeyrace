@@ -1,31 +1,80 @@
+/* 1. Globalūs projekto parametrai (.NET palikimo perrašymas) */
 html {
-  font-size: 14px;
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+/* 2. Mūsų „MonkeyRacer“ šabloninės spalvos (Theme) */
+:root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --accent: #e2b714;
+    --text: #ffffff;
+    --error: #ca4754;
+    --correct: #6e9e6e;
+    --muted: #646669;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* 3. Pagrindinis puslapio stilius */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-  margin-bottom: 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+main {
+    padding: 2rem;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+/* 4. Globalūs animuotos fono grotelės (_Layout) */
+.background-grid {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(to right, rgba(226,183,20,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(226,183,20,0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridMove 40s linear infinite;
+}
+
+/* Subtle center glow */
+.background-grid::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient( circle at center, rgba(226,183,20,0.08), transparent 60% );
+    pointer-events: none;
+}
+
+@keyframes gridMove {
+    from { background-position: 0 0, 0 0; }
+    to { background-position: 60px 60px, 60px 60px; }
+}
+
+.btn {
+    width: 100%;
+    margin-top: .6rem;
+    padding: .7rem;
+    border-radius: 5px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: .9rem;
+    transition: all .2s;
 }

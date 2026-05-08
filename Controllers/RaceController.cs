@@ -83,7 +83,7 @@ public class RaceController : Controller
         // Paverčiame prisijungusio vartotojo ID į int ir pateikiame servisui
         var userId = int.Parse(userIdStr);
 
-        await _raceService.SaveRaceResultAsync(userId, dto.RaceId, dto.Wpm, dto.Accuracy, dto.TimeSeconds);
+        await _raceService.SaveRaceResultAsync(userId, dto.RaceId, dto.Wpm, dto.Accuracy, dto.TimeSeconds, dto.ErrorCount);
 
         return Json(new { success = true }); 
     }
@@ -95,4 +95,5 @@ public class RaceResultDto
     public int Wpm { get; set; }
     public double Accuracy { get; set; }
     public int TimeSeconds { get; set; }
+    public int ErrorCount { get; set; }
 }

@@ -7,28 +7,10 @@
 <head>
     <title>MonkeyRacer</title>
 
+    <link rel="stylesheet" href="/css/site.css">
+    <link rel="stylesheet" href="/css/login.css">
+
     <style>
-        :root {
-            --bg: #1a1a2e;
-            --surface: #16213e;
-            --accent: #e2b714;
-            --text: #ffffff;
-            --muted: #646669;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Courier New', monospace;
-            min-height: 100vh;
-        }
-
         /* ---------------- HOME ---------------- */
         .home-container {
             display: flex;
@@ -81,23 +63,6 @@
             text-align: center;
         }
 
-        .btn {
-            width: 100%;
-            margin-top: .6rem;
-            padding: .7rem;
-            border-radius: 5px;
-            border: 1px solid var(--accent);
-            background: transparent;
-            color: var(--accent);
-            cursor: pointer;
-            font-size: .9rem;
-            transition: all .2s;
-        }
-
-            .btn:hover {
-                background: var(--accent);
-                color: var(--bg);
-            }
 
         .leaderboard-container {
             width: 600px;
@@ -144,16 +109,6 @@
             color: #cd7f32;
         }
 
-        .quick-stats {
-            font-size: .9rem;
-            color: var(--accent);
-            text-align: center;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #333;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-        }
-
         .main-layout {
             display: flex;
             flex-direction: column;
@@ -180,7 +135,6 @@
 </head>
 
 <body>
-
 
     <!-- MAIN -->
     <div class="main-layout">
@@ -243,14 +197,9 @@
 
     </div>
 
-
-
     <script src="/js/login.js"></script>
     <script>
-      function toggleMenu() {
-        document.getElementById("userDropdown").classList.toggle("visible");
-      }
-
+      
       function startSolo() {
         window.location = "/Race/Play";
       }
@@ -296,19 +245,7 @@
         }
       }
       loadTop10();
-      async function loadMyStats() {
-        var username = "@(username ?? "")";
-        if (!username) return;
-        try {
-          const res = await fetch(`/api/stats/${username}`);
-          const data = await res.json();
-          document.getElementById('quick-stats').innerHTML =
-            `PB: ${data.bestWpm} WPM | Acc: ${data.averageAccuracy}% | Races: ${data.totalRaces}`;
-        } catch (err) {
-          console.error("Failed to load user stats", err);
-        }
-      }
-      loadMyStats();
+      
     </script>
 </body>
 
