@@ -1,8 +1,6 @@
 ﻿@model UserProfileViewModel
 @using Microsoft.AspNetCore.Http
-@{
-    var username = ViewContext.HttpContext.Session.GetString("Username") ?? Model.Username;
-}
+
 @{ ViewData["Title"] = "Stats - Monkeyrace"; }
 
 <!DOCTYPE html>
@@ -127,7 +125,7 @@
     <div class="main-content">
         <div class="profile-container">
             <div class="hero">
-                <h1>Profile overview</h1>
+                <h1>Žaidėjo profilis</h1>
 
                 <div class="stats-row">
                     <div class="stat-card">

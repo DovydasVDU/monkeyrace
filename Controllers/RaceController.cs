@@ -41,6 +41,7 @@ public class RaceController : Controller
         // Kai atsidaro langas, sukuriame naują Race objektą. 
         var race = new Race
         {
+
             TextSnippetId = snippet.Id, // ištraukiame tesktą
             StartedAt = DateTime.UtcNow // datą
         };
@@ -59,10 +60,22 @@ public class RaceController : Controller
     // GET /Race/MultiPlay?roomId=abc123
     public IActionResult MultiPlay(string roomId)
     {
-        ViewBag.RoomId = roomId;
-        ViewBag.Username = HttpContext.Session.GetString("Username") ?? "Svečias";
+        // viewbag - tai objektas, kuris leidžia perduoti duomenis iš kontrolerio į view.
+        // Čia perduodame roomId, kad frontend žinotų, kur prisijungti prie websocket'o
 
-        return View("MultiPlay"); // Return without a snippet model
+        ViewBag.RoomId = roomId;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            ViewBag.Username = User.FindFirstValue(ClaimTypes.Name);
+        }
+        else
+        {
+            ViewBag.Username = null;  // svečio username saugomas session
+        }
+        
+         
+
+        return View("MultiPlay"); // grąžiname tik puslapį, nes websocket'as bus atsakingas už visą žaidimo logiką
     }
 
     [HttpPost]

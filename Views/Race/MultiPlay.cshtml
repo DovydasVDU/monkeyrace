@@ -1,9 +1,12 @@
 ﻿@model TextSnippet
 @using Microsoft.AspNetCore.Http
-@{
-    var username = ViewContext.HttpContext.Session.GetString("Username");
+@using System.Security.Claims
+@{ var username = User.FindFirstValue(ClaimTypes.Name);  }
+
+
+@{ 
+    ViewData["Title"] = "Rašyk - Monkeyrace"; 
 }
-@{ ViewData["Title"] = "Rašyk - Monkeyrace"; }
 
 <style>
     .player-hover {
@@ -95,13 +98,33 @@
 const isLoggedIn = @(User.Identity.IsAuthenticated.ToString().ToLower());
 
 let TARGET_TEXT = "";
-const ROOM_ID = "@ViewBag.RoomId";
+const ROOM_ID = "@ViewBag.RoomId"; // paimame kambario ID iš ViewBag, kurį nustatė RaceController
 let RACE_ID = 0;
-const USERNAME    = sessionStorage.getItem('username') || "@ViewBag.Username";
+let USERNAME;
 
-let isHost      = false;
-let isStarted   = false;
-let startTime   = null;
+if (isLoggedIn) {
+    USERNAME = "@Html.Raw(User.FindFirstValue(ClaimTypes.Name))";
+} else {
+    let vardas = sessionStorage.getItem("username");
+
+    if (vardas) {
+       USERNAME = vardas;
+    } else { 
+       // jeigu user neturi įrašyto vardo per sessionStorage (atėjo per tiesioginę nuorodą), tada paprašom įvesti
+       let input = prompt("Įveskite savo vardą (neprivaloma):") || "Svečias";
+
+       if (input !== "Svečias") { 
+           input = input + " (Svečias)"; 
+       }
+
+       sessionStorage.setItem("username", input);
+       USERNAME = input;
+    }
+}
+
+let isHost = false;
+let isStarted = false;
+let startTime = null;
 let timerHandle = null;
 let isFinished  = false;
 const klaidosSet = new Set();
@@ -111,7 +134,7 @@ let totalTypedChars = 0;
 
 const players = {};  // visi žaidėjai
 
-const playersStats = {}; // saugosime žaidėjų PB ir kitą statistiką, kad galėtume rodyti ją gyvai
+const playersStats = {}; // saugosime žaidėjų PB ir kitą statistiką žodyne, kad galėtume rodyti dropdown
 let myConnectionId = null;
 
 const connection = new signalR.HubConnectionBuilder() // sukuriamas SignalR ryšys su serveriu
@@ -303,12 +326,11 @@ async function addPlayerRow(connectionId, username, isMe, isReady) {
         isReady: isReady
     };
 
-    if (username !== "Svečias") {
-        try {
-            // pašalinam "(tu)" jei yra
-            const cleanUsername = username.replace(" (tu)", "");
+    if (!username.includes("(Svečias)")) {
+        const cleanUsername = username.replace(" (tu)", "").trim();
 
-            const res = await fetch(`/api/stats/${cleanUsername}`);
+        try {
+            const res = await fetch(`/api/stats/${encodeURIComponent(cleanUsername)}`);
 
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
@@ -323,7 +345,7 @@ async function addPlayerRow(connectionId, username, isMe, isReady) {
                 races: data.totalRaces
             };
 
-            // atnaujinam dropdown
+            // sukuriam dropdown
             const dropdown = document.getElementById(`stats-${connectionId}`);
 
             if (dropdown) {
@@ -347,27 +369,16 @@ async function addPlayerRow(connectionId, username, isMe, isReady) {
 
         } catch (err) {
             console.error("Failed to load user stats", err);
-
             const dropdown = document.getElementById(`stats-${connectionId}`);
-
             if (dropdown) {
-                dropdown.innerHTML = `
-                    <div class="stats-loading">
-                        Nėra duomenų.
-                    </div>
-                `;
+                dropdown.innerHTML = `<div class="stats-loading">Duomenys nepasiekiami.</div>`;
             }
         }
     } else {
-        // guest fallback
+        // jeigu svečias
         const dropdown = document.getElementById(`stats-${connectionId}`);
-
         if (dropdown) {
-            dropdown.innerHTML = `
-                <div class="stats-loading">
-                    Nėra duomenų.
-                </div>
-            `;
+            dropdown.innerHTML = `<div class="stats-loading">Neprisijungęs.</div>`;
         }
     }
 }

@@ -15,7 +15,7 @@ public class RaceHub : Hub
     // Laikome visus aktyvius kambarius atmintyje (kol veikia serveris)
     private static readonly Dictionary<string, RaceRoom> _rooms = new Dictionary<string, RaceRoom>();
 
-    // Lock naudojamas apsaugoti nuo race condition (kai keli useriai vienu metu keičia state)
+    // Lock naudojamas apsaugoti nuo žinučių dublikatų - kadangi tunelyje gali ateiti kelios vienu metu, jas sustatome į eilę.
     private static readonly object _lock = new object();
 
     public RaceHub(AppDbContext db, RaceService raceService)
@@ -24,15 +24,13 @@ public class RaceHub : Hub
         _raceService = raceService;
     }
 
-    // =========================
-    // JOIN ROOM
-    // =========================
+
     public async Task JoinRoom(string roomId, string username)
     {
-        // Pridedam connection į SignalR grupę
+        // Pridedam connection į SignalR kambarį
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
 
-        // Bandome pasiimti UserId iš JWT/claims
+        // Bandome pasiimti UserId iš cookie claims
         int? userId = null;
         var userIdClaim = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
@@ -53,11 +51,11 @@ public class RaceHub : Hub
             JoinedAt = DateTime.UtcNow
         };
 
-        RaceRoom room;
+        RaceRoom room; // inicijuojamas kambarys
 
         lock (_lock)
         {
-            // 🔹 Jei kambario nėra – sukuriam naują
+            // Jei kambario nėra – sukuriam naują
             if (!_rooms.ContainsKey(roomId))
             {
                 _rooms[roomId] = new RaceRoom
@@ -67,9 +65,10 @@ public class RaceHub : Hub
                 };
             }
 
-            room = _rooms[roomId];
+            room = _rooms[roomId]; // priskiriam jam id
 
-            // Pridedam player į kambario sąrašą
+            // Pridedam player į kambari
+            // Pirmiausia patikriname, ar tas pats žaidėjas jau yra tame kambaryje
             if (userId != null && room.Players.Any(p => p.UserId == userId))
             {
                 // Tai reiškia, kad tas pats prisijungęs user bando prisijungti antrą kartą per kitą tab'ą
@@ -91,7 +90,7 @@ public class RaceHub : Hub
             isReady = false
         });
 
-        // Nusiunčiam pilną kambario state naujam žaidėjui
+        // Nusiunčiam pilną kambario state tam naujam žaidėjui
         await Clients.Caller.SendAsync("RoomState", new
         {
             hostConnectionId = room.HostConnectionId,
@@ -108,9 +107,7 @@ public class RaceHub : Hub
         });
     }
 
-    // =========================
-    // READY
-    // =========================
+    // ready mygtukas. Jeigu visi žaidėjai įjungę ready, host gali pradėti lenktynes
     public async Task ToggleReady(string roomId)
     {
         bool isReady = false;
@@ -128,7 +125,7 @@ public class RaceHub : Hub
                 }
             }
         }
-
+        // jeigu user paspaudė ready, tai siunčiam kitiems žaidėjams
         await Clients.Group(roomId).SendAsync("PlayerReadyStatus", new
         {
             connectionId = Context.ConnectionId,
@@ -136,9 +133,6 @@ public class RaceHub : Hub
         });
     }
 
-    // =========================
-    // START RACE
-    // =========================
     public async Task StartRace(string roomId)
     {
         string textSnippet = "";
@@ -146,6 +140,7 @@ public class RaceHub : Hub
 
         lock (_lock)
         {
+            // TryGetValue patikrina, ar roomId egzistuoja RaceRoom žodyne _rooms 
             if (_rooms.TryGetValue(roomId, out var room))
             {
                 // Tik host gali startinti
@@ -157,10 +152,9 @@ public class RaceHub : Hub
                 room.IsStarted = true;
             }
         }
-
         if (_rooms.TryGetValue(roomId, out var validRoom))
         {
-            // 🔹 Gaunam tekstą iš service
+            // Paimam tekstą iš RaceService
             var snippet = await _raceService.GetRandomSnippetAsync(new List<int>());
 
             validRoom.SnippetContent = snippet.Content;
@@ -169,7 +163,8 @@ public class RaceHub : Hub
             race = new Race
             {
                 TextSnippetId = snippet.Id,
-                StartedAt = DateTime.UtcNow
+                StartedAt = DateTime.UtcNow,
+                IsMultiplayer = true
             };
 
             _db.Races.Add(race);
@@ -191,10 +186,8 @@ public class RaceHub : Hub
             });
         }
     }
-
-    // =========================
-    // LIVE PROGRESS UPDATE
-    // =========================
+    // siunčiami duomenys kitiems žaidėjams, kad atnaujintų progress barą, wpm ir dabartinį žodį
+     
     public async Task UpdateProgress(string roomId, int progressPercent, int currentWpm, string currentWord)
     {
         lock (_lock)
@@ -210,7 +203,7 @@ public class RaceHub : Hub
                 player.CurrentWord = currentWord;
             }
         }
-
+        // kiekvienas žaidėjas siunčia visems .group
         await Clients.Group(roomId).SendAsync("ProgressUpdate", new
         {
             connectionId = Context.ConnectionId,
@@ -220,12 +213,12 @@ public class RaceHub : Hub
         });
     }
 
-    // =========================
-    // FINISH RACE
-    // =========================
+
     public async Task FinishRace(string roomId, int wpm, double accuracy, int timeSeconds, int errorCount)
     {
+        
         int place = 1;
+        // kai race pasibaigia, reikia išvalyti kambarį
         RaceRoom room = null;
         RoomPlayer player = null;
 
@@ -266,9 +259,8 @@ public class RaceHub : Hub
         });
     }
 
-    // =========================
-    // RESET ROOM
-    // =========================
+    // grįžti į lobby mygtukas. Jis išvalo žaidėjo progressą, ready statusą ir kitus duomenis, kad jis galėtų pasiruošti naujoms lenktynėms
+    // reset tai palieka visus žaidėjus, tačiau išvalo tik pačių lenktynių duomenis, kambarys lieka
     public async Task ResetRoom(string roomId)
     {
         lock (_lock)
@@ -294,10 +286,7 @@ public class RaceHub : Hub
 
         await Clients.Group(roomId).SendAsync("RoomReset");
     }
-
-    // =========================
-    // DISCONNECT
-    // =========================
+    // kai atsijungia žaidėjas
     public override async Task OnDisconnectedAsync(Exception exception)
     {
         string roomToNotify = null;
@@ -308,19 +297,19 @@ public class RaceHub : Hub
             foreach (var kvp in _rooms)
             {
                 var room = kvp.Value;
-                var player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+                var player = room.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId); // tikrinamas šio prisijungimo id su įrašytais ids
 
                 if (player != null)
                 {
                     room.Players.Remove(player);
-                    roomToNotify = room.RoomId;
+                    roomToNotify = room.RoomId; // dabartinis kambarys, kuriam siųsim žinutę
 
-                    // 🔹 Jei tuščias kambarys – ištrinam
+                    // Jei tuščias kambarys – ištrinam
                     if (room.Players.Count == 0)
                     {
                         _rooms.Remove(room.RoomId);
                     }
-                    // 🔹 Jei host išėjo – paskiriam naują
+                    // Jei host išėjo – paskiriam naują
                     else if (room.HostConnectionId == Context.ConnectionId)
                     {
                         room.HostConnectionId = room.Players.First().ConnectionId;
@@ -345,10 +334,7 @@ public class RaceHub : Hub
     }
 }
 
-// =========================
-// DATA MODELS
-// =========================
-
+// duomenų struktūros, kurios laiko info apie kambarius ir žaidėjus atmintyje
 public class RaceRoom
 {
     public string RoomId { get; set; }
@@ -364,7 +350,7 @@ public class RoomPlayer
     public string ConnectionId { get; set; }
     public string Username { get; set; }
 
-    // 🔹 Nullable – nes gali būti neprisijungęs user
+    // int? – nes gali būti neprisijungęs user, neturėti id
     public int? UserId { get; set; }
 
     public int Progress { get; set; }

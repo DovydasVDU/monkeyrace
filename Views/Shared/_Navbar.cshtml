@@ -1,7 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Http
-@{
-    var username = Context.Session.GetString("Username");
-}
+@using System.Security.Claims
+@{ var username = User.FindFirstValue(ClaimTypes.Name);  }
 
     <header class="navbar">
 
@@ -104,8 +103,9 @@
 
 
 <script> 
+    const username = "@username";
+
     async function loadMyStats() {
-        var username = "@(username ?? "")";
         if (!username) return;
         try {
           const res = await fetch(`/api/stats/${username}`);

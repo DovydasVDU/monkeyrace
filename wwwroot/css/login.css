@@ -45,7 +45,8 @@ body {
     border: 1px solid #333;
     border-radius: 10px;
     padding: 2rem;
-    width: 320px;
+    width: 420px;
+    height:
 }
 
     .modal-box h3 {
@@ -183,7 +184,7 @@ body {
     background: transparent;
     color: var(--accent);
     cursor: pointer;
-    font-size: .9rem;
+    font-size: 1rem;
     transition: all .2s;
 }
 

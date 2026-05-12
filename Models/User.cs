@@ -29,7 +29,7 @@ public class Race
 {
     public int Id { get; set; }
     public int TextSnippetId { get; set; }
-    public TextSnippet TextSnippet { get; set; } = null!;  // Navigacinė savybė
+    public TextSnippet TextSnippet { get; set; } = null!;  // jungiasi su TextSnippe
     public DateTime StartedAt { get; set; }
     public bool IsMultiplayer { get; set; } = false;
     public string Status { get; set; } = "waiting";        // waiting/finished

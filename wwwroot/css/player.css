@@ -293,6 +293,10 @@
     cursor: pointer;
     margin-right: 0.5rem
 }
+.btn-player:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 .btn-restart {
     background: transparent;
     border: 1px solid var(--accent);

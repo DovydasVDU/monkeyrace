@@ -60,8 +60,8 @@ public class AuthController : Controller
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return Unauthorized(new { message = "Neteisingi prisijungimo duomenys" }); // JSON formatu grąžinama žinutė į html
         // kitu atveju prijungiamas
-        HttpContext.Session.SetString("UserId", user.Id.ToString()); // į sesiją įrašomas vartotojo ID - jis prisijungęs
-        HttpContext.Session.SetString("Username", user.Username);
+        //HttpContext.Session.SetString("UserId", user.Id.ToString()); // į sesiją įrašomas vartotojo ID - jis prisijungęs
+        //HttpContext.Session.SetString("Username", user.Username);
 
         await SignInUser(user);
 
@@ -74,7 +74,7 @@ public class AuthController : Controller
         // Ištrina autentifikacijos cookie
         await HttpContext.SignOutAsync(
             CookieAuthenticationDefaults.AuthenticationScheme);
-        HttpContext.Session.Clear(); // logout metu išvaloma informacija sesijoje
+        HttpContext.Session.Clear(); // logout metu išvaloma informacija sesijoje (LastSnippetsIds
         return Redirect("/"); // Nukreipiame į pagrindinį puslapį
     }
     // Pagalbinis metodas – sukuria Claims ir išduoda Cookie

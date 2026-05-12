@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Http
-@{ var username = ViewContext.HttpContext.Session.GetString("Username"); }
+@using System.Security.Claims
+@{ var username = User.FindFirstValue(ClaimTypes.Name);  }
 @{ ViewData["Title"] = "MonkeyRace"; }
 <!DOCTYPE html>
 <html>
@@ -23,10 +24,14 @@
 
         /* GAME CARDS */
         .card {
+            display: flex;
+            flex-direction:column;
+            justify-content:center;
             background: var(--surface);
             border: 1px solid #333;
             border-radius: 12px;
-            width: 320px;
+            width: 420px;
+            height: 400px;
             padding: 2.5rem;
             text-align: center;
             transition: transform .2s, box-shadow .2s;
@@ -66,7 +71,7 @@
 
         .leaderboard-container {
             width: 600px;
-            margin: 2rem auto;
+            margin: auto;
             background: var(--surface);
             border-radius: 12px;
             padding: 1.5rem;
@@ -197,7 +202,6 @@
 
     </div>
 
-    <script src="/js/login.js"></script>
     <script>
       
       function startSolo() {
@@ -216,8 +220,16 @@
       }
 
       function redirectToRoom(roomId) {
+          // jeigu user yra neprisijungęs, tada paimame vardą iš inputo, jeigu įvestas, arba naudojame "Svečias"
         const usernameInput = document.getElementById('username-input');
-        const username = (usernameInput ? usernameInput.value.trim() : "") || 'Svečias';
+        let username = usernameInput ? usernameInput.value.trim() : "";
+        // jeigu nieko neįvesta -> "Svečias"
+        // jeigu įvesta -> pridėti "(Svečias)"
+        if (username) { // tikrinam, ar įvedė kažką (username yra ne "")
+            username = `${username} (Svečias)`;
+        } else {
+            username = "Svečias";
+        }
         sessionStorage.setItem('username', username);
         window.location.href = `/Race/MultiPlay?roomId=${roomId}`;
       }
@@ -237,6 +249,7 @@
                 <td>${user.username}</td>
                 <td>${user.wpm}</td>
                 <td>${user.accuracy}%</td>
+                <td>${user.date}</td>
             `;
             tbody.appendChild(tr);
           });

@@ -49,7 +49,7 @@ public class RaceService
             ErrorCount = errorCount
         };
 
-        _db.RaceResults.Add(result);
+        _db.RaceResults.Add(result); // išsaugoma RaceResults lentelėje
 
         var race = await _db.Races.FindAsync(raceId);
         if (race != null && race.Status != "finished")
