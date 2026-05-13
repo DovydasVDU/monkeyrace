@@ -25,31 +25,31 @@ public class Startup
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
 
-        //services.AddDbContext<AppDbContext>(options =>
-        //    options.UseSqlite("Data Source=monkeyracer.db"));
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlite("Data Source=monkeyracer.db"));
 
 
         // Prisijungiame prie SQL Server duomenų bazės.
-        string connectionString = "Server=tcp:db50921.databaseasp.net,1433;Database=db50921;User ID=db50921;Password=4Dw#b!L67a%E;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+        //string connectionString = "Server=tcp:db50921.databaseasp.net,1433;Database=db50921;User ID=db50921;Password=4Dw#b!L67a%E;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True;";
 
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
-                    errorNumbersToAdd: null);
-            }));
+        //services.AddDbContext<AppDbContext>(options =>
+        //    options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+        //    {
+        //        sqlOptions.EnableRetryOnFailure(
+        //            maxRetryCount: 5,
+        //            maxRetryDelay: TimeSpan.FromSeconds(30),
+        //            errorNumbersToAdd: null);
+        //    }));
 
 
         // cookies autentikavimas
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
-                options.LoginPath = "/Auth/Login"; // jei vartotojas nėra prisijungęs, bus peradresuotas į šį URL
-                options.LogoutPath = "/Auth/Logout"; // URL, kuris bus naudojamas atsijungimui
+                options.LoginPath = "/"; // login URL
+                options.LogoutPath = "/Auth/Logout"; // logout URL
 
-                options.AccessDeniedPath = "/Auth/AccessDenied"; // vartotojas neturi teisės pasiekti tam tikrą puslapį
+                options.AccessDeniedPath = "/"; // vartotojas neturi teisės pasiekti tam tikrą puslapį
 
                 //Cookie nustatymai
                 options.Cookie.Name = "MonkeyRacer.Auth";
@@ -86,8 +86,8 @@ public class Startup
         app.UseRouting(); // pasakome, kad naudosime routing'ą, kuris leidžia mums valdyti, kokie URL veda į kokius controller'ius ir jų metodus.
 
         // SVARBU: tvarka būtina
-        app.UseAuthentication();  // ← pirma: kas esi?
-        app.UseAuthorization();   // ← antra: ką gali?
+        app.UseAuthentication();  // pirma: kas esi?
+        app.UseAuthorization();   // antra: ką gali?
 
 
         // pasakome, kad pagrindinis maršrutas būtų HomeController ir jo Index metodas, kuris atidaro pagrindinį puslapį. 
