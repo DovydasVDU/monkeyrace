@@ -30,7 +30,7 @@ public class Startup
 
 
         // Prisijungiame prie SQL Server duomenų bazės.
-        string connectionString = db_key;
+        string connectionString = db_key; // dont worry credentials were changed
 
         services.AddDbContext<AppDbContext>(options =>
            options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
