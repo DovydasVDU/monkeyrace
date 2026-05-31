@@ -19,27 +19,27 @@ public class Startup
     // Joje nurodome, kokius servisus naudosime (ConfigureServices) ir kaip bus tvarkomi užklausos (Configure).
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddControllersWithViews();
-        services.AddSignalR(); // multiplayer websocket
-        services.AddSession();
-        services.AddHttpContextAccessor();
-        services.AddMemoryCache();
+        // services.AddControllersWithViews();
+        // services.AddSignalR(); // multiplayer websocket
+        // services.AddSession();
+        // services.AddHttpContextAccessor();
+        // services.AddMemoryCache();
 
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite("Data Source=monkeyracer.db"));
+        // services.AddDbContext<AppDbContext>(options =>
+        //     options.UseSqlite("Data Source=monkeyracer.db"));
 
 
         // Prisijungiame prie SQL Server duomenų bazės.
-        //string connectionString = "Server=tcp:db50921.databaseasp.net,1433;Database=db50921;User ID=db50921;Password=4Dw#b!L67a%E;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True;";
+        string connectionString = db_key;
 
-        //services.AddDbContext<AppDbContext>(options =>
-        //    options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
-        //    {
-        //        sqlOptions.EnableRetryOnFailure(
-        //            maxRetryCount: 5,
-        //            maxRetryDelay: TimeSpan.FromSeconds(30),
-        //            errorNumbersToAdd: null);
-        //    }));
+        services.AddDbContext<AppDbContext>(options =>
+           options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+           {
+               sqlOptions.EnableRetryOnFailure(
+                   maxRetryCount: 5,
+                   maxRetryDelay: TimeSpan.FromSeconds(30),
+                   errorNumbersToAdd: null);
+           }));
 
 
         // cookies autentikavimas
