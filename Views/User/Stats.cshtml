@@ -17,7 +17,7 @@
     <div class="profile-grid">
         <section class="card profile-hero" aria-labelledby="profile-title">
             <div class="profile-hero-head">
-                <span class="profile-hero-monkey">
+                <span class="profile-hero-monkey" aria-hidden="true">
                     @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F", Level = card?.Level })
                 </span>
                 <div>
@@ -67,7 +67,7 @@
                 @foreach (var (name, color, price) in hats)
                 {
                     <article class="shop-item">
-                        <span class="shop-preview">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = color })</span>
+                        <span class="shop-preview" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = color })</span>
                         <h3>@name</h3>
                         <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
                         <button class="btn btn-s" type="button" disabled>Netrukus</button>
@@ -78,7 +78,7 @@
                 @foreach (var (name, color, price) in furs)
                 {
                     <article class="shop-item">
-                        <span class="shop-preview">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { BodyColor = color, HatColor = "none" })</span>
+                        <span class="shop-preview" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { BodyColor = color, HatColor = "none" })</span>
                         <h3>@name</h3>
                         <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
                         <button class="btn btn-s" type="button" disabled>Netrukus</button>

@@ -1035,7 +1035,7 @@
 /* Solo rezultatų modalas (Play). JS perjungia .visible */
 .results-overlay {
     align-items: center;
-    background: rgba(15, 46, 30, .85);
+    background: var(--overlay);
     display: none;
     inset: 0;
     justify-content: center;

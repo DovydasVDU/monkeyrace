@@ -2,7 +2,7 @@
 
 .modal {
     align-items: center;
-    background: rgba(15, 46, 30, .8);
+    background: var(--overlay);
     display: none;
     inset: 0;
     justify-content: center;

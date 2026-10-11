@@ -31,6 +31,10 @@
     --ink-a18: rgba(18, 53, 36, .18);
     --ink-a60: rgba(18, 53, 36, .60);
     --shade: rgba(0, 0, 0, .28);
+    --cream-a28: rgba(255, 246, 220, .28);
+    --overlay: rgba(15, 46, 30, .85);
+    --glow-leaf: rgba(80, 170, 100, .35);
+    --glow-banana: rgba(255, 201, 60, .10);
 
     --radius-card: 24px;
     --radius-ctl: 16px;
@@ -42,16 +46,6 @@
     --font-display: "Fredoka", "Plus Jakarta Sans", system-ui, sans-serif;
     --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-
-    /* shortcut: seni vardai, kuriuos dar naudoja race/progress/player.css; išimami 6 fazėje */
-    --accent: var(--banana);
-    --surface: var(--bg-deep);
-    --text: var(--text-on-dark);
-    --muted: var(--muted-on-dark);
-    --jungle-dark: var(--ink);
-    --jungle: var(--leaf);
-    --monkey-brown: var(--brown);
-    --correct: var(--leaf-light);
 }
 
 * {
@@ -70,8 +64,8 @@ html {
 
 body {
     background:
-        radial-gradient(900px 600px at 15% -5%, rgba(80, 170, 100, .35), transparent 60%),
-        radial-gradient(800px 600px at 95% 40%, rgba(255, 201, 60, .10), transparent 60%),
+        radial-gradient(900px 600px at 15% -5%, var(--glow-leaf), transparent 60%),
+        radial-gradient(800px 600px at 95% 40%, var(--glow-banana), transparent 60%),
         linear-gradient(var(--cream-a05) 1px, transparent 1px) 0 0 / 44px 44px,
         linear-gradient(90deg, var(--cream-a05) 1px, transparent 1px) 0 0 / 44px 44px,
         var(--bg);
@@ -102,11 +96,6 @@ button, input, select, textarea {
 :focus-visible {
     outline: var(--focus);
     outline-offset: 3px;
-}
-
-.num,
-.tabular {
-    font-variant-numeric: tabular-nums;
 }
 
 .visually-hidden {
@@ -154,7 +143,7 @@ main {
     background: var(--cream-a05);
     border: 2px solid var(--cream-a16);
     border-radius: 14px;
-    color: rgba(255, 246, 220, .28);
+    color: var(--cream-a28);
     display: flex;
     font-family: var(--font-display);
     font-size: calc(var(--s) * .45);
