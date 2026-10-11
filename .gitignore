@@ -3,3 +3,16 @@ bin/
 obj/
 *.user
 *.suo
+
+# Duomenų bazės (kuriamos paleidžiant programą per Migrate())
+*.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Python scraperių aplinka ir rezultatai
+.venv/
+__pycache__/
+cache/
+cache-wikipedia/
+out/
