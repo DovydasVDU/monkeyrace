@@ -972,3 +972,223 @@ main {
     gap: .75rem;
     justify-content: center;
 }
+
+/* ---------- Profilis ir parduotuvė (User/Stats) ---------- */
+.profile-page {
+    display: grid;
+    gap: 1.5rem;
+    margin: 0 auto;
+    max-width: 1200px;
+}
+
+.profile-grid {
+    align-items: start;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+}
+
+.profile-hero,
+.shop {
+    display: grid;
+    gap: 1.25rem;
+    padding: 1.75rem;
+}
+
+.profile-hero-head {
+    align-items: center;
+    display: flex;
+    gap: 1.25rem;
+}
+
+.profile-hero-head > div {
+    display: grid;
+    gap: .4rem;
+    justify-items: start;
+    min-width: 0;
+}
+
+.profile-hero-head h1 {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    overflow-wrap: anywhere;
+}
+
+.profile-hero-monkey {
+    flex: none;
+    height: 96px;
+    width: 96px;
+}
+
+.profile-hero-monkey .monkey-svg,
+.shop-preview .monkey-svg {
+    height: 100%;
+    width: 100%;
+}
+
+.profile-xp {
+    display: grid;
+    gap: .5rem;
+}
+
+.profile-xp-label {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    justify-content: space-between;
+}
+
+.profile-xp-label strong {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+}
+
+.profile-xp-label span {
+    color: var(--ink-a60);
+    font-weight: 700;
+}
+
+.profile-stats {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-stats .result-metric > strong {
+    font-size: 1.9rem;
+}
+
+.result-metric-banana {
+    background: var(--banana-soft);
+}
+
+.shop-head,
+.profile-history h2 {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    justify-content: space-between;
+}
+
+.shop-head h2,
+.profile-history h2 {
+    align-items: center;
+    display: inline-flex;
+    font-size: 1.5rem;
+    gap: .5rem;
+}
+
+.shop-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.shop-item {
+    background: var(--white);
+    border: 2px dashed var(--ink-a60);
+    border-radius: var(--radius-ctl);
+    display: grid;
+    gap: .4rem;
+    justify-items: center;
+    padding: 1rem .75rem;
+    text-align: center;
+}
+
+.shop-item h3 {
+    font-size: 1.05rem;
+}
+
+.shop-item .btn {
+    min-height: 44px;
+    padding: .4rem .9rem;
+    width: 100%;
+}
+
+.shop-preview {
+    height: 72px;
+    width: 72px;
+}
+
+.shop-price {
+    align-items: center;
+    display: inline-flex;
+    font-weight: 800;
+    gap: .3rem;
+}
+
+.shop-track {
+    align-self: center;
+    background: var(--cream-2);
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    height: 30px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.shop-track span {
+    display: block;
+    height: 100%;
+    width: 65%;
+}
+
+.track-classic span { background: var(--leaf-light); }
+.track-leaf span { background: var(--leaf); }
+.track-banana span { background: var(--banana); }
+
+.shop-note {
+    align-items: center;
+    color: var(--ink-a60);
+    display: flex;
+    font-size: .9rem;
+    font-weight: 700;
+    gap: .4rem;
+}
+
+.profile-history {
+    display: grid;
+    gap: 1rem;
+    padding: 1.75rem;
+}
+
+.history-table .lb-row {
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+}
+
+.profile-history .lb-empty a {
+    color: var(--leaf);
+    font-weight: 800;
+}
+
+@media (max-width: 900px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .profile-hero,
+    .shop,
+    .profile-history {
+        padding: 1.1rem;
+    }
+
+    .profile-hero-monkey {
+        height: 72px;
+        width: 72px;
+    }
+
+    .shop-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .history-table .lb-row {
+        grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+    }
+
+    /* istorijoje data būtina, Top10 ją slepia */
+    .history-table .lb-date {
+        display: inline;
+    }
+}

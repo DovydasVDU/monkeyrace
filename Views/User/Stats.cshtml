@@ -1,189 +1,143 @@
-﻿@model UserProfileViewModel
-@using Microsoft.AspNetCore.Http
+@model UserProfileViewModel
+@inject RaceService RaceService
 
-@{ ViewData["Title"] = "Stats - Monkeyrace"; }
+@{
+    ViewData["Title"] = "Profilis - MonkeyRace";
+    // lygis, XP ir bananai – tas pats šaltinis kaip navbar profilio kortelėje
+    var userId = PlayerIdentity.GetUserId(Context);
+    var card = userId == null ? null : await RaceService.GetPlayerCardAsync(userId.Value);
+    var xpPercent = card == null ? 0 : (int)Math.Round(card.LevelProgress * 100);
+    // shortcut: statinės prekės be backend'o, kol parduotuvė neveikia – pridėti modelį, kai bus pirkimai
+    var hats = new[] { ("Žalia kepurė", "#2E8B4F", 0), ("Bananų kepurė", "#FFC93C", 150), ("Raudona kepurė", "#C93A3A", 300) };
+    var furs = new[] { ("Ruda", "#8B5E3C", 0), ("Auksinė", "#B98300", 400), ("Tamsi", "#5E3B22", 600) };
+    var tracks = new[] { ("Klasikinis", "track-classic", 0), ("Lapų", "track-leaf", 250), ("Bananų", "track-banana", 500) };
+}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MonkeyRacer - Profile</title>
-    <link rel="stylesheet" href="/css/login.css">
-    <style>
-
-        main {
-            padding-top: 10rem;
-        }
-
-        /* PROFILE */
-        .profile-container {
-            max-width: 1100px;
-            margin: 2.5rem auto;
-            padding: 0 2rem 3rem;
-        }
-
-        .hero {
-            background: var(--surface);
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-        }
-
-            .hero h1 {
-                color: var(--accent);
-                font-size: 1.6rem;
-                letter-spacing: .08em;
-            }
-
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.2rem;
-        }
-
-        .stat-card {
-            background: #111827;
-            border: 1px solid #2a2a3f;
-            border-radius: 10px;
-            padding: 1.2rem;
-        }
-
-        .stat-title {
-            color: var(--muted);
-            font-size: .8rem;
-            letter-spacing: .12em;
-        }
-
-        .stat-value {
-            font-size: 1.6rem;
-            margin-top: .4rem;
-            color: var(--text);
-        }
-
-        .section {
-            margin-top: 2rem;
-            display: grid;
-            grid-template-columns: 1.2fr 1.8fr;
-            gap: 1.5rem;
-        }
-
-        .panel {
-            background: var(--surface);
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 1.6rem;
-        }
-
-            .panel h2 {
-                color: var(--accent);
-                font-size: 1.1rem;
-                margin-bottom: 1rem;
-                letter-spacing: .1em;
-            }
-
-        .intro {
-            color: var(--text);
-            line-height: 1.6;
-        }
-
-        .past-races {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-            .past-races th, .past-races td {
-                text-align: left;
-                padding: .7rem .5rem;
-                border-bottom: 1px solid #2a2a3f;
-                color: var(--text);
-                font-size: .9rem;
-            }
-
-            .past-races th {
-                color: var(--muted);
-                font-weight: normal;
-                letter-spacing: .08em;
-                font-size: .75rem;
-            }
-        /**/
-        @@media (max-width: 900px) {
-            .stats-row {
-                grid-template-columns: 1fr;
-            }
-
-            .section {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="main-content">
-        <div class="profile-container">
-            <div class="hero">
-                <h1>Žaidėjo profilis</h1>
-
-                <div class="stats-row">
-                    <div class="stat-card">
-                        <div class="stat-title">VARTOTOJAS</div>
-                        <div class="stat-value">@Model.Username</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-title">VIDUTINIS WPM</div>
-                        <div class="stat-value">@Model.AverageWpm</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-title">VIDUTINIS TIKSLUMAS</div>
-                        <div class="stat-value">@Model.AverageAccuracy.ToString("0.0")%</div>
-                    </div>
+<div class="profile-page">
+    <div class="profile-grid">
+        <section class="card profile-hero" aria-labelledby="profile-title">
+            <div class="profile-hero-head">
+                <span class="profile-hero-monkey">
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F", Level = card?.Level })
+                </span>
+                <div>
+                    <p class="eyebrow">Žaidėjo profilis</p>
+                    <h1 id="profile-title">@Model.Username</h1>
                 </div>
             </div>
 
-            <div class="section">
-                <div class="panel">
-                    <h2>APIE VARTOTOJĄ</h2>
-                    <p class="intro">
-                        <strong>@Model.Username</strong> rimtai žiūri į spausdinimo greitį.
-                        Su vidutiniu greičiu <strong>@Model.AverageWpm WPM</strong> ir
-                        tikslumu apie <strong>@Model.AverageAccuracy.ToString("0.0")%</strong>,
-                        pažanga kalba pati už save. Išlaikykite dėmesį, išlaikykite ritmą.
-                    </p>
+            @if (card != null)
+            {
+                <div class="profile-xp">
+                    <div class="profile-xp-label">
+                        <strong>Lygis @card.Level</strong>
+                        <span>@(card.XpToNext == null ? "Maksimalus lygis" : $"Iki {card.Level + 1} lygio: {card.XpToNext} XP")</span>
+                    </div>
+                    <span class="xp-track" role="progressbar" aria-label="XP iki kito lygio"
+                          aria-valuemin="0" aria-valuemax="100" aria-valuenow="@xpPercent">
+                        <span style="width:@(xpPercent)%"></span>
+                    </span>
                 </div>
+            }
 
-                <div class="panel">
-                    <h2>Spausdinimai</h2>
-                    <table class="past-races">
-                        <thead>
-                            <tr>
-                                <th>DATA</th>
-                                <th>ŽODŽIAI PER MINUTĘ</th>
-                                <th>TIKSLUMAS</th>
-                                <th>KLAIDOS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var race in Model.PastRaces)
-                            {
-                                <tr>
-                                    <td>@race.CompletedAt.ToString("yyyy-MM-dd")</td>
-                                    <td>@race.Wpm</td>
-                                    <td>@race.Accuracy.ToString("0.0")%</td>
-                                    <td>@race.ErrorCount</td>
-
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+            <div class="profile-stats">
+                <div class="result-metric"><span>Vidutinis WPM</span><strong>@Model.AverageWpm</strong></div>
+                <div class="result-metric"><span>Tikslumas</span><strong>@Model.AverageAccuracy.ToString("0.0")%</strong></div>
+                <div class="result-metric"><span>Geriausias WPM</span><strong>@(card?.BestWpm ?? 0)</strong></div>
+                <div class="result-metric result-metric-banana">
+                    <span>Bananai</span>
+                    <strong><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @(card?.Bananas ?? 0)</strong>
                 </div>
             </div>
-        </div>
-        
+        </section>
+
+        <section class="card shop" id="shop" aria-labelledby="shop-title">
+            <div class="shop-head">
+                <h2 id="shop-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-shop"></use></svg>Parduotuvė</h2>
+                <span class="pill">Netrukus</span>
+            </div>
+
+            <div class="tm-group" role="group" aria-label="Prekių kategorija">
+                <button class="tm" type="button" aria-pressed="true" data-shop-tab="hats">Kepurės</button>
+                <button class="tm" type="button" aria-pressed="false" data-shop-tab="furs">Spalvos</button>
+                <button class="tm" type="button" aria-pressed="false" data-shop-tab="tracks">Takeliai</button>
+            </div>
+
+            <div class="shop-grid" data-shop-panel="hats">
+                @foreach (var (name, color, price) in hats)
+                {
+                    <article class="shop-item">
+                        <span class="shop-preview">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = color })</span>
+                        <h3>@name</h3>
+                        <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
+                        <button class="btn btn-s" type="button" disabled>Netrukus</button>
+                    </article>
+                }
+            </div>
+            <div class="shop-grid" data-shop-panel="furs" hidden>
+                @foreach (var (name, color, price) in furs)
+                {
+                    <article class="shop-item">
+                        <span class="shop-preview">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { BodyColor = color, HatColor = "none" })</span>
+                        <h3>@name</h3>
+                        <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
+                        <button class="btn btn-s" type="button" disabled>Netrukus</button>
+                    </article>
+                }
+            </div>
+            <div class="shop-grid" data-shop-panel="tracks" hidden>
+                @foreach (var (name, cssClass, price) in tracks)
+                {
+                    <article class="shop-item">
+                        <span class="shop-preview shop-track @cssClass" aria-hidden="true"><span></span></span>
+                        <h3>@name</h3>
+                        <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
+                        <button class="btn btn-s" type="button" disabled>Netrukus</button>
+                    </article>
+                }
+            </div>
+
+            <p class="shop-note">
+                <svg class="icon" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                Parduotuvė dar ruošiama. Rink bananus lenktynėse – jie išliks.
+            </p>
+        </section>
     </div>
 
+    <section class="card profile-history" aria-labelledby="history-title">
+        <h2 id="history-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-chart"></use></svg>Paskutinės lenktynės</h2>
 
-</body>
-</html>
+        @if (Model.PastRaces.Count == 0)
+        {
+            <p class="lb-empty">Dar nesudalyvavai nė vienose lenktynėse. <a href="/race/quick">Žaisk dabar!</a></p>
+        }
+        else
+        {
+            <div class="history-table" role="table" aria-label="Paskutinės lenktynės">
+                <div class="lb-row lb-header" role="row">
+                    <span role="columnheader">Data</span>
+                    <span role="columnheader">WPM</span>
+                    <span role="columnheader">Tikslumas</span>
+                    <span role="columnheader">Klaidos</span>
+                </div>
+                @foreach (var race in Model.PastRaces)
+                {
+                    <div class="lb-row" role="row">
+                        <span class="lb-date" role="cell">@race.CompletedAt.ToString("yyyy-MM-dd")</span>
+                        <span class="lb-num" role="cell"><strong>@race.Wpm</strong></span>
+                        <span role="cell">@race.Accuracy.ToString("0.0")%</span>
+                        <span role="cell">@race.ErrorCount</span>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+<script>
+    // Parduotuvės kategorijų perjungimas (tik rodymas, pirkimų dar nėra)
+    document.querySelectorAll('[data-shop-tab]').forEach(tab => tab.addEventListener('click', () => {
+        document.querySelectorAll('[data-shop-tab]').forEach(t => t.setAttribute('aria-pressed', String(t === tab)));
+        document.querySelectorAll('[data-shop-panel]').forEach(p => p.hidden = p.dataset.shopPanel !== tab.dataset.shopTab);
+    }));
+</script>
