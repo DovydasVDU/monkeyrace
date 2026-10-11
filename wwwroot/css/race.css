@@ -342,6 +342,37 @@ body {
         text-decoration: none;
     }
 
+    /* „Išeiti“ atskiroje eilutėje kairėje, po juo antraštė ir statistika */
+    .race-topbar {
+        align-items: end;
+        display: grid;
+        gap: .5rem 1rem;
+        grid-template-columns: 1fr auto;
+    }
+
+    .race-topbar #leave-button {
+        align-items: center;
+        display: inline-flex;
+        gap: .35rem;
+        grid-column: 1 / -1;
+        justify-self: start;
+        margin: 0 0 .5rem;
+    }
+
+    .race-topbar #leave-button:hover {
+        color: var(--accent);
+    }
+
+    .ui-icon {
+        fill: none;
+        height: 1.1rem;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+        width: 1.1rem;
+    }
+
     .race-header {
         align-items: center;
         display: flex;
@@ -377,12 +408,24 @@ body {
         margin-left: .25rem;
     }
 
+    /* plūduriuoja viršuje dešinėje, kad nestumtų teksto žemyn */
     .countdown {
+        background: var(--surface);
+        border: 2px solid var(--accent);
+        border-radius: 999px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
         color: var(--accent);
-        font-size: 5rem;
+        font-size: 2.25rem;
         font-weight: 700;
-        padding: 1.5rem;
+        line-height: 1;
+        min-width: 4.5rem;
+        padding: .6rem 1.2rem;
+        pointer-events: none;
+        position: fixed;
+        right: max(16px, 4vw);
         text-align: center;
+        top: 88px;
+        z-index: 50;
     }
 
     .players-track {
@@ -418,8 +461,18 @@ body {
         font-size: 1.4rem;
     }
 
+    /* tamsus ženkliukas, kad vardas ir WPM matytųsi ir ant geltonos progreso juostos */
+    .player-name,
+    .player-wpm {
+        background: rgba(21, 23, 44, .78);
+        border-radius: 999px;
+        padding: .15rem .55rem;
+    }
+
     .player-name {
+        color: #fff;
         font-weight: 700;
+        width: auto;
     }
 
     .bot-badge {
@@ -449,7 +502,7 @@ body {
     }
 
     .player-wpm {
-        color: #1a1a2e;
+        color: #fff;
         font-size: .75rem;
         font-weight: 700;
         margin-left: auto;
@@ -595,6 +648,10 @@ body {
         .race-stats {
             flex-wrap: wrap;
         }
+
+        .race-topbar {
+            grid-template-columns: 1fr;
+        }
     }
 /* Result analysis */
 .race-history,
@@ -610,26 +667,31 @@ body {
 
 .leader-bar {
     display: flex;
+    margin: .75rem 0;
     min-height: 2.5rem;
     overflow: hidden;
     border-radius: 10px;
-    background: #eee;
+    background: rgba(0, 0, 0, .25);
 }
 
 .leader-bar span {
-    display: grid;
-    min-width: 2rem;
-    place-items: center;
+    display: block;
+    line-height: 2rem;
+    min-width: 0;
+    text-align: center;
     padding: .25rem;
     overflow: hidden;
-    color: #fff;
-    background: var(--jungle-dark, #1B4D2E);
+    /* geltona, ne žalia: žalia susiliedavo su kortelės fonu (--surface) */
+    color: #1a1a2e;
+    background: var(--accent);
     font-size: .75rem;
+    font-weight: 700;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .leader-bar span:nth-child(2n) {
+    color: #fff;
     background: var(--monkey-brown, #8D5A2B);
 }
 

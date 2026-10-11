@@ -561,11 +561,11 @@ public sealed class MatchmakingService
             {
                 await _hub.Clients.Group(room.GroupName).SendAsync("Progress",
                     ToProgressState(room, bot, bot.CorrectChars,
-                        bot.BotPlan.Accuracy));
+                        bot.BotPlan.Accuracy * 100));
             }
             foreach (var bot in botFinished.Where(bot => !bot.IsFinished).ToList())
                 await FinishPlayerAsync(room, bot, (int)Math.Round(bot.TargetWpm),
-                    bot.BotPlan.Accuracy, bot.BotPlan.FinishMs / 1000d);
+                    bot.BotPlan.Accuracy * 100, bot.BotPlan.FinishMs / 1000d);
         }
     }
 
@@ -663,7 +663,7 @@ public sealed class MatchmakingService
             if (bot.IsFinished)
                 continue;
             await FinishPlayerAsync(room, bot, (int)Math.Round(bot.TargetWpm),
-                bot.BotPlan?.Accuracy ?? .95,
+                (bot.BotPlan?.Accuracy ?? .95) * 100,
                 (bot.BotPlan?.FinishMs ?? 0) / 1000d);
         }
         await FinishRoomAsync(room);

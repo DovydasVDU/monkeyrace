@@ -291,7 +291,10 @@ function prepareCountdown(startAt, serverNowUtc, text) {
     countdownTimer = setInterval(() => {
         const remaining = Math.ceil((startAtUtc - serverNow()) / 1000);
         countdown.textContent = remaining > 0 ? remaining : "GO!";
-        if (remaining <= 0) clearInterval(countdownTimer);
+        if (remaining <= 0) {
+            clearInterval(countdownTimer);
+            setTimeout(() => countdown.hidden = true, 1000);
+        }
     }, 50);
 }
 
@@ -309,6 +312,8 @@ function prepareRace(startAt, serverNowUtc, text) {
     input.readOnly = false;
     input.disabled = false;
     input.placeholder = "Pradėk spausdinti...";
+    document.getElementById("race-title").textContent = "Lenktynės vyksta!";
+    setStatus("Rašyk kuo greičiau!", `${Object.keys(players).length} žaidėjai trasoje`);
     focusRaceInput();
     clearInterval(raceTimer);
     raceTimer = setInterval(updateTimer, 100);
@@ -334,6 +339,7 @@ function showPersonalResult(data) {
     finished = true;
     input.disabled = true;
     clearInterval(raceTimer);
+    document.getElementById("wpm-display").textContent = data.wpm;
     document.getElementById("race-result").hidden = false;
     document.getElementById("personal-result").hidden = false;
     document.getElementById("personal-place").textContent = `#${data.place}`;
@@ -408,6 +414,8 @@ connection.on("Progress", data => {
 connection.on("PlayerFinished", data => {
     const track = document.getElementById(`track-${cssId(data.playerKey)}`);
     if (track) {
+        // paskutinis Progress gali būti dar ne 100 %
+        track.style.setProperty("--progress", "100%");
         const name = track.querySelector(".player-name");
         if (name) name.innerHTML =
             `${escapeHtml(data.username)} · #${data.place} ${botBadge(data)}`;
@@ -420,6 +428,7 @@ connection.on("RaceFinished", data => {
     clearInterval(raceTimer);
     document.getElementById("race-result").hidden = false;
     document.getElementById("race-title").textContent = "Lenktynės baigtos!";
+    setStatus("Rezultatai žemiau", "");
     document.getElementById("final-results").hidden = false;
     const hasBots = data.players.some(player => player.isBot);
     document.getElementById("bot-explanation").hidden = !hasBots;
@@ -453,7 +462,8 @@ input.addEventListener("input", event => {
     if (!raceStarted || finished) return;
     let typed = input.value;
     const ranges = getTargetWordRanges();
-    const activeIndex = getActiveWordIndex(typed);
+    // ką tik įvestas tarpas priklauso dar ankstesniam žodžiui
+    const activeIndex = getActiveWordIndex(typed.endsWith(" ") ? typed.slice(0, -1) : typed);
     const activeRange = ranges[Math.max(0, activeIndex)];
     if (activeRange && !typed.endsWith(" ")) {
         const wordStart = activeRange.start;
@@ -574,8 +584,11 @@ function getTargetWordRanges() {
 
 function updateTimer() {
     if (!raceStarted || !startAtUtc) return;
-    document.getElementById("timer-display").textContent =
-        Math.max(0, Math.floor((serverNow() - startAtUtc) / 1000));
+    const elapsedMs = Math.max(0, serverNow() - startAtUtc);
+    document.getElementById("timer-display").textContent = Math.floor(elapsedMs / 1000);
+    // ta pati formulė kaip serveryje (MatchmakingService): teisingi simboliai / 5 per minutę
+    document.getElementById("wpm-display").textContent = elapsedMs < 1000 ? 0 :
+        Math.round(getCorrectChars(input.value) / 5 / (elapsedMs / 60000));
 }
 
 function updateCharacters(typed) {
@@ -599,21 +612,6 @@ function updateCharacters(typed) {
             expected.textContent = state.expected;
             element.appendChild(expected);
         }
-
-        function getActiveWordIndex(typed) {
-            const completedWords = (typed.match(/ /g) || []).length;
-            return Math.min(completedWords, Math.max(0, getTargetWordRanges().length - 1));
-        }
-
-        function flashWordError(index) {
-            const word = document.querySelector(
-                `#text-display .word[data-word-index="${index}"]`);
-            if (!word) return;
-            word.classList.remove("word-input-error");
-            void word.offsetWidth;
-            word.classList.add("word-input-error");
-            setTimeout(() => word.classList.remove("word-input-error"), 180);
-        }
         if (index === typedWord.length && index < range.word.length)
             element.classList.add("current");
     });
@@ -624,6 +622,21 @@ function updateCharacters(typed) {
         extra.textContent = item.ch;
         wordElement.appendChild(extra);
     });
+}
+
+function getActiveWordIndex(typed) {
+    const completedWords = (typed.match(/ /g) || []).length;
+    return Math.min(completedWords, Math.max(0, getTargetWordRanges().length - 1));
+}
+
+function flashWordError(index) {
+    const word = document.querySelector(
+        `#text-display .word[data-word-index="${index}"]`);
+    if (!word) return;
+    word.classList.remove("word-input-error");
+    void word.offsetWidth;
+    word.classList.add("word-input-error");
+    setTimeout(() => word.classList.remove("word-input-error"), 180);
 }
 
 function renderText() {
@@ -666,10 +679,7 @@ function renderRaceHistory() {
     const total = Math.max(1, raceAnalysis.totalMs);
     bar.innerHTML = raceAnalysis.leaderSegments.map(segment => `
         <span style="width:${(segment.toMs - segment.fromMs) * 100 / total}%"
-              title="${escapeHtml(names[segment.playerId] || segment.playerId)}">
-            ${escapeHtml(names[segment.playerId] || segment.playerId)}
-            ${botBadge(timelinePlayers[segment.playerId])}
-        </span>`).join("");
+              title="${escapeHtml(names[segment.playerId] || segment.playerId)}">${escapeHtml(names[segment.playerId] || segment.playerId)}</span>`).join("");
     status.textContent = "Lenktynių istorija paruošta";
     document.getElementById("result-overtakes-list").innerHTML =
         raceAnalysis.overtakes.length
@@ -735,11 +745,10 @@ function updateReplayFrame() {
 function renderWpmChart() {
     const player = raceTimeline.players.find(item => item.id === PLAYER_KEY);
     if (!player) return;
-    const totalTicks = Math.max(...raceTimeline.players.map(item =>
-        item.series.length), player.series.length, 1);
     const lastValue = player.series[player.series.length - 1] || 0;
-    const fullSeries = Array.from({ length: totalTicks }, (_, index) =>
-        player.series[index] === undefined ? lastValue : player.series[index]);
+    // grafikas baigiasi mano finiše, kitaip laukimas kitų žaidėjų numuštų greitį ir vidurkį iki 0
+    const totalTicks = Math.max(1, player.series.indexOf(lastValue) + 1);
+    const fullSeries = player.series.length ? player.series.slice(0, totalTicks) : [0];
     const points = fullSeries.map((value, index) => {
         const from = Math.max(0, index - 12);
         const elapsed = (index - from) * 250 / 60000;
@@ -796,7 +805,7 @@ function renderWpmChart() {
     document.getElementById("result-wpm-average").textContent =
         `${Math.round(average)} WPM`;
     document.getElementById("result-wpm-high").textContent =
-        `${Math.round(max)} WPM`;
+        `${Math.round(peak)} WPM`;
 }
 
 function renderWordErrors() {
