@@ -13,6 +13,9 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Unikalus slapyvardis DB lygiu: AnyAsync patikra Register metode nepadeda, jei du registruojasi vienu metu
+        modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+
         // Seed data – pradiniai duomenys. Tekstus padarome iškart, kad nereiktų jų suvedinėti ranka
         modelBuilder.Entity<TextSnippet>().HasData(
             new TextSnippet { Id = 1, Content = "Greitas ruda lapė šokinėja per tingų šunį", WordCount = 8 },

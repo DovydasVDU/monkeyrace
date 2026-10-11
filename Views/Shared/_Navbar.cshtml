@@ -11,7 +11,7 @@
         </div>
 
         <nav class="desktop-nav" aria-label="Pagrindinė navigacija">
-            <a href="/Race/MultiPlay">Žaisti</a>
+            <a href="/race/quick">Žaisti</a>
             <a href="/#top10-body">Lyderiai</a>
             <a href="@(isAuthenticated ? "/User/Stats" : "#")"
                class="@(isAuthenticated ? "" : "nav-disabled")">Profilis</a>
@@ -93,7 +93,7 @@
 
     </header>
     <nav class="mobile-tabs" aria-label="Mobilioji navigacija">
-        <a href="/Race/MultiPlay"><span>🏁</span>Žaisti</a>
+        <a href="/race/quick"><span>🏁</span>Žaisti</a>
         <a href="/#top10-body"><span>🏆</span>Lyderiai</a>
         <a href="@(isAuthenticated ? "/User/Stats" : "#")"
            class="@(isAuthenticated ? "" : "nav-disabled")"><span>🐒</span>Profilis</a>
@@ -121,12 +121,12 @@
 
 
 <script> 
-    const username = "@username";
+    const username = @Json.Serialize(username);
 
     async function loadMyStats() {
         if (!username) return;
         try {
-          const res = await fetch(`/api/stats/${username}`);
+          const res = await fetch(`/api/stats/${encodeURIComponent(username)}`);
           const data = await res.json();
           document.getElementById('quick-stats').innerHTML =
             `<span>Greitis (PB): <b>${data.bestWpm} WPM</b></span>

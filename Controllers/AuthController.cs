@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 
@@ -27,6 +28,10 @@ public class AuthController : Controller
     {
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password)) // tikrinam, ar duomenys nėra tušti
             return BadRequest(); // http 400  - failed to load request
+
+        // Slapyvardis rodomas lentelėse, todėl leidžiame tik raides, skaičius ir _ (apsauga nuo HTML/JS įterpimo)
+        if (!Regex.IsMatch(username, @"^[\p{L}\p{N}_]{3,20}$"))
+            return BadRequest(new { message = "Slapyvardis: 3–20 raidžių, skaičių arba _" });
 
         var exists = await _db.Users.AnyAsync(u => u.Username == username);
 

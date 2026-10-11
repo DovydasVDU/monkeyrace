@@ -36,8 +36,6 @@ public class UserController : Controller
 
         var results = await _db.RaceResults // ištraukiame iš duomenų bazės informaciją apie user pagal ID
             .Where(r => r.UserId == userId)
-            .Include(r => r.Race)
-                .ThenInclude(r => r.TextSnippet)
             .OrderByDescending(r => r.CompletedAt)
             .ToListAsync();
 

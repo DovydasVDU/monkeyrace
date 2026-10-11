@@ -260,6 +260,10 @@
         sessionStorage.setItem('username', username);
         window.location.href = `/race/quick?username=${encodeURIComponent(username)}`;
       }
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+      }
       async function loadTop10() {
         try {
           const res = await fetch('/api/stats/top10/');
@@ -273,7 +277,7 @@
             if (index === 2) tr.classList.add('rank-3');
             tr.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${user.username}</td>
+                <td>${escapeHtml(user.username)}</td>
                 <td>${user.wpm}</td>
                 <td>${user.accuracy}%</td>
                 <td>${user.date}</td>
