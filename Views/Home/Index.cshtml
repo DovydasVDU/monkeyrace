@@ -1,313 +1,114 @@
-﻿@using Microsoft.AspNetCore.Http
 @using System.Security.Claims
-@inject RaceService RaceService
-@{ var username = User.FindFirstValue(ClaimTypes.Name); var isGuest = !User.Identity.IsAuthenticated; }
 @{
-    var userId = PlayerIdentity.GetUserId(Context);
-    var card = userId == null ? null : await RaceService.GetPlayerCardAsync(userId.Value);
-    var xpPercent = card == null ? 0 : (int)Math.Round(card.LevelProgress * 100);
+    ViewData["Title"] = "MonkeyRace";
+    var currentUser = User.FindFirstValue(ClaimTypes.Name);
 }
-@{ ViewData["Title"] = "MonkeyRace"; }
-<!DOCTYPE html>
-<html>
 
-<head>
-    <title>MonkeyRacer</title>
-
-    <link rel="stylesheet" href="/css/site.css">
-    <link rel="stylesheet" href="/css/login.css">
-    <link rel="stylesheet" href="/css/race.css">
-
-    <style>
-        /* ---------------- HOME ---------------- */
-        .home-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 60vh;
-            gap: 4rem;
-            margin-top: 80px;
-        }
-
-        /* GAME CARDS */
-        .card {
-            display: flex;
-            flex-direction:column;
-            justify-content:center;
-            background: var(--surface);
-            border: 1px solid #333;
-            border-radius: 12px;
-            width: 420px;
-            height: 400px;
-            padding: 2.5rem;
-            text-align: center;
-            transition: transform .2s, box-shadow .2s;
-            cursor: pointer;
-        }
-
-            .card:hover {
-                transform: translateY(-6px);
-                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-            }
-
-            .card h2 {
-                color: var(--accent);
-                font-size: 1.1rem;
-                letter-spacing: .15em;
-                margin-bottom: 2rem;
-            }
-
-            .card p {
-                color: var(--muted);
-                font-size: .85rem;
-                margin-bottom: 1.5rem;
-            }
-
-        .card-input {
-            width: 100%;
-            margin-bottom: .8rem;
-            padding: .6rem;
-            background: #111;
-            border: 1px solid #333;
-            color: white;
-            border-radius: 4px;
-            font-family: inherit;
-            text-align: center;
-        }
-
-
-        .leaderboard-container {
-            width: 600px;
-            margin: auto;
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid #333;
-        }
-
-            .leaderboard-container h3 {
-                text-align: center;
-                color: var(--accent);
-                margin-bottom: 1rem;
-                letter-spacing: .1em;
-            }
-
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: .9rem;
-        }
-
-            .leaderboard-table th,
-            .leaderboard-table td {
-                padding: .6rem;
-                text-align: center;
-                border-bottom: 1px solid #2a2a2a;
-            }
-
-            .leaderboard-table tr:hover {
-                background: rgba(255, 255, 255, 0.03);
-            }
-
-        .rank-1 {
-            color: gold;
-        }
-
-        .rank-2 {
-            color: silver;
-        }
-
-        .rank-3 {
-            color: #cd7f32;
-        }
-
-        .main-layout {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* kad kortelės būtų vienoje eilėje */
-        .home-container {
-            display: flex;
-            justify-content: center;
-            gap: 4rem;
-            margin-top: 80px;
-        }
-
-        .icon-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.5rem;
-            border-radius: 8px; /* makes it look like a nice square/circle */
-        }
-    </style>
-
-</head>
-
-<body>
-    @await Html.PartialAsync("_Navbar")
-
-    <!-- MAIN -->
-    <div class="main-layout">
-        <section class="home-hero">
-            <div class="hero-monkey">
-                @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "idle" })
-            </div>
-            <div class="hero-copy">
-                <p class="eyebrow">LIETUVIŠKOS TEKSTO LENKTYNĖS</p>
-                <h1>Lenktyniauk. Spausdink. <span>Užkariauk džiungles.</span></h1>
-                <p>MonkeyRace sujungia greitą spausdinimą, varžovus ir smagias beždžionėlių lenktynes.</p>
-                <button class="btn btn-primary hero-play" onclick="startMatchmaking()">ŽAISTI</button>
-            </div>
-        </section>
-
-        <section class="player-card">
-            <div class="player-card-monkey">
-                @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "idle", HatColor = "#2E7D32", Level = card?.Level })
-            </div>
-            <div class="player-card-info">
-                <p class="eyebrow">TAVO LENKTYNININKAS</p>
-                <h2>@(username ?? "Svečias")</h2>
-                @if (card == null)
-                {
-                    <p class="guest-copy">Prisijunk, kad kauptum XP, lygius ir bananus.</p>
-                }
-                else
-                {
-                    <p class="guest-copy">@(card.XpToNext == null ? "Maksimalus lygis!" : $"Iki {card.Level + 1} lygio: {card.XpToNext} XP")</p>
-                }
-                <div class="xp-track" role="progressbar" aria-label="XP iki kito lygio"
-                     aria-valuemin="0" aria-valuemax="100" aria-valuenow="@xpPercent">
-                    <span style="width:@(xpPercent)%"></span>
-                </div>
-                <div class="player-meta">
-                    <span>Lygis @(card?.Level.ToString() ?? "—")</span>
-                    <span><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @(card?.Bananas.ToString() ?? "—")<span class="visually-hidden"> bananų</span></span>
-                </div>
-            </div>
-        </section>
-
-        <div class="home-container">
-
-            <!-- SOLO TEST -->
-
-            <div class="card mode-card" onclick="startSolo()">
-
-                <span class="mode-icon">🎯</span>
-                <h2>SOLO</h2>
-
-                <p>Treniruok savo spausdinimo greitį ir tikslumą.</p>
-
-                <button class="btn">Pradėti</button>
-
-            </div>
-
-            <!-- ONLINE RACE -->
-
-            <div class="card mode-card">
-
-                <span class="mode-icon">🏁</span>
-                <h2>GREITOS LENKTYNĖS</h2>
-
-                @if (username != null)
-                {
-    <p style="margin-bottom:.8rem;">Žaidžiama kaip <span style="color:var(--accent)">@username</span></p>
-                    <input type="hidden" id="username-input" value="@username" /> }
-                else
-                {
-    <input id="username-input" class="card-input" placeholder="Jūsų vardas (neprivaloma)" maxlength="20" />}
-
-                <p style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">
-                    Sistema automatiškai suras 2–4 panašiu metu žaidžiančius varžovus.
-                </p>
-                <button class="btn" onclick="startMatchmaking()">Ieškoti varžovų</button>
-
-            </div>
-
-            <div class="card mode-card mode-disabled">
-                <span class="mode-icon">👥</span>
-                <h2>KAMBARYS SU DRAUGAIS</h2>
-                <p>Privatūs kambariai grįš kitame MonkeyRace etape.</p>
-                <button class="btn" disabled>Netrukus</button>
-            </div>
-
-            <div class="card mode-card mode-disabled">
-                <span class="mode-icon">🌴</span>
-                <h2>DAILY / TIME ATTACK</h2>
-                <p>Netrukus: kasdieniai iššūkiai ir lenktynės su laikrodžiu.</p>
-                <button class="btn" disabled>Netrukus</button>
-            </div>
-
+<div class="home">
+    <section class="home-hero">
+        <p class="eyebrow">Spausdinimo lenktynės lietuvių kalba</p>
+        <h1>Lenktyniauk su kitais ir treniruok rašymo greitį</h1>
+        <p class="home-lead">Rašyk lietuviškus tekstus, varžykis realiu laiku, rink XP ir bananus.</p>
+        <div class="home-hero-row">
+            <span class="chip"><svg class="icon" aria-hidden="true"><use href="#icon-users"></use></svg>2–4 žaidėjai</span>
+            <span class="chip"><svg class="icon" aria-hidden="true"><use href="#icon-target"></use></svg>Lygis pagal tave</span>
+            <a class="btn btn-g" href="/Race/Play">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg>Solo treniruotė
+            </a>
         </div>
-    </div>
-    <div class="leaderboard-container">
+    </section>
 
-        <h3>Top 10 Žaidėjų</h3>
+    <a class="play-card" href="/race/quick">
+        <div class="play-card-copy">
+            <span class="play-card-tag">Daugelio žaidėjų režimas</span>
+            <h2>Žaisti internetu</h2>
+            <p>Sistema per kelias sekundes suras 2–4 panašaus lygio varžovus. Kas pirmas finišuos be klaidų, laimės.</p>
+        </div>
+        <div class="play-card-side">
+            <div class="play-card-art" aria-hidden="true">
+                <span class="play-card-monkey">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F", Mood = "run" })</span>
+                <span class="play-card-banana">@await Html.PartialAsync("_Banana")</span>
+            </div>
+            <span class="play-card-btn">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Žaisti
+            </span>
+        </div>
+    </a>
 
-        <table class="leaderboard-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Žaidėjas</th>
-                    <th>Žodžiai per minutę</th>
-                    <th>Tikslumas</th>
-                    <th>Data</th>
-                </tr>
-            </thead>
-            <tbody id="top10-body">
-            </tbody>
-        </table>
+    <section class="home-section" aria-labelledby="modes-title">
+        <h2 id="modes-title" class="section-title">Kiti režimai</h2>
+        <div class="mode-grid">
+            <article class="card mode-card">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg></span>
+                <h3>Solo treniruotė</h3>
+                <p>Treniruok greitį ir tikslumą savo tempu, be varžovų.</p>
+                <a class="btn btn-p" href="/Race/Play">Pradėti</a>
+            </article>
 
-    </div>
+            <article class="card mode-card">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg></span>
+                <h3>Dažniausi žodžiai</h3>
+                <p>Atsitiktiniai žodžiai iš 1000 dažniausių lietuviškų. Rašyk, kol baigsis laikas.</p>
+                <div class="tm-group" role="group" aria-label="Trukmė">
+                    <button class="tm" type="button" disabled>15 s</button>
+                    <button class="tm on" type="button" disabled>30 s</button>
+                    <button class="tm" type="button" disabled>1 min</button>
+                </div>
+                <button class="btn btn-s" type="button" disabled>Netrukus</button>
+            </article>
 
-    <script>
-      
-      function startSolo() {
-        window.location = "/Race/Play";
-      }
-      function startMatchmaking() {
-        const usernameInput = document.getElementById('username-input');
-        let username = usernameInput ? usernameInput.value.trim() : "";
-        if (username && @(isGuest.ToString().ToLowerInvariant())) {
-            username = `${username} (Svečias)`;
-        }
-        if (!username) username = "Svečias";
-        sessionStorage.setItem('username', username);
-        window.location.href = `/race/quick?username=${encodeURIComponent(username)}`;
-      }
-      function escapeHtml(value) {
+            <article class="card card--soon mode-card">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg></span>
+                <h3>Su draugais</h3>
+                <p>Sukurk privatų kambarį ir pakviesk draugus kodu.</p>
+                <button class="btn btn-s" type="button" disabled>
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg>Netrukus
+                </button>
+            </article>
+        </div>
+    </section>
+
+    <section class="card leaderboard" aria-labelledby="top10-title">
+        <div class="leaderboard-head">
+            <h2 id="top10-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Top 10 žaidėjų</h2>
+            <span class="pill">Visą laiką</span>
+        </div>
+        <div class="lb-row lb-header" aria-hidden="true">
+            <span>#</span><span>Žaidėjas</span><span>WPM</span><span>Tikslumas</span><span class="lb-date">Data</span>
+        </div>
+        @* id naudoja navbar nuoroda „Lyderiai" ir loadTop10() *@
+        <div id="top10-body" class="lb-body" role="list">
+            <p class="lb-empty">Kraunama...</p>
+        </div>
+    </section>
+</div>
+
+<script>
+    const CURRENT_USER = @Json.Serialize(currentUser);
+
+    function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, char =>
-          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
-      }
-      async function loadTop10() {
-        try {
-          const res = await fetch('/api/stats/top10/');
-          const data = await res.json();
-          const tbody = document.getElementById('top10-body');
-          tbody.innerHTML = "";
-          data.forEach((user, index) => {
-            const tr = document.createElement('tr');
-            if (index === 0) tr.classList.add('rank-1');
-            if (index === 1) tr.classList.add('rank-2');
-            if (index === 2) tr.classList.add('rank-3');
-            tr.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${escapeHtml(user.username)}</td>
-                <td>${user.wpm}</td>
-                <td>${user.accuracy}%</td>
-                <td>${user.date}</td>
-            `;
-            tbody.appendChild(tr);
-          });
-        } catch (err) {
-          console.error("Failed to load top10", err);
-        }
-      }
-      loadTop10();
-      
-    </script>
-</body>
+            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    }
 
-</html>
+    async function loadTop10() {
+        const body = document.getElementById('top10-body');
+        try {
+            const res = await fetch('/api/stats/top10/');
+            const data = await res.json();
+            body.innerHTML = data.length ? data.map((user, index) => `
+                <div class="lb-row ${user.username === CURRENT_USER ? "is-me" : ""}" role="listitem">
+                    <span class="lb-place ${index < 3 ? "lb-place-" + (index + 1) : ""}">${index + 1}</span>
+                    <span class="lb-name">${escapeHtml(user.username)}</span>
+                    <span class="lb-num"><strong>${user.wpm}</strong></span>
+                    <span class="lb-num">${user.accuracy}%</span>
+                    <span class="lb-date">${user.date}</span>
+                </div>`).join("")
+                : `<p class="lb-empty">Dar nėra rezultatų. Būk pirmas!</p>`;
+        } catch (err) {
+            body.innerHTML = `<p class="lb-empty">Nepavyko įkelti lyderių.</p>`;
+            console.error("Failed to load top10", err);
+        }
+    }
+    loadTop10();
+</script>
