@@ -1103,6 +1103,11 @@
     .result-actions .btn {
         flex: 1;
     }
+
+    /* solo modalas siauras: mygtukai po vieną eilutėje, kad tekstas nelūžtų */
+    .results-box .result-actions .btn {
+        flex-basis: 100%;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

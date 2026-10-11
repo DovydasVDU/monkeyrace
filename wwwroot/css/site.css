@@ -1050,8 +1050,7 @@ main {
     background: var(--banana-soft);
 }
 
-.shop-head,
-.profile-history h2 {
+.shop-head {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
