@@ -239,11 +239,18 @@ function botBadge(player) {
         : "";
 }
 
-function monkeyTemplate(colorIndex) {
+// level (nebūtinas) rodomas kaip ženkliukas, toks pat kaip _Monkey.cshtml
+function monkeyTemplate(colorIndex, level) {
     const templates = document.querySelectorAll(
         "#replay-monkey-templates .monkey-svg");
     const template = templates[Math.abs(colorIndex || 0) % templates.length];
-    return template ? template.outerHTML : "";
+    if (!template) return "";
+    if (level == null) return template.outerHTML;
+    const svg = template.cloneNode(true);
+    svg.insertAdjacentHTML("beforeend",
+        `<g class="monkey-level"><circle cx="134" cy="134" r="24"/>` +
+        `<text x="134" y="144" text-anchor="middle">${Number(level)}</text></g>`);
+    return svg.outerHTML;
 }
 
 function applyState(state) {
@@ -335,9 +342,10 @@ function showPersonalResult(data) {
         `${Number(data.accuracy).toFixed(1)}%`;
     document.getElementById("personal-time").textContent = `${data.timeSeconds} s`;
     document.getElementById("personal-errors").textContent = data.errorCount;
+    // tikras apdovanojimas ateina su RaceFinished, kai visi žmonės baigia
     document.getElementById("personal-reward").textContent = IS_AUTHENTICATED
-        ? "Bananai ir XP bus pridėti vėliau"
-        : "Prisijunk, kad kauptum";
+        ? "Skaičiuojami XP ir bananai..."
+        : "Laukiama kitų žaidėjų...";
     finalizeWordErrors();
     renderWordErrors();
     renderTextAbout();
@@ -415,6 +423,9 @@ connection.on("RaceFinished", data => {
     document.getElementById("final-results").hidden = false;
     const hasBots = data.players.some(player => player.isBot);
     document.getElementById("bot-explanation").hidden = !hasBots;
+    const me = data.players.find(player => player.playerKey === PLAYER_KEY);
+    if (me && me.reward)
+        renderReward(document.getElementById("personal-reward"), me.reward);
     document.getElementById("final-results-list").innerHTML = data.players.map(player => `
         <div class="podium-item">
             <strong>${player.place ? "#" + player.place : "DNF"}</strong>
@@ -867,15 +878,26 @@ function setReplayPlayingState(isPlaying) {
 function renderPlayers() {
     document.getElementById("players-track").innerHTML =
         Object.values(players).map((player, index) => `
-        <div class="player-track" id="track-${cssId(player.playerKey)}" style="--progress: 0%">
-            <span class="player-monkey ${player.isBot ? "player-monkey-bot" : ""}">
-                ${player.isBot ? monkeyTemplate(getBotColorIndex(player, index)) : "🐒"}
+        <div class="player-track" id="track-${cssId(player.playerKey)}" style="--progress: 0%"
+             tabindex="0" aria-label="${escapeHtml(player.username)}: žaidėjo kortelė">
+            <span class="player-monkey ${player.isBot ? "player-monkey-bot" : "player-monkey-human"}">
+                ${monkeyTemplate(player.isBot ? getBotColorIndex(player, index) : index, playerLevel(player))}
             </span>
             <span class="player-name">${escapeHtml(player.username)}
                 ${botBadge(player)}</span>
             <span class="player-wpm" id="wpm-${cssId(player.playerKey)}">${player.wpm || 0} WPM</span>
+            <div class="player-card-pop" role="tooltip">${playerCardHtml(player)}</div>
         </div>`).join("");
 }
+
+// Mobiliajame kortelė atsidaro paspaudus (hover neveikia)
+document.getElementById("players-track").addEventListener("click", event => {
+    const track = event.target.closest(".player-track");
+    document.querySelectorAll(".player-track.card-open").forEach(item => {
+        if (item !== track) item.classList.remove("card-open");
+    });
+    if (track) track.classList.toggle("card-open");
+});
 
 function cssId(value) {
     return value.replace(/[^a-zA-Z0-9_-]/g, "_");

@@ -45,6 +45,8 @@
                 </div>
             </div>
 
+            <div id="solo-reward" aria-live="polite" hidden></div>
+
             <div class="results-actions">
                 <button class="btn-restart" onclick="restartRace()">Žaisti dar kartą <span>&#9654;</span></button>
                 <button class="btn-restart" onclick="retrySameText()" style="border-color: var(--muted); color: var(--muted);">Kartoti tekstą <span>&#8634;</span></button>
@@ -301,11 +303,15 @@
                     timeSeconds: timeSeconds,
                     errorCount:  klaidos
                 })
-            });
+            })
+                .then(res => res.ok ? res.json() : null)
+                .then(data => renderReward(document.getElementById('solo-reward'), data && data.reward))
+                .catch(() => renderReward(document.getElementById('solo-reward'), null));
         }
 
         function retrySameText(){
             document.getElementById('results-overlay').classList.remove('visible');
+            document.getElementById('solo-reward').hidden = true;
 
             // Atstatome kintamuosius
             klaidosSet.clear();

@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     {
         // Unikalus slapyvardis DB lygiu: AnyAsync patikra Register metode nepadeda, jei du registruojasi vienu metu
         modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
+        // Vienas rezultatas vienam žaidėjui vienose lenktynėse: apsauga nuo dvigubo apdovanojimo
+        modelBuilder.Entity<RaceResult>().HasIndex(r => new { r.RaceId, r.UserId }).IsUnique();
 
         // Seed data – pradiniai duomenys. Tekstus padarome iškart, kad nereiktų jų suvedinėti ranka
         modelBuilder.Entity<TextSnippet>().HasData(

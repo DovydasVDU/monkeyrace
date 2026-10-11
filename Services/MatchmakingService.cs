@@ -55,7 +55,7 @@ public sealed class MatchmakingService
         }
     }
 
-    public string JoinOrCreate(string playerKey, string username, int? userId)
+    public string JoinOrCreate(string playerKey, string username, int? userId, PlayerCard card)
     {
         lock (_sync)
         {
@@ -90,7 +90,8 @@ public sealed class MatchmakingService
             {
                 PlayerKey = playerKey,
                 Username = username,
-                UserId = userId
+                UserId = userId,
+                Card = card
             });
 
             if (room.Players.Count == 4 && !room.CountdownStarted)
@@ -690,14 +691,19 @@ public sealed class MatchmakingService
         {
             var raceService = scope.ServiceProvider.GetRequiredService<RaceService>();
             // DNF nerašome: 0 WPM įrašai gadintų vidurkius ir botų greičio parinkimą
+            // Botai neapdovanojami ir nerašomi; svečiai gauna tik hipotetinį apdovanojimą rodymui
             foreach (var player in room.Players.Where(item =>
-                !item.IsBot && !item.IsDnf && item.UserId.HasValue && !item.ResultSaved))
+                !item.IsBot && !item.IsDnf && !item.ResultSaved))
             {
                 player.ResultSaved = true;
-                await raceService.SaveRaceResultAsync(
-                    player.UserId.Value, room.DatabaseRaceId,
-                    player.Wpm, player.Accuracy, player.TimeSeconds,
-                    player.ErrorCount);
+                player.Reward = player.UserId.HasValue
+                    ? await raceService.SaveRaceResultAsync(
+                        player.UserId.Value, room.DatabaseRaceId,
+                        RaceMode.Multiplayer, player.Place,
+                        player.Wpm, player.Accuracy, player.TimeSeconds,
+                        player.ErrorCount)
+                    : RaceService.GuestReward(RaceMode.Multiplayer, player.Place,
+                        player.Wpm, player.Accuracy);
             }
         }
 
@@ -756,6 +762,8 @@ public sealed class MatchmakingService
             IsDnf = player.IsDnf,
             Wpm = player.Wpm
             ,IsBot = player.IsBot
+            ,Card = player.Card
+            ,BotWpm = player.IsBot ? (int)Math.Round(player.TargetWpm) : 0
         };
     }
 
@@ -771,6 +779,7 @@ public sealed class MatchmakingService
             IsDnf = player.IsDnf,
             ErrorCount = player.ErrorCount
             ,IsBot = player.IsBot
+            ,Reward = player.Reward
         };
     }
 
@@ -841,6 +850,9 @@ public sealed class RacePlayerState
     public bool IsDnf { get; set; }
     public bool IsBot { get; set; }
     public int Wpm { get; set; }
+    // null svečiams ir botams
+    public PlayerCard Card { get; set; }
+    public int BotWpm { get; set; }
 }
 
 public sealed class RaceResultState
@@ -853,6 +865,8 @@ public sealed class RaceResultState
     public int ErrorCount { get; set; }
     public bool IsDnf { get; set; }
     public bool IsBot { get; set; }
+    // null botams ir DNF; svečiui Saved = false
+    public RaceReward Reward { get; set; }
 }
 
 public sealed class RaceRoom
@@ -895,6 +909,8 @@ public sealed class RacePlayer
     public int ColorIndex { get; set; }
     public double TargetWpm { get; set; }
     public BotPlan BotPlan { get; set; }
+    public RaceReward Reward { get; set; }
+    public PlayerCard Card { get; set; }
     public Dictionary<int, int> FirstReachedAtMs { get; set; } =
         new Dictionary<int, int>();
 }

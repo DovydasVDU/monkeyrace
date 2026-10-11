@@ -50,6 +50,9 @@ namespace monkeyrace.Migrations
                     b.Property<double>("Accuracy")
                         .HasColumnType("REAL");
 
+                    b.Property<int>("BananasGained")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CompletedAt")
                         .HasColumnType("TEXT");
 
@@ -68,11 +71,15 @@ namespace monkeyrace.Migrations
                     b.Property<int>("WPM")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("XpGained")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("RaceId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("RaceId", "UserId")
+                        .IsUnique();
 
                     b.ToTable("RaceResults");
                 });
@@ -406,6 +413,9 @@ namespace monkeyrace.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Bananas")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -417,6 +427,9 @@ namespace monkeyrace.Migrations
 
                     b.Property<string>("Username")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Xp")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

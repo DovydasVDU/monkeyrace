@@ -20,4 +20,11 @@
           stroke="@bodyColor" stroke-width="14" stroke-linecap="round" />
     <path class="monkey-arm monkey-arm-right" d="M118 119 Q142 132 130 151" fill="none"
           stroke="@bodyColor" stroke-width="14" stroke-linecap="round" />
+    @if (Model?.Level != null)
+    {
+        <g class="monkey-level">
+            <circle cx="134" cy="134" r="24" />
+            <text x="134" y="144" text-anchor="middle">@Model.Level</text>
+        </g>
+    }
 </svg>

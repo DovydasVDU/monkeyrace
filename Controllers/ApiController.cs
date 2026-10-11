@@ -15,43 +15,25 @@ namespace monkeyrace.Controllers
         private readonly AppDbContext _db;
 
         // Inject your database context
-        public StatsApiController(AppDbContext db)
+        private readonly RaceService _raceService;
+
+        public StatsApiController(AppDbContext db, RaceService raceService)
         {
             _db = db;
+            _raceService = raceService;
         }
 
         // This makes the endpoint: GET /api/StatsApi/{username}
         [HttpGet("{username}")]
         public async Task<IActionResult> GetUserStats(string username)
         {
-            // 1. Find the user by username
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
-            
-            if (user == null)
-            {
+            var userId = await _db.Users.Where(u => u.Username == username)
+                .Select(u => (int?)u.Id).FirstOrDefaultAsync();
+            if (userId == null)
                 return NotFound(new { message = $"User '{username}' not found." });
-            }
 
-            // 2. Go to RaceResults table and get all results belonging to this user
-            var results = await _db.RaceResults
-                                   .Where(r => r.UserId == user.Id)
-                                   .ToListAsync();
-
-            // 3. Calculate statistics
-            int totalRaces = results.Count;
-            int bestWpm = totalRaces > 0 ? results.Max(r => r.WPM) : 0;
-            
-            // Use Math.Round to keep the percentage clean (e.g., 98.45%)
-            double avgAccuracy = totalRaces > 0 ? Math.Round(results.Average(r => r.Accuracy), 2) : 0;
-
-            // 4. Return the data as JSON
-            return Ok(new 
-            {
-                Username = user.Username,
-                TotalRaces = totalRaces,
-                BestWpm = bestWpm,
-                AverageAccuracy = avgAccuracy
-            });
+            // ta pati kortelė kaip lenktynėse ir navbar (RaceService.GetPlayerCardAsync)
+            return Ok(await _raceService.GetPlayerCardAsync(userId.Value));
         }
 
         [HttpGet("top10")]

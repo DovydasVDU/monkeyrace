@@ -52,7 +52,7 @@ public class RaceController : Controller
     }
 
     [HttpGet("/race/quick")]
-    public IActionResult Quick(string username, int attempt = 0)
+    public async Task<IActionResult> Quick(string username, int attempt = 0)
     {
         if (attempt >= 2)
             return View("MatchmakingError");
@@ -60,8 +60,10 @@ public class RaceController : Controller
         var playerKey = PlayerIdentity.GetPlayerKey(HttpContext);
         var displayName = PlayerIdentity.GetUsername(HttpContext, username);
         HttpContext.Session.SetString("MatchmakingUsername", displayName);
-        var raceId = _matchmaking.JoinOrCreate(
-            playerKey, displayName, PlayerIdentity.GetUserId(HttpContext));
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        // kortelė keliauja su žaidėju, kad trasoje užvedus pele nereikėtų papildomų užklausų
+        var card = userId == null ? null : await _raceService.GetPlayerCardAsync(userId.Value);
+        var raceId = _matchmaking.JoinOrCreate(playerKey, displayName, userId, card);
 
         return RedirectToAction(nameof(MultiPlay), new { raceId, attempt });
     }
@@ -83,22 +85,14 @@ public class RaceController : Controller
     }
 
     [HttpPost]
-    [Authorize]
-    // Šis metodas priima rezultatus iš frontend'o ir saugo juos duomenų bazėje. Taip pat tikrina, ar prisijungęs vartotojas, ir priskiria rezultatą tam vartotojui.
+    // Šis metodas priima solo rezultatus iš frontend'o. Prisijungusiam įrašo rezultatą ir skiria XP/bananus,
+    // svečiui grąžina tik hipotetinį apdovanojimą.
     public async Task<IActionResult> SaveResult([FromBody] RaceResultDto dto) 
     {
         if (dto == null) 
         {
             return BadRequest("Invalid payload.");
         }
-
-        // Pirmiausia reikia patikrinti, ar vartotojas prisijungęs
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userIdStr))
-            return Unauthorized();
-
-        // Paverčiame prisijungusio vartotojo ID į int ir pateikiame servisui
-        var userId = int.Parse(userIdStr);
 
         // Naršyklei aklai netikime: tekstas ir pradžios laikas imami iš sesijos (nustatyti Play metu),
         // o WPM negali viršyti greičio, kurį leidžia serverio išmatuotas laikas nuo puslapio atidarymo.
@@ -121,13 +115,19 @@ public class RaceController : Controller
             dto.Accuracy < 0 || dto.Accuracy > 100)
             return BadRequest("Implausible result.");
 
+        // Svečias: tik parodome, kiek būtų gavęs. Nieko nesaugome.
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        if (userId == null)
+            return Json(new { success = true, reward = RaceService.GuestReward(RaceMode.Solo, null, dto.Wpm, dto.Accuracy) });
+
         var race = new Race { TextSnippetId = snippet.Id, StartedAt = startedAt };
         _db.Races.Add(race);
         await _db.SaveChangesAsync();
 
-        await _raceService.SaveRaceResultAsync(userId, race.Id, dto.Wpm, dto.Accuracy, dto.TimeSeconds, dto.ErrorCount);
+        var reward = await _raceService.SaveRaceResultAsync(userId.Value, race.Id, RaceMode.Solo, null,
+            dto.Wpm, dto.Accuracy, dto.TimeSeconds, dto.ErrorCount);
 
-        return Json(new { success = true }); 
+        return Json(new { success = true, reward }); 
     }
 }
 // DTO (Data Transfer Object) klasė, skirta priimti rezultatus iš frontend'o ir saugoti juos duomenų bazėje

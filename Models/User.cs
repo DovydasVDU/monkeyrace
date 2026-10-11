@@ -11,6 +11,10 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Progresas. Lygis nesaugomas: visada skaičiuojamas iš Xp (Progression.LevelFor)
+    public int Xp { get; set; }
+    public int Bananas { get; set; }
+
     // Foreign key į RaceResult, kad galėtume matyti žaidimus, kuriuose dalyvavo
     public ICollection<RaceResult> RaceResults { get; set; } = new List<RaceResult>();
 }
@@ -51,6 +55,10 @@ public class RaceResult
     public int TimeSeconds { get; set; }   // Kiek laiko užtruko
     public int ErrorCount { get; set; }
     public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+
+    // Kiek gauta už šias lenktynes; saugoma, kad pakartotinis išsaugojimas grąžintų tą patį apdovanojimą
+    public int XpGained { get; set; }
+    public int BananasGained { get; set; }
     //public int Place { get; set; }
 
 }

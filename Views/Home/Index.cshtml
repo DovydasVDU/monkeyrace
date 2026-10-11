@@ -1,6 +1,12 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using System.Security.Claims
+@inject RaceService RaceService
 @{ var username = User.FindFirstValue(ClaimTypes.Name); var isGuest = !User.Identity.IsAuthenticated; }
+@{
+    var userId = PlayerIdentity.GetUserId(Context);
+    var card = userId == null ? null : await RaceService.GetPlayerCardAsync(userId.Value);
+    var xpPercent = card == null ? 0 : (int)Math.Round(card.LevelProgress * 100);
+}
 @{ ViewData["Title"] = "MonkeyRace"; }
 <!DOCTYPE html>
 <html>
@@ -159,16 +165,27 @@
 
         <section class="player-card">
             <div class="player-card-monkey">
-                @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "idle", HatColor = "#2E7D32" })
+                @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "idle", HatColor = "#2E7D32", Level = card?.Level })
             </div>
             <div class="player-card-info">
                 <p class="eyebrow">TAVO LENKTYNININKAS</p>
                 <h2>@(username ?? "Svečias")</h2>
-                <p class="guest-copy">Lygis ir bananai atsiras sukūrus žaidėjo progresą.</p>
-                <div class="xp-track" aria-label="XP nepasiekiamas">
-                    <span style="width:0%"></span>
+                @if (card == null)
+                {
+                    <p class="guest-copy">Prisijunk, kad kauptum XP, lygius ir bananus.</p>
+                }
+                else
+                {
+                    <p class="guest-copy">@(card.XpToNext == null ? "Maksimalus lygis!" : $"Iki {card.Level + 1} lygio: {card.XpToNext} XP")</p>
+                }
+                <div class="xp-track" role="progressbar" aria-label="XP iki kito lygio"
+                     aria-valuemin="0" aria-valuemax="100" aria-valuenow="@xpPercent">
+                    <span style="width:@(xpPercent)%"></span>
                 </div>
-                <div class="player-meta"><span>Lygis —</span><span>🍌 —</span></div>
+                <div class="player-meta">
+                    <span>Lygis @(card?.Level.ToString() ?? "—")</span>
+                    <span><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @(card?.Bananas.ToString() ?? "—")<span class="visually-hidden"> bananų</span></span>
+                </div>
             </div>
         </section>
 

@@ -1,6 +1,12 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using System.Security.Claims
+@inject RaceService RaceService
 @{ var username = User.FindFirstValue(ClaimTypes.Name); var isAuthenticated = User.Identity?.IsAuthenticated == true; }
+@{
+    // XP, lygis ir bananai iš DB, todėl atnaujinami kiekvieną kartą perkrovus puslapį
+    var userId = PlayerIdentity.GetUserId(Context);
+    var card = userId == null ? null : await RaceService.GetPlayerCardAsync(userId.Value);
+}
 
     <header class="navbar monkey-navbar">
 
@@ -19,8 +25,8 @@
         </nav>
 
         <div class="nav-right">
-            <div class="nav-chip" title="Bananai">🍌 <span>—</span></div>
-            <div class="nav-chip" title="Lygis">Lygis <span>—</span></div>
+            <div class="nav-chip" title="Bananai"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> <span>@(card?.Bananas.ToString() ?? "—")</span><span class="visually-hidden">bananų</span></div>
+            <div class="nav-chip" title="Lygis">Lygis <span>@(card?.Level.ToString() ?? "—")</span></div>
 
             @if (username != null)
             {
