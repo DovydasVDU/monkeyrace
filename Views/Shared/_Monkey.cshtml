@@ -1,0 +1,23 @@
+@model MonkeyViewModel
+@{
+    var mood = Model?.Mood ?? "idle";
+    var bodyColor = Model?.BodyColor ?? "#8D5A2B";
+    var hatColor = Model?.HatColor ?? "#FFC93C";
+}
+<svg class="monkey-svg monkey-mood-@mood" viewBox="0 0 160 160" role="img"
+     aria-label="MonkeyRace beždžionėlė" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="42" cy="67" r="22" fill="@bodyColor" />
+    <circle cx="118" cy="67" r="22" fill="@bodyColor" />
+    <circle cx="80" cy="76" r="52" fill="@bodyColor" />
+    <ellipse cx="80" cy="94" rx="34" ry="27" fill="#C98D57" />
+    <circle cx="61" cy="70" r="6" fill="#1B4D2E" />
+    <circle cx="99" cy="70" r="6" fill="#1B4D2E" />
+    <path class="monkey-mouth" d="M68 101 Q80 112 92 101" fill="none"
+          stroke="#1B4D2E" stroke-width="5" stroke-linecap="round" />
+    <path d="M45 40 Q80 5 115 40 L108 48 Q80 28 52 48 Z" fill="@hatColor" />
+    <circle cx="80" cy="20" r="9" fill="@hatColor" />
+    <path class="monkey-arm monkey-arm-left" d="M42 119 Q18 132 30 151" fill="none"
+          stroke="@bodyColor" stroke-width="14" stroke-linecap="round" />
+    <path class="monkey-arm monkey-arm-right" d="M118 119 Q142 132 130 151" fill="none"
+          stroke="@bodyColor" stroke-width="14" stroke-linecap="round" />
+</svg>

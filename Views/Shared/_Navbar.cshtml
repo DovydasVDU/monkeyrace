@@ -1,15 +1,26 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using System.Security.Claims
-@{ var username = User.FindFirstValue(ClaimTypes.Name);  }
+@{ var username = User.FindFirstValue(ClaimTypes.Name); var isAuthenticated = User.Identity?.IsAuthenticated == true; }
 
-    <header class="navbar">
+    <header class="navbar monkey-navbar">
 
-        <div class="logo">
-            <a href="/" style="        text-decoration: none;
-        color: #e2b714;">MonkeyRacer</a>
+        <div class="logo monkey-logo">
+            <a href="/" aria-label="MonkeyRace pradžia">
+                <span class="logo-mark">🐒</span> Monkey<span>Race</span>
+            </a>
         </div>
 
+        <nav class="desktop-nav" aria-label="Pagrindinė navigacija">
+            <a href="/Race/MultiPlay">Žaisti</a>
+            <a href="/#top10-body">Lyderiai</a>
+            <a href="@(isAuthenticated ? "/User/Stats" : "#")"
+               class="@(isAuthenticated ? "" : "nav-disabled")">Profilis</a>
+            <a href="#" class="nav-disabled" aria-disabled="true">Parduotuvė</a>
+        </nav>
+
         <div class="nav-right">
+            <div class="nav-chip" title="Bananai">🍌 <span>—</span></div>
+            <div class="nav-chip" title="Lygis">Lygis <span>—</span></div>
 
             @if (username != null)
             {
@@ -81,6 +92,13 @@
         </div>
 
     </header>
+    <nav class="mobile-tabs" aria-label="Mobilioji navigacija">
+        <a href="/Race/MultiPlay"><span>🏁</span>Žaisti</a>
+        <a href="/#top10-body"><span>🏆</span>Lyderiai</a>
+        <a href="@(isAuthenticated ? "/User/Stats" : "#")"
+           class="@(isAuthenticated ? "" : "nav-disabled")"><span>🐒</span>Profilis</a>
+        <a href="#" class="nav-disabled"><span>🛒</span>Parduotuvė</a>
+    </nav>
     <!-- LOGIN MODAL -->
 
     <div class="modal" id="loginModal">

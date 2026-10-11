@@ -1,6 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Http
 @using System.Security.Claims
-@{ var username = User.FindFirstValue(ClaimTypes.Name);  }
+@{ var username = User.FindFirstValue(ClaimTypes.Name); var isGuest = !User.Identity.IsAuthenticated; }
 @{ ViewData["Title"] = "MonkeyRace"; }
 <!DOCTYPE html>
 <html>
@@ -10,6 +10,7 @@
 
     <link rel="stylesheet" href="/css/site.css">
     <link rel="stylesheet" href="/css/login.css">
+    <link rel="stylesheet" href="/css/race.css">
 
     <style>
         /* ---------------- HOME ---------------- */
@@ -140,16 +141,45 @@
 </head>
 
 <body>
+    @await Html.PartialAsync("_Navbar")
 
     <!-- MAIN -->
     <div class="main-layout">
+        <section class="home-hero">
+            <div class="hero-monkey">
+                @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "idle" })
+            </div>
+            <div class="hero-copy">
+                <p class="eyebrow">LIETUVIŠKOS TEKSTO LENKTYNĖS</p>
+                <h1>Lenktyniauk. Spausdink. <span>Užkariauk džiungles.</span></h1>
+                <p>MonkeyRace sujungia greitą spausdinimą, varžovus ir smagias beždžionėlių lenktynes.</p>
+                <button class="btn btn-primary hero-play" onclick="startMatchmaking()">ŽAISTI</button>
+            </div>
+        </section>
+
+        <section class="player-card">
+            <div class="player-card-monkey">
+                @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "idle", HatColor = "#2E7D32" })
+            </div>
+            <div class="player-card-info">
+                <p class="eyebrow">TAVO LENKTYNININKAS</p>
+                <h2>@(username ?? "Svečias")</h2>
+                <p class="guest-copy">Lygis ir bananai atsiras sukūrus žaidėjo progresą.</p>
+                <div class="xp-track" aria-label="XP nepasiekiamas">
+                    <span style="width:0%"></span>
+                </div>
+                <div class="player-meta"><span>Lygis —</span><span>🍌 —</span></div>
+            </div>
+        </section>
+
         <div class="home-container">
 
             <!-- SOLO TEST -->
 
-            <div class="card" onclick="startSolo()">
+            <div class="card mode-card" onclick="startSolo()">
 
-                <h2>SOLO ŽAIDIMAS</h2>
+                <span class="mode-icon">🎯</span>
+                <h2>SOLO</h2>
 
                 <p>Treniruok savo spausdinimo greitį ir tikslumą.</p>
 
@@ -159,9 +189,10 @@
 
             <!-- ONLINE RACE -->
 
-            <div class="card">
+            <div class="card mode-card">
 
-                <h2>ŽAISTI SU DRAUGAIS</h2>
+                <span class="mode-icon">🏁</span>
+                <h2>GREITOS LENKTYNĖS</h2>
 
                 @if (username != null)
                 {
@@ -171,13 +202,25 @@
                 {
     <input id="username-input" class="card-input" placeholder="Jūsų vardas (neprivaloma)" maxlength="20" />}
 
-                <button class="btn" onclick="createRoom()">Sukurti kambarį</button>
+                <p style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">
+                    Sistema automatiškai suras 2–4 panašiu metu žaidžiančius varžovus.
+                </p>
+                <button class="btn" onclick="startMatchmaking()">Ieškoti varžovų</button>
 
-                <div style="color:var(--muted); margin:.8rem 0; font-size:.85rem;">— ARBA —</div>
+            </div>
 
-                <input id="room-id-input" class="card-input" placeholder="Įveskite kambario ID" />
-                <button class="btn" onclick="joinRoom()">Prisijungti prie kambario</button>
+            <div class="card mode-card mode-disabled">
+                <span class="mode-icon">👥</span>
+                <h2>KAMBARYS SU DRAUGAIS</h2>
+                <p>Privatūs kambariai grįš kitame MonkeyRace etape.</p>
+                <button class="btn" disabled>Netrukus</button>
+            </div>
 
+            <div class="card mode-card mode-disabled">
+                <span class="mode-icon">🌴</span>
+                <h2>DAILY / TIME ATTACK</h2>
+                <p>Netrukus: kasdieniai iššūkiai ir lenktynės su laikrodžiu.</p>
+                <button class="btn" disabled>Netrukus</button>
             </div>
 
         </div>
@@ -207,31 +250,15 @@
       function startSolo() {
         window.location = "/Race/Play";
       }
-      /* ROOM LOGIC */
-      function createRoom() {
-        const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-        redirectToRoom(roomId);
-      }
-
-      function joinRoom() {
-        const roomId = document.getElementById('room-id-input').value.trim();
-        if (!roomId) return alert('Įveskite kambario ID');
-        redirectToRoom(roomId);
-      }
-
-      function redirectToRoom(roomId) {
-          // jeigu user yra neprisijungęs, tada paimame vardą iš inputo, jeigu įvestas, arba naudojame "Svečias"
+      function startMatchmaking() {
         const usernameInput = document.getElementById('username-input');
         let username = usernameInput ? usernameInput.value.trim() : "";
-        // jeigu nieko neįvesta -> "Svečias"
-        // jeigu įvesta -> pridėti "(Svečias)"
-        if (username) { // tikrinam, ar įvedė kažką (username yra ne "")
+        if (username && @(isGuest.ToString().ToLowerInvariant())) {
             username = `${username} (Svečias)`;
-        } else {
-            username = "Svečias";
         }
+        if (!username) username = "Svečias";
         sessionStorage.setItem('username', username);
-        window.location.href = `/Race/MultiPlay?roomId=${roomId}`;
+        window.location.href = `/race/quick?username=${encodeURIComponent(username)}`;
       }
       async function loadTop10() {
         try {

@@ -13,13 +13,17 @@ html {
 
 /* 2. Mūsų „MonkeyRacer“ šabloninės spalvos (Theme) */
 :root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --accent: #e2b714;
-    --text: #ffffff;
-    --error: #ca4754;
-    --correct: #6e9e6e;
-    --muted: #646669;
+    --jungle-dark: #1B4D2E;
+    --jungle: #2E7D32;
+    --banana: #FFC93C;
+    --cream: #FFF8E1;
+    --monkey-brown: #8D5A2B;
+    --bg: #102a1b;
+    --surface: #1B4D2E;
+    --accent: #FFC93C;
+    --text: #FFF8E1;
+    --error: #E53935;
+    --muted: #b8c7b5;
 }
 
 /* 3. Pagrindinis puslapio stilius */
@@ -32,10 +36,94 @@ html {
 body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Courier New', monospace;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+}
+
+h1, h2, h3, .logo, .btn, .nav-btn, .eyebrow {
+    font-family: "Trebuchet MS", system-ui, sans-serif;
+}
+
+.navbar {
+    align-items: center;
+    background: rgba(16, 42, 27, .94);
+    border-bottom: 1px solid rgba(255, 201, 60, .2);
+    display: flex;
+    gap: 1.5rem;
+    justify-content: space-between;
+    min-height: 68px;
+    padding: .75rem clamp(1rem, 4vw, 4rem);
+    position: relative;
+    z-index: 5;
+}
+
+.monkey-logo a {
+    align-items: center;
+    color: var(--cream);
+    display: flex;
+    font-size: 1.25rem;
+    font-weight: 900;
+    gap: .4rem;
+    text-decoration: none;
+}
+
+.monkey-logo a span:last-child {
+    color: var(--banana);
+}
+
+.logo-mark {
+    font-size: 1.5rem;
+}
+
+.desktop-nav {
+    display: flex;
+    gap: 1.1rem;
+    margin-left: auto;
+}
+
+.desktop-nav a,
+.mobile-tabs a {
+    color: var(--muted);
+    font-size: .82rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.desktop-nav a:hover,
+.mobile-tabs a:hover {
+    color: var(--banana);
+}
+
+.nav-right {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+}
+
+.nav-chip {
+    background: rgba(255, 201, 60, .12);
+    border: 1px solid rgba(255, 201, 60, .3);
+    border-radius: 999px;
+    color: var(--cream);
+    font-size: .75rem;
+    padding: .45rem .65rem;
+}
+
+.nav-chip span {
+    color: var(--banana);
+    font-weight: 800;
+}
+
+.nav-disabled {
+    cursor: not-allowed;
+    opacity: .45;
+    pointer-events: none;
+}
+
+.mobile-tabs {
+    display: none;
 }
 
 main {
@@ -70,15 +158,202 @@ main {
     width: 100%;
     margin-top: .6rem;
     padding: 1rem;
-    border-radius: 5px;
-    border: 1px solid var(--accent);
-    background: transparent;
+    border-radius: 12px;
+    border: 0;
+    background: var(--jungle);
+    box-shadow: 0 4px 0 var(--jungle-dark);
     color: var(--accent);
     cursor: pointer;
     font-size: 1rem;
-    transition: all .2s;
+    font-weight: 800;
+    transition: transform .12s, box-shadow .12s, background .2s;
 }
 .btn:hover {
-    background: var(--accent);
-    color: var(--bg);
+    background: #3b9141;
+    color: var(--cream);
+}
+
+.btn:active {
+    box-shadow: 0 1px 0 var(--jungle-dark);
+    transform: translateY(3px);
+}
+
+.btn-primary {
+    background: var(--banana);
+    box-shadow: 0 5px 0 #b47e16;
+    color: var(--jungle-dark);
+}
+
+.home-hero {
+    align-items: center;
+    display: grid;
+    gap: clamp(1rem, 5vw, 5rem);
+    grid-template-columns: minmax(150px, 260px) minmax(0, 600px);
+    margin: 2rem auto;
+    max-width: 930px;
+}
+
+.home-container {
+    height: auto !important;
+    flex-wrap: wrap;
+    gap: 1rem !important;
+    margin-top: 1rem !important;
+    max-width: 980px;
+    width: 100%;
+}
+
+.home-container .card {
+    cursor: default;
+    height: auto !important;
+    min-height: 270px;
+    padding: 1.5rem !important;
+    width: min(300px, 100%) !important;
+}
+
+.home-container .mode-card:hover {
+    transform: translateY(-4px);
+}
+
+.mode-icon {
+    font-size: 2.1rem;
+    margin-bottom: .5rem;
+}
+
+.mode-card h2 {
+    color: var(--jungle-dark) !important;
+    margin-bottom: .8rem !important;
+}
+
+.mode-card p {
+    flex: 1;
+}
+
+.mode-disabled {
+    filter: saturate(.5);
+    opacity: .7;
+}
+
+.leaderboard-container {
+    max-width: 980px !important;
+    width: 100% !important;
+}
+
+.hero-monkey {
+    background: radial-gradient(circle, rgba(255, 201, 60, .2), transparent 68%);
+    height: 230px;
+    padding: 1rem;
+}
+
+.hero-copy h1 {
+    color: var(--cream);
+    font-size: clamp(2rem, 5vw, 4rem);
+    line-height: 1.05;
+    margin: .6rem 0 1rem;
+}
+
+.hero-copy h1 span {
+    color: var(--banana);
+}
+
+.hero-copy p:not(.eyebrow) {
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 560px;
+}
+
+.hero-play {
+    max-width: 220px;
+    margin-top: 1.4rem;
+}
+
+.player-card {
+    align-items: center;
+    background: var(--cream);
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .2);
+    color: var(--jungle-dark);
+    display: flex;
+    gap: 1.2rem;
+    margin: 0 auto 2rem;
+    max-width: 930px;
+    padding: 1rem 1.4rem;
+}
+
+.player-card-monkey {
+    height: 90px;
+    width: 90px;
+}
+
+.player-card-info {
+    flex: 1;
+}
+
+.player-card-info h2 {
+    margin: .2rem 0;
+}
+
+.guest-copy {
+    color: #657365;
+    font-size: .85rem;
+    margin: .2rem 0 .6rem;
+}
+
+.xp-track {
+    background: #dbe7d8;
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.xp-track span {
+    background: var(--jungle);
+    display: block;
+    height: 100%;
+}
+
+.player-meta {
+    display: flex;
+    font-size: .75rem;
+    font-weight: 800;
+    justify-content: space-between;
+    margin-top: .45rem;
+}
+
+@media (max-width: 700px) {
+    main { padding: 1rem; }
+    .desktop-nav, .navbar .nav-chip { display: none; }
+    .navbar { min-height: 58px; }
+    .mobile-tabs {
+        background: var(--jungle-dark);
+        bottom: 0;
+        display: flex;
+        justify-content: space-around;
+        left: 0;
+        padding: .55rem .2rem;
+        position: fixed;
+        right: 0;
+        z-index: 10;
+    }
+    .mobile-tabs a {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        font-size: .65rem;
+        gap: .15rem;
+    }
+    .mobile-tabs a span { font-size: 1rem; }
+    .home-hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    .hero-monkey {
+        height: 170px;
+        margin: auto;
+        max-width: 170px;
+    }
+    .hero-copy h1 { font-size: 2.35rem; }
+    .hero-play { margin-left: auto; margin-right: auto; }
+    .player-card { padding: .8rem; }
+    .player-card-monkey { height: 70px; width: 70px; }
+    .home-container { gap: 1rem !important; }
 }
