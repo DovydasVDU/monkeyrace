@@ -1,25 +1,40 @@
 @model MonkeyViewModel
 @{
     var mood = Model?.Mood ?? "idle";
-    var bodyColor = Model?.BodyColor ?? "#8D5A2B";
-    var hatColor = Model?.HatColor ?? "#FFC93C";
+    var bodyColor = Model?.BodyColor ?? "#8B5E3C";
+    // HatColor = "none" arba "" – be kepurės
+    var hatColor = Model?.HatColor;
+    var hasHat = !string.IsNullOrEmpty(hatColor) && hatColor != "none";
 }
+@* viewBox 160 ir lygio ženkliukas cx=134 turi sutapti su MultiPlay monkeyTemplate() *@
 <svg class="monkey-svg monkey-mood-@mood" viewBox="0 0 160 160" role="img"
      aria-label="MonkeyRace beždžionėlė" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="42" cy="67" r="22" fill="@bodyColor" />
-    <circle cx="118" cy="67" r="22" fill="@bodyColor" />
-    <circle cx="80" cy="76" r="52" fill="@bodyColor" />
-    <ellipse cx="80" cy="94" rx="34" ry="27" fill="#C98D57" />
-    <circle cx="61" cy="70" r="6" fill="#1B4D2E" />
-    <circle cx="99" cy="70" r="6" fill="#1B4D2E" />
-    <path class="monkey-mouth" d="M68 101 Q80 112 92 101" fill="none"
-          stroke="#1B4D2E" stroke-width="5" stroke-linecap="round" />
-    <path d="M45 40 Q80 5 115 40 L108 48 Q80 28 52 48 Z" fill="@hatColor" />
-    <circle cx="80" cy="20" r="9" fill="@hatColor" />
-    <path class="monkey-arm monkey-arm-left" d="M42 119 Q18 132 30 151" fill="none"
-          stroke="@bodyColor" stroke-width="14" stroke-linecap="round" />
-    <path class="monkey-arm monkey-arm-right" d="M118 119 Q142 132 130 151" fill="none"
-          stroke="@bodyColor" stroke-width="14" stroke-linecap="round" />
+    <path class="monkey-tail" d="M110 132 Q150 136 148 104 Q146 84 128 90" fill="none"
+          stroke="@bodyColor" stroke-width="9" stroke-linecap="round" />
+    <path class="monkey-arm monkey-arm-left" d="M46 118 Q22 132 32 152" fill="none"
+          stroke="@bodyColor" stroke-width="13" stroke-linecap="round" />
+    <path class="monkey-arm monkey-arm-right" d="M114 118 Q138 132 128 152" fill="none"
+          stroke="@bodyColor" stroke-width="13" stroke-linecap="round" />
+    <circle cx="32" cy="74" r="20" fill="@bodyColor" />
+    <circle cx="32" cy="74" r="11" fill="#F7DDB0" />
+    <circle cx="128" cy="74" r="20" fill="@bodyColor" />
+    <circle cx="128" cy="74" r="11" fill="#F7DDB0" />
+    <circle cx="80" cy="78" r="50" fill="@bodyColor" />
+    <ellipse cx="65" cy="74" rx="17" ry="19" fill="#F7DDB0" />
+    <ellipse cx="95" cy="74" rx="17" ry="19" fill="#F7DDB0" />
+    <ellipse cx="80" cy="100" rx="32" ry="22" fill="#F7DDB0" />
+    <circle cx="66" cy="74" r="5.5" fill="#123524" />
+    <circle cx="94" cy="74" r="5.5" fill="#123524" />
+    <ellipse cx="74" cy="93" rx="2.5" ry="2" fill="#5E3B22" />
+    <ellipse cx="86" cy="93" rx="2.5" ry="2" fill="#5E3B22" />
+    <path class="monkey-mouth" d="M68 104 Q80 115 92 104" fill="none"
+          stroke="#123524" stroke-width="4.5" stroke-linecap="round" />
+    @if (hasHat)
+    {
+        <path class="monkey-hat" d="M36 50 Q80 0 124 50 Q80 36 36 50 Z" fill="@hatColor"
+              stroke="#123524" stroke-width="3" stroke-linejoin="round" />
+        <circle cx="80" cy="16" r="8" fill="@hatColor" stroke="#123524" stroke-width="3" />
+    }
     @if (Model?.Level != null)
     {
         <g class="monkey-level">

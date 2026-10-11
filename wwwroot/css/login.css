@@ -1,194 +1,116 @@
-﻿/* base css*/
-:root {
-    --bg: #1a1a2e;
-    --surface: #16213e;
-    --accent: #e2b714;
-    --text: #ffffff;
-    --error: #ca4754;
-    --correct: #6e9e6e;
-    --muted: #646669;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Courier New', monospace;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
-
-
-/* LOGIN MODAL */
+/* Prisijungimo modalas ir vartotojo meniu (_Navbar, login.js). .modal turi likti pilno ekrano fonu */
 
 .modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    display: none;
-    justify-content: center;
     align-items: center;
+    background: rgba(15, 46, 30, .8);
+    display: none;
+    inset: 0;
+    justify-content: center;
+    padding: 16px;
+    position: fixed;
+    z-index: 100;
 }
 
-    .modal.visible {
-        display: flex;
-    }
+.modal.visible {
+    display: flex;
+}
 
 .modal-box {
-    background: var(--surface);
-    border: 1px solid #333;
-    border-radius: 10px;
+    background: var(--cream);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    color: var(--ink);
+    display: grid;
+    gap: .75rem;
+    max-width: 420px;
     padding: 2rem;
-    width: 420px;
-    height:
+    position: relative;
+    width: 100%;
 }
 
-    .modal-box h3 {
-        margin-bottom: 1rem;
-        color: var(--accent);
-    }
+.modal-box h3 {
+    font-size: 1.6rem;
+    margin-bottom: .25rem;
+}
 
-    .modal-box input {
-        width: 100%;
-        margin-bottom: .8rem;
-        padding: .6rem;
-        background: #111;
-        border: 1px solid #333;
-        color: white;
-        border-radius: 4px;
-    }
-/* USER MENU */
+.modal-box label {
+    display: grid;
+    font-size: .85rem;
+    font-weight: 700;
+    gap: .3rem;
+}
 
-.user-menu {
-    display: flex;
+.modal-box input {
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font-size: 1rem;
+    min-height: 48px;
+    padding: .6rem .9rem;
+    width: 100%;
+}
+
+.modal-close {
     align-items: center;
-    gap: .5rem;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+    color: var(--ink);
     cursor: pointer;
+    display: inline-flex;
+    height: 44px;
+    justify-content: center;
+    position: absolute;
+    right: .75rem;
+    top: .75rem;
+    width: 44px;
+}
+
+.modal-close:hover {
+    background: var(--ink-a18);
+}
+
+.modal-actions {
+    display: grid;
+    gap: .6rem;
+    grid-template-columns: 1fr 1fr;
+    margin-top: .5rem;
+}
+
+/* Vartotojo meniu: profilio kortelė + išskleidžiama greita statistika */
+.user-menu {
     position: relative;
 }
 
-.user-icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #000;
-    font-weight: bold;
-}
-
-.username {
-    color: var(--text);
-}
-
 .dropdown {
-    position: absolute;
-    top: 40px;
-    right: 0;
-    background: var(--surface);
-    border: 1px solid #333;
-    border-radius: 8px;
-    width: 180px;
+    background: var(--cream);
+    border: var(--border);
+    border-radius: var(--radius-ctl);
+    box-shadow: var(--shadow-card);
+    color: var(--ink);
     display: none;
     flex-direction: column;
-}
-
-    .dropdown a {
-        padding: .7rem 1rem;
-        color: var(--text);
-        text-decoration: none;
-        border-bottom: 1px solid #2a2a2a;
-    }
-
-        .dropdown a:hover {
-            background: #1d2748;
-        }
-
-    .dropdown.visible {
-        display: flex;
-    }
-/* ---------------- NAVBAR ---------------- */
-
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.2rem 2rem;
-    border-bottom: 1px solid #2a2a3f;
-    width: 80%;
-    position: fixed;
-    top: 0;
+    min-width: 220px;
+    position: absolute;
     right: 0;
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid #333;
-    z-index: 1000;
+    top: calc(100% + 6px);
+    z-index: 40;
 }
 
-.logo {
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: var(--accent);
-    cursor: pointer;
-}
-
-.nav-right {
+.dropdown.visible {
     display: flex;
-    align-items: center;
-    gap: 1rem;
 }
 
-.nav-btn {
-    border: 1px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    padding: 0.45rem 1.3rem;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all .2s;
-}
-
-    .nav-btn:hover {
-        background: var(--accent);
-        color: var(--bg);
-    }
 .quick-stats {
-    font-size: .95em;
-    color: var(--accent);
-    text-align: center;
-    background: var(--surface);
-    padding: 0.8rem;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    border-bottom: 1px solid #333;
-    border-radius: 8px 8px 0 0;
+    font-size: .85rem;
+    gap: .35rem;
+    padding: .9rem 1rem;
 }
 
-.btn-login {
-    width: 100%;
-    margin-top: .6rem;
-    padding: .7rem;
-    border-radius: 5px;
-    border: 1px solid var(--accent);
-    background: transparent;
-    color: var(--accent);
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all .2s;
+.quick-stats b {
+    font-variant-numeric: tabular-nums;
 }
-
-    .btn-login:hover {
-        background: var(--accent);
-        color: var(--bg);
-    }

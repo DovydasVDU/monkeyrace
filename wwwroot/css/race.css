@@ -1,35 +1,4 @@
-/* wwwroot/css/race.css */
-:root {
-    --jungle-dark: #1B4D2E;
-    --jungle: #2E7D32;
-    --banana: #FFC93C;
-    --cream: #FFF8E1;
-    --monkey-brown: #8D5A2B;
-    --error: #E53935;
-    --bg: #102a1b;
-    --surface: #1B4D2E;
-    --accent: #FFC93C;
-    --text: #FFF8E1;
-    --correct: #8bd18f;
-    --muted: #b8c7b5;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-}
-
+/* Lenktynių ekranai (MultiPlay, Play). Spalvos ir komponentai: site.css, /DESIGN.md */
 .race-container {
     width: 100%;
     max-width: 800px;

@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 @using System.Security.Claims
 @inject RaceService RaceService
 @{ var username = User.FindFirstValue(ClaimTypes.Name); var isAuthenticated = User.Identity?.IsAuthenticated == true; }
@@ -6,141 +6,135 @@
     // XP, lygis ir bananai iš DB, todėl atnaujinami kiekvieną kartą perkrovus puslapį
     var userId = PlayerIdentity.GetUserId(Context);
     var card = userId == null ? null : await RaceService.GetPlayerCardAsync(userId.Value);
+    var xpPercent = card == null ? 0 : (int)Math.Round(card.LevelProgress * 100);
+    var path = Context.Request.Path.Value ?? "/";
+    var playActive = path.StartsWith("/race", StringComparison.OrdinalIgnoreCase);
+    var profileActive = path.StartsWith("/User/Stats", StringComparison.OrdinalIgnoreCase);
 }
 
-    <header class="navbar monkey-navbar">
+<header class="navbar monkey-navbar">
 
-        <div class="logo monkey-logo">
-            <a href="/" aria-label="MonkeyRace pradžia">
-                <span class="logo-mark">🐒</span> Monkey<span>Race</span>
-            </a>
+    <div class="logo monkey-logo">
+        <a href="/" aria-label="MonkeyRace pradžia">
+            <span class="logo-mark">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F" })</span>
+            <span>Monkey <span class="logo-race">Race</span></span>
+        </a>
+    </div>
+
+    <nav class="desktop-nav" aria-label="Pagrindinė navigacija">
+        <a href="/race/quick" class="@(playActive ? "is-active" : "")" aria-current="@(playActive ? "page" : null)">Žaisti</a>
+        <a href="/#top10-body">Lyderiai</a>
+        <a href="@(isAuthenticated ? "/User/Stats#shop" : "#")"
+           class="@(isAuthenticated ? "" : "nav-disabled")"
+           aria-disabled="@(isAuthenticated ? null : "true")">Parduotuvė</a>
+    </nav>
+
+    <div class="nav-right">
+        @if (username != null)
+        {
+            <div class="user-menu" onmouseenter="openMenu()" onmouseleave="closeMenu()">
+                <a class="profile-card" href="/User/Stats" aria-label="Profilis: @username, lygis @(card?.Level)">
+                    <span class="profile-avatar">
+                        @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F" })
+                        @if (card != null)
+                        {
+                            <span class="level-badge">@card.Level</span>
+                        }
+                    </span>
+                    <span class="profile-main">
+                        <span class="profile-name">@username</span>
+                        @if (card != null)
+                        {
+                            <span class="xp-track" role="progressbar" aria-label="XP iki kito lygio"
+                                  aria-valuemin="0" aria-valuemax="100" aria-valuenow="@xpPercent">
+                                <span style="width:@(xpPercent)%"></span>
+                            </span>
+                            <span class="profile-next">@(card.XpToNext == null ? "Maksimalus lygis" : $"Iki {card.Level + 1} lygio: {card.XpToNext} XP")</span>
+                        }
+                    </span>
+                    @if (card != null)
+                    {
+                        <span class="profile-stat"><strong>@card.BestWpm</strong><span>geriausias WPM</span></span>
+                        <span class="profile-stat"><strong><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @card.Bananas</strong><span>bananai</span></span>
+                        <span class="profile-compact">
+                            <span>Lvl @card.Level</span>
+                            <span><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @card.Bananas</span>
+                        </span>
+                    }
+                </a>
+
+                <div class="dropdown" id="userDropdown">
+                    <div id="quick-stats" class="quick-stats"></div>
+                </div>
+            </div>
+
+            <button class="icon-btn" type="button" onclick="window.location='/Auth/Logout'"
+                    title="Atsijungti" aria-label="Atsijungti">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-logout"></use></svg>
+            </button>
+        }
+        else
+        {
+            <button class="btn btn-p" type="button" onclick="openLogin()">Prisijungti</button>
+        }
+    </div>
+
+</header>
+
+<nav class="mobile-tabs" aria-label="Mobilioji navigacija">
+    <a href="/race/quick" class="@(playActive ? "is-active" : "")">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-flag"></use></svg>Žaisti
+    </a>
+    <a href="/#top10-body">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Lyderiai
+    </a>
+    <a href="@(isAuthenticated ? "/User/Stats" : "#")"
+       class="@(isAuthenticated ? "" : "nav-disabled") @(profileActive ? "is-active" : "")">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-user"></use></svg>Profilis
+    </a>
+    <a href="@(isAuthenticated ? "/User/Stats#shop" : "#")" class="@(isAuthenticated ? "" : "nav-disabled")">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-shop"></use></svg>Parduotuvė
+    </a>
+</nav>
+
+<!-- LOGIN MODAL: .modal turi likti pilno ekrano fonu (login.js uždaro paspaudus šalia) -->
+<div class="modal" id="loginModal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="login-title">
+        <button class="modal-close" type="button" onclick="closeLogin()" aria-label="Uždaryti">
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+        </button>
+
+        <h3 id="login-title">Prisijungimas</h3>
+
+        <label>Slapyvardis
+            <input id="login-user" autocomplete="username">
+        </label>
+        <label>Slaptažodis
+            <input id="login-pass" type="password" autocomplete="current-password">
+        </label>
+
+        <div class="modal-actions">
+            <button class="btn btn-p" type="button" onclick="login()">Prisijungti</button>
+            <button class="btn btn-s" type="button" onclick="register()">Registruotis</button>
         </div>
-
-        <nav class="desktop-nav" aria-label="Pagrindinė navigacija">
-            <a href="/race/quick">Žaisti</a>
-            <a href="/#top10-body">Lyderiai</a>
-            <a href="@(isAuthenticated ? "/User/Stats" : "#")"
-               class="@(isAuthenticated ? "" : "nav-disabled")">Profilis</a>
-            <a href="#" class="nav-disabled" aria-disabled="true">Parduotuvė</a>
-        </nav>
-
-        <div class="nav-right">
-            <div class="nav-chip" title="Bananai"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> <span>@(card?.Bananas.ToString() ?? "—")</span><span class="visually-hidden">bananų</span></div>
-            <div class="nav-chip" title="Lygis">Lygis <span>@(card?.Level.ToString() ?? "—")</span></div>
-
-            @if (username != null)
-            {
-<div class="user-menu"
-     onmouseenter="openMenu()"
-     onmouseleave="closeMenu()"
-     style="margin-right: 15px;">
-
-    <div class="user-icon">
-        @username.Substring(0, 1).ToUpper()
     </div>
-
-    <div class="username">
-        @username
-    </div>
-
-    <div class="dropdown" id="userDropdown">
-        <div id="quick-stats" class="quick-stats"></div>
-    </div>
-
 </div>
 
-                <button class="nav-btn icon-btn"
-                        onclick="window.location='/User/Stats'"
-                        title="Statistika">
-
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                         width="20"
-                         height="20"
-                         viewBox="0 0 24 24"
-                         fill="none"
-                         stroke="currentColor"
-                         stroke-width="2">
-
-                        <line x1="18" y1="20" x2="18" y2="10"></line>
-                        <line x1="12" y1="20" x2="12" y2="4"></line>
-                        <line x1="6" y1="20" x2="6" y2="14"></line>
-
-                    </svg>
-
-                </button>
-
-                                <button class="nav-btn icon-btn"
-                                        onclick="window.location='/Auth/Logout'"
-                                        title="Atsijungti"
-                                        style="margin-left: 10px;">
-
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         width="20"
-                                         height="20"
-                                         viewBox="0 0 24 24"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         stroke-width="2">
-
-                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                        <polyline points="16 17 21 12 16 7"></polyline>
-                                        <line x1="21" y1="12" x2="9" y2="12"></line>
-
-                                    </svg>
-
-                                </button> }
-                            else
-                            {
-                <button class="nav-btn" onclick="openLogin()">
-                    Login
-                </button>}
-
-        </div>
-
-    </header>
-    <nav class="mobile-tabs" aria-label="Mobilioji navigacija">
-        <a href="/race/quick"><span>🏁</span>Žaisti</a>
-        <a href="/#top10-body"><span>🏆</span>Lyderiai</a>
-        <a href="@(isAuthenticated ? "/User/Stats" : "#")"
-           class="@(isAuthenticated ? "" : "nav-disabled")"><span>🐒</span>Profilis</a>
-        <a href="#" class="nav-disabled"><span>🛒</span>Parduotuvė</a>
-    </nav>
-    <!-- LOGIN MODAL -->
-
-    <div class="modal" id="loginModal">
-
-        <div class="modal-box" style="position: relative;">
-
-            <span onclick="closeLogin()" style="position: absolute; top: 1rem; right: 1rem; cursor: pointer; color: var(--muted); font-size: 1.2rem;">&times;</span>
-
-            <h3>Prisijungimas</h3>
-
-            <input id="login-user" placeholder="slapyvardis">
-            <input id="login-pass" type="password" placeholder="slaptažodis">
-
-            <button class="btn-login" onclick="login()">Prisijungti</button>
-            <button class="btn-login" onclick="register()">Registruotis</button>
-
-        </div>
-
-    </div>
-
-
-<script> 
+<script>
     const username = @Json.Serialize(username);
 
     async function loadMyStats() {
         if (!username) return;
         try {
-          const res = await fetch(`/api/stats/${encodeURIComponent(username)}`);
-          const data = await res.json();
-          document.getElementById('quick-stats').innerHTML =
-            `<span>Greitis (PB): <b>${data.bestWpm} WPM</b></span>
-             <span>Tikslumas: <b>${data.averageAccuracy}%</b></span>
-             <span>Žaidimai: <b>${data.totalRaces}</b></span>`;
+            const res = await fetch(`/api/stats/${encodeURIComponent(username)}`);
+            const data = await res.json();
+            document.getElementById('quick-stats').innerHTML =
+                `<span>Greitis (PB): <b>${data.bestWpm} WPM</b></span>
+                 <span>Tikslumas: <b>${data.averageAccuracy}%</b></span>
+                 <span>Žaidimai: <b>${data.totalRaces}</b></span>`;
         } catch (err) {
-          console.error("Failed to load user stats", err);
+            console.error("Failed to load user stats", err);
         }
-      }
-      loadMyStats();
-    </script>
+    }
+    loadMyStats();
+</script>
