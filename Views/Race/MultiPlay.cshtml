@@ -56,14 +56,16 @@
         <p class="race-hint">Žodis su klaida neleidžia pereiti toliau. Ištaisyk jį, kad tęstum.</p>
 
         <div class="race-result" id="race-result" hidden>
-            <div class="personal-result" id="personal-result" hidden>
-                <p class="eyebrow">Tavo rezultatas</p>
-                <h2 id="personal-result-title">Finišavai!</h2>
-                <div class="personal-result-grid">
-                    <div class="result-metric result-metric-place">
-                        <span>Vieta</span><strong id="personal-place">—</strong>
+            <section class="card personal-result" id="personal-result" hidden>
+                <div class="result-head">
+                    <span class="place-badge"><strong id="personal-place">—</strong></span>
+                    <div>
+                        <p class="eyebrow">Tavo rezultatas</p>
+                        <h2 id="personal-result-title">Finišavai!</h2>
                     </div>
-                    <div class="result-metric result-metric-wpm">
+                </div>
+                <div class="personal-result-grid">
+                    <div class="result-metric">
                         <span>WPM</span><strong id="personal-wpm">—</strong>
                     </div>
                     <div class="result-metric">
@@ -76,57 +78,62 @@
                         <span>Klaidos</span><strong id="personal-errors">—</strong>
                     </div>
                 </div>
-                <div class="reward-placeholder" id="personal-reward">
-                    Bananai ir XP – netrukus
+                <div class="reward-box">
+                    <h3><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> Atlygis</h3>
+                    <div class="reward-placeholder" id="personal-reward" aria-live="polite">
+                        Skaičiuojama...
+                    </div>
                 </div>
-            </div>
+            </section>
             <div class="podium" id="podium"></div>
-            <div class="final-results" id="final-results" hidden>
-                <p class="eyebrow">Rezultatai</p>
+            <section class="card final-results" id="final-results" hidden>
+                <h2>Rezultatai</h2>
                 <div id="final-results-list"></div>
                 <p class="bot-explanation" id="bot-explanation" hidden>
-                    Botas: kompiuterio valdomas žaidėjas
+                    <span class="bot-badge">Botas</span> kompiuterio valdomas žaidėjas, rezultatai neįskaitomi
                 </p>
-            </div>
+            </section>
             <div class="result-actions">
-                <a class="monkey-button" href="/race/quick">
-                    Žaisti dar kartą
+                <a class="btn btn-p" href="/race/quick">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-redo"></use></svg>Žaisti dar kartą
                 </a>
-                <a class="text-button" href="/">Į pradžią</a>
+                <a class="btn btn-g" href="/">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-home"></use></svg>Į pradžią
+                </a>
             </div>
-            <section class="race-history" id="result-race-history">
+            <section class="card race-history" id="result-race-history">
                 <h2>Lenktynių istorija</h2>
                 <p id="result-history-status">Laukiama kitų žaidėjų…</p>
                 <div class="leader-bar" id="result-leader-bar"></div>
                 <div class="overtakes-list" id="result-overtakes-list"></div>
                 <p id="result-leader-summary"></p>
             </section>
-            <section class="race-replay" id="replay-race">
-                <h2>Žiūrėti lenktynes</h2>
+            <section class="card race-replay" id="replay-race">
+                <h2>Perklausa</h2>
                 <div class="replay-track" id="replay-track"></div>
                 <div class="replay-controls">
-                    <button type="button" id="replay-play" class="replay-main-button"
+                    <button type="button" id="replay-play" class="btn btn-p replay-main-button"
                             aria-label="Paleisti lenktynių replay" aria-pressed="false">
                         <svg class="control-icon icon-play" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M8 5v14l11-7z"/>
                         </svg><span>Paleisti</span>
                     </button>
-                    <button type="button" id="replay-pause" class="replay-pause-button"
+                    <button type="button" id="replay-pause" class="btn btn-s replay-pause-button"
                             aria-label="Pristabdyti lenktynių replay">
                         <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M7 5h4v14H7zm6 0h4v14h-4z"/>
                         </svg><span>Pauzė</span>
                     </button>
-                    <button type="button" id="replay-reset" class="replay-reset-button"
+                    <button type="button" id="replay-reset" class="btn btn-s replay-reset-button"
                             aria-label="Paleisti replay iš naujo">
                         <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M5 5v6h6M5.5 11A7 7 0 1 0 7 6.1"/>
                         </svg><span>Iš naujo</span>
                     </button>
-                    <div class="replay-speed" role="group" aria-label="Replay greitis">
-                        <button type="button" data-replay-speed="1" aria-pressed="true">1x</button>
-                        <button type="button" data-replay-speed="2" aria-pressed="false">2x</button>
-                        <button type="button" data-replay-speed="4" aria-pressed="false">4x</button>
+                    <div class="replay-speed tm-group" role="group" aria-label="Replay greitis">
+                        <button type="button" class="tm" data-replay-speed="0.5" aria-pressed="false">0.5x</button>
+                        <button type="button" class="tm" data-replay-speed="1" aria-pressed="true">1x</button>
+                        <button type="button" class="tm" data-replay-speed="2" aria-pressed="false">2x</button>
                     </div>
                     <div class="replay-scrubber">
                         <output id="replay-time">0,0 s / 0,0 s</output>
@@ -141,14 +148,14 @@
                     @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#795548", HatColor = "#7E57C2" })
                 </div>
             </section>
-            <section class="speed-chart" id="result-speed-chart">
+            <section class="card speed-chart" id="result-speed-chart">
                 <h2>Mano greitis</h2>
                 <svg id="result-wpm-chart" viewBox="0 0 640 180" role="img"
                      aria-label="WPM grafikas"></svg>
                 <p>Vidurkis: <strong id="result-wpm-average">—</strong> ·
                     Aukščiausias: <strong id="result-wpm-high">—</strong></p>
             </section>
-            <details class="word-errors" id="result-word-errors" open>
+            <details class="card result-details word-errors" id="result-word-errors" open>
                 <summary>Klaidos</summary>
                 <div class="details-content">
                     <div id="result-error-words"></div>
@@ -160,7 +167,7 @@
                     <ul id="result-error-list"></ul>
                 </div>
             </details>
-            <details class="text-about" id="text-about">
+            <details class="card result-details text-about" id="text-about">
                 <summary>Apie tekstą</summary>
                 <div class="details-content">
                 <dl>
@@ -172,7 +179,7 @@
                 </dl>
                 </div>
             </details>
-            <details class="race-statistics">
+            <details class="card result-details race-statistics">
                 <summary id="statistics-title">Lenktynių statistika</summary>
                 <div class="details-content">
                     <div class="statistics-chart" id="statistics-chart">
@@ -364,7 +371,10 @@ function showPersonalResult(data) {
     document.getElementById("wpm-display").textContent = data.wpm;
     document.getElementById("race-result").hidden = false;
     document.getElementById("personal-result").hidden = false;
-    document.getElementById("personal-place").textContent = `#${data.place}`;
+    document.getElementById("personal-place").textContent = data.place;
+    document.getElementById("personal-result").dataset.place = data.place;
+    document.getElementById("personal-result-title").textContent =
+        ["Pirma vieta!", "Antra vieta!", "Trečia vieta!", "Ketvirta vieta!"][data.place - 1] || "Finišavai!";
     document.getElementById("personal-wpm").textContent = data.wpm;
     document.getElementById("personal-accuracy").textContent =
         `${Number(data.accuracy).toFixed(1)}%`;
@@ -458,11 +468,12 @@ connection.on("RaceFinished", data => {
     if (me && me.reward)
         renderReward(document.getElementById("personal-reward"), me.reward);
     document.getElementById("final-results-list").innerHTML = data.players.map(player => `
-        <div class="podium-item">
-            <strong>${player.place ? "#" + player.place : "DNF"}</strong>
+        <div class="podium-item lb-row ${player.playerKey === PLAYER_KEY ? "is-me" : ""}">
+            <span class="lb-place ${player.place && player.place <= 3 ? "lb-place-" + player.place : ""}">${player.place || "–"}</span>
             <span class="result-player-name">${escapeHtml(player.username)}
-                ${botBadge(player)}</span>
-            <small>${player.wpm} WPM · ${Math.round(player.accuracy)}%${player.isDnf ? " · DNF" : ""}</small>
+                ${player.playerKey === PLAYER_KEY ? `<span class="tag tag-me">Tu</span>` : botBadge(player)}</span>
+            <span class="lb-num"><strong>${player.wpm}</strong> WPM</span>
+            <span class="lb-num">${Math.round(player.accuracy)}%${player.isDnf ? " · DNF" : ""}</span>
         </div>`).join("");
     raceTimeline = data.timeline;
     raceAnalysis = data.analysis;

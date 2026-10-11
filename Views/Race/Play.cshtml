@@ -31,40 +31,38 @@
         <p class="race-hint">Žodis su klaida neleidžia pereiti toliau. Ištaisyk jį, kad tęstum.</p>
     </section>
 </div>
-    <div class="results-overlay" id="results-overlay">
-        <div class="results-box">
-            <h2>Rezultatai</h2>
-            <div class="results-grid">
-                <div class="result-stat">
-                    <span id="result-wpm">0</span>
-                    <label>WPM</label>
-                </div>
-                <div class="result-stat">
-                    <span id="result-accuracy">0</span>
-                    <label>Tikslumas %</label>
-                </div>
-                <div class="result-stat">
-                    <span id="result-time">0</span>
-                    <label>Sekundės</label>
-                </div>
-                <div class="result-stat">
-                    <span id="result-klaidos">0</span>
-                    <label>Klaidos</label>
-                </div>
-            </div>
-
-            <div id="solo-reward" aria-live="polite" hidden></div>
-
-            <div class="results-actions">
-                <button class="btn-restart" onclick="restartRace()">Žaisti dar kartą <span>&#9654;</span></button>
-                <button class="btn-restart" onclick="retrySameText()" style="border-color: var(--muted); color: var(--muted);">Kartoti tekstą <span>&#8634;</span></button>
-                <button class="btn-restart" onclick="window.location='/'" style="border-color: #ca4754; color: #ca4754;">Grįžti į Pradinį <span>&#10006;</span></button>
+<div class="results-overlay" id="results-overlay">
+    <section class="card results-box personal-result" role="dialog" aria-modal="true" aria-labelledby="solo-result-title">
+        <div class="result-head">
+            <span class="place-badge" aria-hidden="true"><svg class="ui-icon" aria-hidden="true"><use href="#icon-flag"></use></svg></span>
+            <div>
+                <p class="eyebrow">Solo treniruotė</p>
+                <h2 id="solo-result-title">Tekstas baigtas!</h2>
             </div>
         </div>
-    </div>
+        <div class="personal-result-grid">
+            <div class="result-metric"><span>WPM</span><strong id="result-wpm">0</strong></div>
+            <div class="result-metric"><span>Tikslumas</span><strong><span id="result-accuracy">0</span>%</strong></div>
+            <div class="result-metric"><span>Laikas</span><strong><span id="result-time">0</span> s</strong></div>
+            <div class="result-metric result-metric-errors"><span>Klaidos</span><strong id="result-klaidos">0</strong></div>
+        </div>
 
+        <div id="solo-reward" aria-live="polite" hidden></div>
 
+        <div class="result-actions">
+            <button class="btn btn-p" type="button" onclick="restartRace()">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Žaisti dar kartą
+            </button>
+            <button class="btn btn-s" type="button" onclick="retrySameText()">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-redo"></use></svg>Kartoti tekstą
+            </button>
+            <a class="btn btn-s" href="/">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-home"></use></svg>Į pradžią
+            </a>
+        </div>
+    </section>
 </div>
+
     <script>
          
         let TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
