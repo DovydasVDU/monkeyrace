@@ -3,6 +3,8 @@
 	<PropertyGroup>
    		<TargetFramework>net10.0</TargetFramework>	
 		<RootNamespace>monkeyrace</RootNamespace>
+		<!-- testų projektas gyvena tests/ aplanke ir neturi būti kompiliuojamas kartu su svetaine -->
+		<DefaultItemExcludes>$(DefaultItemExcludes);tests/**</DefaultItemExcludes>
 	</PropertyGroup>
 
 	<ItemGroup>
