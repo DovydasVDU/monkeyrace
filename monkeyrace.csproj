@@ -1,20 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+   		<TargetFramework>net10.0</TargetFramework>	
+		<RootNamespace>monkeyrace</RootNamespace>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.32" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.32" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.1.32" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.32" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="3.1.32" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Filters\" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		  <PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 	</ItemGroup>
 
 </Project>

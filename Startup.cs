@@ -5,15 +5,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using Microsoft.Extensions.Configuration;
 
 public class Startup
 {
     private readonly IWebHostEnvironment _env;
+    private readonly IConfiguration _configuration;
 
-    public Startup(IWebHostEnvironment env)
-    {
-        _env = env;
-    }
+
+   public Startup(IConfiguration configuration, IWebHostEnvironment env)
+{
+    _configuration = configuration;
+    _env = env;
+}
 
     // Tai klasė, kuri konfigūruoja mūsų programą. 
     // Joje nurodome, kokius servisus naudosime (ConfigureServices) ir kaip bus tvarkomi užklausos (Configure).
@@ -25,21 +29,11 @@ public class Startup
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
 
+        // Vystymui naudojame naują SQLite DB failą. Schema sukuriama paleidimo metu.
+        string connectionString = _configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Trūksta ConnectionStrings:DefaultConnection.");
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite("Data Source=monkeyracer.db"));
-
-
-        // Prisijungiame prie SQL Server duomenų bazės.
-        //string connectionString = "Server=tcp:db50921.databaseasp.net,1433;Database=db50921;User ID=db50921;Password=4Dw#b!L67a%E;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True;";
-
-        //services.AddDbContext<AppDbContext>(options =>
-        //    options.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
-        //    {
-        //        sqlOptions.EnableRetryOnFailure(
-        //            maxRetryCount: 5,
-        //            maxRetryDelay: TimeSpan.FromSeconds(30),
-        //            errorNumbersToAdd: null);
-        //    }));
+            options.UseSqlite(connectionString));
 
 
         // cookies autentikavimas

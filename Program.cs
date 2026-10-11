@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 public class Program
 {
@@ -9,7 +10,17 @@ public class Program
     // Host'as rūpinasi viskuo, kas susiję su programos gyvavimo ciklu, įskaitant serverio paleidimą, konfigūraciją ir pan.
     public static void Main(string[] args)
     {
-        CreateHostBuilder(args).Build().Run();
+        var host = CreateHostBuilder(args).Build();
+
+        using (var scope = host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            // Migrate() sukuria DB ir prideda naujus stulpelius (EnsureCreated to nedaro esamai DB).
+            // Pakeitus modelį: dotnet ef migrations add <Pavadinimas>
+            db.Database.Migrate();
+        }
+
+        host.Run();
     }
 
     public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -18,4 +29,5 @@ public class Program
             {
                 webBuilder.UseStartup<Startup>(); // naudojame Startup klasę
             });
+
 }
