@@ -12,11 +12,16 @@ public class RaceController : Controller
 {
     private readonly AppDbContext _db;
     private readonly RaceService _raceService;
+    private readonly MatchmakingService _matchmaking;
 
-    public RaceController(AppDbContext db, RaceService raceService)
+    public RaceController(
+        AppDbContext db,
+        RaceService raceService,
+        MatchmakingService matchmaking)
     {
         _db = db;
         _raceService = raceService; // prijungiame duomenų bazę per Dependency Injection, kad galėtume saugoti rezultatus ir gauti tekstus iš duomenų bazės
+        _matchmaking = matchmaking;
     }
 
     public async Task<IActionResult> Play() // pagrindinis žaidimo puslapis, kuris parenka tekstą pagal sunkumą ir rodo jį žaidėjui
@@ -38,44 +43,43 @@ public class RaceController : Controller
 
         HttpContext.Session.SetString("LastSnippetIds", JsonSerializer.Serialize(lastIds)); // atnaujiname ir išsaugom sesijoje lastIds
 
-        // Kai atsidaro langas, sukuriame naują Race objektą. 
-        var race = new Race
-        {
-
-            TextSnippetId = snippet.Id, // ištraukiame tesktą
-            StartedAt = DateTime.UtcNow // datą
-        };
-        _db.Races.Add(race); // pridedame įrašą į duomenų bazę
-        await _db.SaveChangesAsync();
-
-        ViewBag.RaceId = race.Id; // 
+        // Race įrašas DB kuriamas tik išsaugant rezultatą (SaveResult), o ne kiekvieną kartą atidarius puslapį.
+        // Sesijoje prisimenam, kokį tekstą ir kada davėme - pagal tai SaveResult patikrina rezultatą.
+        HttpContext.Session.SetInt32("SoloSnippetId", snippet.Id);
+        HttpContext.Session.SetString("SoloStartedAt", DateTime.UtcNow.ToString("O"));
 
         return View(snippet);
     }
 
-    public IActionResult Lobby()
+    [HttpGet("/race/quick")]
+    public IActionResult Quick(string username, int attempt = 0)
     {
-        return View();
+        if (attempt >= 2)
+            return View("MatchmakingError");
+
+        var playerKey = PlayerIdentity.GetPlayerKey(HttpContext);
+        var displayName = PlayerIdentity.GetUsername(HttpContext, username);
+        HttpContext.Session.SetString("MatchmakingUsername", displayName);
+        var raceId = _matchmaking.JoinOrCreate(
+            playerKey, displayName, PlayerIdentity.GetUserId(HttpContext));
+
+        return RedirectToAction(nameof(MultiPlay), new { raceId, attempt });
     }
-    // GET /Race/MultiPlay?roomId=abc123
-    public IActionResult MultiPlay(string roomId)
+
+    [HttpGet("/race/multiplay/{raceId}")]
+    public IActionResult MultiPlay(string raceId)
     {
-        // viewbag - tai objektas, kuris leidžia perduoti duomenis iš kontrolerio į view.
-        // Čia perduodame roomId, kad frontend žinotų, kur prisijungti prie websocket'o
+        var playerKey = PlayerIdentity.GetPlayerKey(HttpContext);
+        var username = PlayerIdentity.GetUsername(HttpContext);
+        var attempt = 0;
+        if (Request.Query.TryGetValue("attempt", out var attemptValue))
+            int.TryParse(attemptValue, out attempt);
 
-        ViewBag.RoomId = roomId;
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            ViewBag.Username = User.FindFirstValue(ClaimTypes.Name);
-        }
-        else
-        {
-            ViewBag.Username = null;  // svečio username saugomas session
-        }
-        
-         
-
-        return View("MultiPlay"); // grąžiname tik puslapį, nes websocket'as bus atsakingas už visą žaidimo logiką
+        ViewBag.RaceId = raceId;
+        ViewBag.PlayerKey = playerKey;
+        ViewBag.Username = username;
+        ViewBag.Attempt = attempt;
+        return View("MultiPlay");
     }
 
     [HttpPost]
@@ -96,7 +100,32 @@ public class RaceController : Controller
         // Paverčiame prisijungusio vartotojo ID į int ir pateikiame servisui
         var userId = int.Parse(userIdStr);
 
-        await _raceService.SaveRaceResultAsync(userId, dto.RaceId, dto.Wpm, dto.Accuracy, dto.TimeSeconds, dto.ErrorCount);
+        // Naršyklei aklai netikime: tekstas ir pradžios laikas imami iš sesijos (nustatyti Play metu),
+        // o WPM negali viršyti greičio, kurį leidžia serverio išmatuotas laikas nuo puslapio atidarymo.
+        var snippetId = HttpContext.Session.GetInt32("SoloSnippetId");
+        var startedAtText = HttpContext.Session.GetString("SoloStartedAt");
+        if (snippetId == null || !DateTime.TryParse(startedAtText, null,
+                System.Globalization.DateTimeStyles.RoundtripKind, out var startedAt))
+            return BadRequest("Race unavailable.");
+        // vienas rezultatas vienam Play atidarymui
+        HttpContext.Session.Remove("SoloSnippetId");
+        HttpContext.Session.Remove("SoloStartedAt");
+
+        var snippet = await _db.TextSnippets.FindAsync(snippetId.Value);
+        if (snippet == null)
+            return BadRequest("Race unavailable.");
+
+        var elapsedMinutes = Math.Max(1d / 60, (DateTime.UtcNow - startedAt).TotalMinutes);
+        var maxPossibleWpm = snippet.Content.Length / 5d / elapsedMinutes * 1.2;
+        if (dto.Wpm < 0 || dto.Wpm > RaceService.MaxWpm || dto.Wpm > maxPossibleWpm ||
+            dto.Accuracy < 0 || dto.Accuracy > 100)
+            return BadRequest("Implausible result.");
+
+        var race = new Race { TextSnippetId = snippet.Id, StartedAt = startedAt };
+        _db.Races.Add(race);
+        await _db.SaveChangesAsync();
+
+        await _raceService.SaveRaceResultAsync(userId, race.Id, dto.Wpm, dto.Accuracy, dto.TimeSeconds, dto.ErrorCount);
 
         return Json(new { success = true }); 
     }
@@ -104,7 +133,6 @@ public class RaceController : Controller
 // DTO (Data Transfer Object) klasė, skirta priimti rezultatus iš frontend'o ir saugoti juos duomenų bazėje
 public class RaceResultDto 
 {
-    public int RaceId { get; set; }
     public int Wpm { get; set; }
     public double Accuracy { get; set; }
     public int TimeSeconds { get; set; }

@@ -1,608 +1,912 @@
-﻿@model TextSnippet
-@using Microsoft.AspNetCore.Http
-@using System.Security.Claims
-@{ var username = User.FindFirstValue(ClaimTypes.Name);  }
-
-
-@{ 
-    ViewData["Title"] = "Rašyk - Monkeyrace"; 
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Lenktynės - MonkeyRace";
+    var raceId = (string)ViewBag.RaceId;
+    var playerKey = (string)ViewBag.PlayerKey;
+    var username = (string)ViewBag.Username;
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
 }
 
-<style>
-    .player-hover {
-    position: relative;
-    display: inline-block;
-}
+<div class="match-page">
+    <section class="race-card" id="race-panel">
+        <div class="race-topbar">
+            <button class="text-button" id="leave-button" type="button"
+                    onclick="leaveRace()">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m14.5 5-7 7 7 7M8 12h12"/>
+                </svg>
+                <span>Išeiti</span>
+            </button>
+            <div class="race-title-wrap">
+                <p class="eyebrow"><span class="live-dot"></span> MonkeyRace</p>
+                <h1 id="race-title">Laukiame varžovų</h1>
+            </div>
+            <div class="race-stats" aria-label="Lenktynių statistika">
+                <span><strong id="wpm-display">0</strong><small>WPM</small></span>
+                <span><strong id="accuracy-display">100</strong><small>%</small></span>
+                <span><strong id="timer-display">0</strong><small>sek</small></span>
+            </div>
+        </div>
+        <div class="queue-status" id="queue-status" aria-live="polite">Jungiama prie lenktynių...</div>
+        <div class="queue-meta" id="queue-meta"></div>
+        <div class="countdown" id="countdown" aria-live="polite" hidden></div>
+        <div class="players-track" id="players-track"></div>
+        <div class="race-lane-label"><span>Startas</span><span>Finišas</span></div>
+        <div class="text-display" id="text-display"></div>
+        <input type="text" id="input-field" class="word-input"
+               autocomplete="off" autocorrect="off" autocapitalize="off"
+               spellcheck="false" placeholder="Laukite starto..." disabled />
 
-.stats-dropdown {
-    position: absolute;
-    top: 130%;
-    left: 0;
-
-    min-width: 180px;
-
-    background: #1e1f26;
-    border: 1px solid #333;
-    border-radius: 10px;
-
-    padding: 0.8rem;
-
-    display: none;
-    flex-direction: column;
-    gap: 0.5rem;
-
-    z-index: 999;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.35);
-}
-
-.player-hover:hover .stats-dropdown {
-    display: flex;
-}
-
-.stats-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    font-size: 0.9rem;
-    color: #ccc;
-}
-
-.stats-item strong {
-    color: white;
-}
-
-.stats-loading {
-    color: #777;
-    font-size: 0.85rem;
-}
-    </style>
+        <div class="race-result" id="race-result" hidden>
+            <div class="personal-result" id="personal-result" hidden>
+                <p class="eyebrow">Tavo rezultatas</p>
+                <h2 id="personal-result-title">Finišavai!</h2>
+                <div class="personal-result-grid">
+                    <div class="result-metric result-metric-place">
+                        <span>Vieta</span><strong id="personal-place">—</strong>
+                    </div>
+                    <div class="result-metric result-metric-wpm">
+                        <span>WPM</span><strong id="personal-wpm">—</strong>
+                    </div>
+                    <div class="result-metric">
+                        <span>Tikslumas</span><strong id="personal-accuracy">—</strong>
+                    </div>
+                    <div class="result-metric">
+                        <span>Laikas</span><strong id="personal-time">—</strong>
+                    </div>
+                    <div class="result-metric result-metric-errors">
+                        <span>Klaidos</span><strong id="personal-errors">—</strong>
+                    </div>
+                </div>
+                <div class="reward-placeholder" id="personal-reward">
+                    Bananai ir XP – netrukus
+                </div>
+            </div>
+            <div class="podium" id="podium"></div>
+            <div class="final-results" id="final-results" hidden>
+                <p class="eyebrow">Rezultatai</p>
+                <div id="final-results-list"></div>
+                <p class="bot-explanation" id="bot-explanation" hidden>
+                    Botas: kompiuterio valdomas žaidėjas
+                </p>
+            </div>
+            <div class="result-actions">
+                <a class="monkey-button" href="/race/quick">
+                    Žaisti dar kartą
+                </a>
+                <a class="text-button" href="/">Į pradžią</a>
+            </div>
+            <section class="race-history" id="result-race-history">
+                <h2>Lenktynių istorija</h2>
+                <p id="result-history-status">Laukiama kitų žaidėjų…</p>
+                <div class="leader-bar" id="result-leader-bar"></div>
+                <div class="overtakes-list" id="result-overtakes-list"></div>
+                <p id="result-leader-summary"></p>
+            </section>
+            <section class="race-replay" id="replay-race">
+                <h2>Žiūrėti lenktynes</h2>
+                <div class="replay-track" id="replay-track"></div>
+                <div class="replay-controls">
+                    <button type="button" id="replay-play" class="replay-main-button"
+                            aria-label="Paleisti lenktynių replay" aria-pressed="false">
+                        <svg class="control-icon icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg><span>Paleisti</span>
+                    </button>
+                    <button type="button" id="replay-pause" class="replay-pause-button"
+                            aria-label="Pristabdyti lenktynių replay">
+                        <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M7 5h4v14H7zm6 0h4v14h-4z"/>
+                        </svg><span>Pauzė</span>
+                    </button>
+                    <button type="button" id="replay-reset" class="replay-reset-button"
+                            aria-label="Paleisti replay iš naujo">
+                        <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 5v6h6M5.5 11A7 7 0 1 0 7 6.1"/>
+                        </svg><span>Iš naujo</span>
+                    </button>
+                    <div class="replay-speed" role="group" aria-label="Replay greitis">
+                        <button type="button" data-replay-speed="1" aria-pressed="true">1x</button>
+                        <button type="button" data-replay-speed="2" aria-pressed="false">2x</button>
+                        <button type="button" data-replay-speed="4" aria-pressed="false">4x</button>
+                    </div>
+                    <div class="replay-scrubber">
+                        <output id="replay-time">0,0 s / 0,0 s</output>
+                        <input type="range" id="replay-range" min="0" max="0" value="0"
+                               aria-label="Replay laiko pozicija">
+                    </div>
+                </div>
+                <div id="replay-monkey-templates" hidden>
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#8D5A2B", HatColor = "#FFC93C" })
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#5D4037", HatColor = "#E53935" })
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#6D4C41", HatColor = "#2E7D32" })
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#795548", HatColor = "#7E57C2" })
+                </div>
+            </section>
+            <section class="speed-chart" id="result-speed-chart">
+                <h2>Mano greitis</h2>
+                <svg id="result-wpm-chart" viewBox="0 0 640 180" role="img"
+                     aria-label="WPM grafikas"></svg>
+                <p>Vidurkis: <strong id="result-wpm-average">—</strong> ·
+                    Aukščiausias: <strong id="result-wpm-high">—</strong></p>
+            </section>
+            <details class="word-errors" id="result-word-errors" open>
+                <summary>Klaidos</summary>
+                <div class="details-content">
+                    <div id="result-error-words"></div>
+                    <div class="word-error-legend" aria-label="Klaidų legenda">
+                        <span class="legend-fixed">Pataisyta klaida</span>
+                        <span class="legend-wrong">Liko neteisingai</span>
+                    </div>
+                    <p>Žodžiai su klaidomis:</p>
+                    <ul id="result-error-list"></ul>
+                </div>
+            </details>
+            <details class="text-about" id="text-about">
+                <summary>Apie tekstą</summary>
+                <div class="details-content">
+                <dl>
+                    <div id="text-length-row"><dt>Ilgis</dt><dd id="text-length"></dd></div>
+                    <div id="text-word-count-row"><dt>Žodžiai</dt><dd id="text-word-count"></dd></div>
+                    <div id="text-author-row" hidden><dt>Autorius</dt><dd id="text-author"></dd></div>
+                    <div id="text-work-row" hidden><dt>Kūrinys</dt><dd id="text-work"></dd></div>
+                    <div id="text-source-row" hidden><dt>Šaltinis</dt><dd><a id="text-source" target="_blank" rel="noopener noreferrer"></a></dd></div>
+                </dl>
+                </div>
+            </details>
+            <details class="race-statistics">
+                <summary id="statistics-title">Lenktynių statistika</summary>
+                <div class="details-content">
+                    <div class="statistics-chart" id="statistics-chart">
+                        <span>Netrukus</span>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </section>
 </div>
-<div class="race-container">
-    <div style="color:var(--muted); font-size:0.8rem; margin-bottom:1rem;">
-        kambarys: <span style="color:var(--accent)">@ViewBag.RoomId</span>
-        — pasidalink šiuo kodu su draugais
-    </div>
 
-    <div id="lobby-controls" style="margin-bottom: 1.5rem;">                
-        <button id="btn-restart" class="btn-player" style="border-color:#ca4754; color:#ca4754;" onclick="window.location='/'">Grįžti į Pradinį</button>
-        <button id="btn-ready" class="btn-player" onclick="toggleReady()">Pasiruošęs</button>
-        <button id="btn-start" class="btn-player" style="display:none;" disabled onclick="startRace()">Pradėti lenktynes</button>
-
-    </div>
-
-    <div class="players-bar" id="players-bar"></div>
-
-    <div class="stats-bar" id="stats-bar">
-        <span class="stat"><span id="wpm-display">0</span><label>wpm</label></span>
-        <span class="stat"><span id="accuracy-display">100</span><label>%</label></span>
-        <span class="stat"><span id="timer-display">0</span><label>sek</label></span>
-    </div>
-
-    <div id="text-display" class="text-display"></div>
-
-    <div style="text-align: center;">
-        <input type="text" id="input-field" class="word-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Laukiama..." />
-    </div>
-
-    <div id="result-controls" style="display:none; text-align:center; margin-top: 1.5rem;">
-        <div style="color:var(--muted); font-size:0.8rem; margin-bottom:1rem;">  Palauk, kol kambario kūrėjas paleis žaidimą.</div>
-        <button id="btn-reset" class="btn" style="display:none;" onclick="resetRoom()">Grįžti į laukiamąjį (Host)</button>
-        <button class="btn" onclick="window.location.href='/'">Išeiti</button>
-    </div>
-</div>
-
-<div id="countdown-overlay" class="countdown-overlay">3</div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
 <script>
-const isLoggedIn = @(User.Identity.IsAuthenticated.ToString().ToLower());
-
-let TARGET_TEXT = "";
-const ROOM_ID = "@ViewBag.RoomId"; // paimame kambario ID iš ViewBag, kurį nustatė RaceController
-let RACE_ID = 0;
-let USERNAME;
-
-if (isLoggedIn) {
-    USERNAME = "@Html.Raw(User.FindFirstValue(ClaimTypes.Name))";
-} else {
-    let vardas = sessionStorage.getItem("username");
-
-    if (vardas) {
-       USERNAME = vardas;
-    } else { 
-       // jeigu user neturi įrašyto vardo per sessionStorage (atėjo per tiesioginę nuorodą), tada paprašom įvesti
-       let input = prompt("Įveskite savo vardą (neprivaloma):") || "Svečias";
-
-       if (input !== "Svečias") { 
-           input = input + " (Svečias)"; 
-       }
-
-       sessionStorage.setItem("username", input);
-       USERNAME = input;
-    }
-}
-
-let isHost = false;
-let isStarted = false;
-let startTime = null;
-let timerHandle = null;
-let isFinished  = false;
-const klaidosSet = new Set();
-let targetWords = [];
-let currentWordIndex = 0;
-let totalTypedChars = 0;
-
-const players = {};  // visi žaidėjai
-
-const playersStats = {}; // saugosime žaidėjų PB ir kitą statistiką žodyne, kad galėtume rodyti dropdown
-let myConnectionId = null;
-
-const connection = new signalR.HubConnectionBuilder() // sukuriamas SignalR ryšys su serveriu
+const RACE_ID = @Html.Raw(JsonSerializer.Serialize(raceId));
+const PLAYER_KEY = @Html.Raw(JsonSerializer.Serialize(playerKey));
+const USERNAME = @Html.Raw(JsonSerializer.Serialize(username));
+const ATTEMPT = @((int)(ViewBag.Attempt ?? 0));
+const IS_AUTHENTICATED = @isAuthenticated.ToString().ToLowerInvariant();
+const TAB_ID = sessionStorage.getItem("monkeyrace-tab-id") ||
+    (crypto.randomUUID ? crypto.randomUUID() :
+        `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+sessionStorage.setItem("monkeyrace-tab-id", TAB_ID);
+const connection = new signalR.HubConnectionBuilder()
     .withUrl("/racehub")
     .withAutomaticReconnect()
     .build();
 
-connection.on("PlayerJoined", (data) => {
-    if (!players[data.connectionId]) {
-        addPlayerRow(data.connectionId, data.username, false, data.isReady);
-    }
-    updateStartButtonState();
-});
+let targetText = "";
+let startAtUtc = null;
+let serverOffsetMs = 0;
+let raceStarted = false;
+let finished = false;
+let countdownTimer = null;
+let raceTimer = null;
+let inputTimer = null;
+let totalKeystrokes = 0;
+let wrongKeystrokes = 0;
+let wordErrorStates = [];
+let wordHadError = [];
+let raceTimeline = null;
+let raceAnalysis = null;
+let raceTextLength = 0;
+let replayTimer = null;
+let replaySpeed = 1;
+let replayIndex = 0;
+const players = {};
+const BOT_MONKEY_COLORS = ["#8D5A2B", "#5D4037", "#6D4C41", "#795548"];
 
-connection.on("RoomState", (data) => {
-    myConnectionId = connection.connectionId;
-    isHost = data.hostConnectionId === myConnectionId;
+const input = document.getElementById("input-field");
+const queueStatus = document.getElementById("queue-status");
+const queueMeta = document.getElementById("queue-meta");
+const countdown = document.getElementById("countdown");
 
-    if (isHost) {
-        document.getElementById('btn-start').style.display = 'inline-block';
-    }
+function serverNow() {
+    return Date.now() + serverOffsetMs;
+}
 
-    data.players.forEach(p => {
-        if (!players[p.connectionId]) {
-            const isMe = p.connectionId === myConnectionId;
-            addPlayerRow(p.connectionId, p.username + (isMe ? " (tu)" : ""), isMe, p.isReady);
-            if (data.isStarted) {
-                updateProgressBar(p.connectionId, p.progress);
-                const wpmEl = document.getElementById('wpm-' + p.connectionId);
-                if (wpmEl) wpmEl.textContent = (p.wpm || 0) + " WPM";
-                const wordEl = document.getElementById('word-' + p.connectionId);
-                if (wordEl) wordEl.textContent = (p.word || "...");
-            }
-        }
-    });
+function setStatus(status, meta) {
+    queueStatus.textContent = status;
+    queueMeta.textContent = meta || "";
+}
 
-    updateStartButtonState();
-});
+function isBotPlayer(player) {
+    return Boolean(player && (player.isBot ||
+        (player.id && player.id.startsWith("bot:")) ||
+        (player.playerKey && player.playerKey.startsWith("bot:"))));
+}
 
-connection.on("PlayerReadyStatus", (data) => {
-    if (players[data.connectionId]) {
-        players[data.connectionId].isReady = data.isReady;
-        const statusEl = document.getElementById('status-' + data.connectionId);
-        if (statusEl) {
-            statusEl.textContent = data.isReady ? "Pasiruošęs" : "Laukiama";
-            statusEl.className = 'player-status ' + (data.isReady ? 'ready' : 'not-ready');
-        }
+function getBotColorIndex(player, fallbackIndex) {
+    const value = Number.isInteger(player?.colorIndex)
+        ? player.colorIndex
+        : Number.isInteger(players[player?.id]?.colorIndex)
+            ? players[player.id].colorIndex
+            : fallbackIndex;
+    return Math.abs(value || 0) % BOT_MONKEY_COLORS.length;
+}
 
-        if (data.connectionId === myConnectionId) {
-            document.getElementById('btn-ready').textContent = data.isReady ? "Atšaukti pasiruošimą" : "Pasiruošęs";
-        }
-    }
-    updateStartButtonState();
-});
+function botBadge(player) {
+    return isBotPlayer(player)
+        ? `<span class="bot-badge" title="Botas: kompiuterio valdomas žaidėjas"
+             aria-label="Botas">BOT</span>`
+        : "";
+}
 
-connection.on("RaceStarting", (data) => {
-    TARGET_TEXT = data.text;
-    window.RACE_ID = data.raceId || 0;
-    startCountdown();
-});
+function monkeyTemplate(colorIndex) {
+    const templates = document.querySelectorAll(
+        "#replay-monkey-templates .monkey-svg");
+    const template = templates[Math.abs(colorIndex || 0) % templates.length];
+    return template ? template.outerHTML : "";
+}
 
-connection.on("ProgressUpdate", (data) => {
-    updateProgressBar(data.connectionId, data.progress);
-    const wpmEl = document.getElementById('wpm-' + data.connectionId);
-    if (wpmEl && data.wpm !== undefined) wpmEl.textContent = data.wpm + " WPM";
-    const wordEl = document.getElementById('word-' + data.connectionId);
-    if (wordEl && data.word !== undefined) wordEl.textContent = data.word;
-});
+function applyState(state) {
+    targetText = state.text || targetText;
+    state.players.forEach(player => players[player.playerKey] = player);
+    renderPlayers();
 
-connection.on("PlayerFinished", (data) => {
-    const row = document.getElementById('player-' + data.connectionId);
-    if (row) row.classList.add('finished');
-    const statsEl = document.getElementById('live-stats-' + data.connectionId);
-    if (statsEl) {
-        let medal = ""; let placeClass = "";
-        if (data.place === 1) { medal = "🏆 "; placeClass = "place-1"; }
-        else if (data.place === 2) { medal = "🥈 "; placeClass = "place-2"; }
-        else if (data.place === 3) { medal = "🥉 "; placeClass = "place-3"; }
-        statsEl.innerHTML = `<span class="${placeClass}" style="font-size:0.9rem; text-align:right; width:100%; border:none; background:transparent;">${medal}#${data.place} (${data.wpm} WPM)</span>`;
-
-    }
-});
-
-connection.on("PlayerLeft", (data) => {
-    const row = document.getElementById('player-' + data.connectionId);
-    if (row) row.remove();
-    delete players[data.connectionId];
-
-    if (data.newHostId === myConnectionId) {
-        isHost = true;
-        if (!isStarted) {
-            document.getElementById('btn-start').style.display = 'inline-block';
-        } else if (isFinished) {
-            document.getElementById('btn-reset').style.display = 'inline-block';
-        }
-    }
-    updateStartButtonState();
-});
-
-connection.on("RoomReset", () => {
-    isStarted = false;
-    isFinished = false;
-    startTime = null;
-    timerHandle = null;
-    klaidosSet.clear();
-    currentWordIndex = 0;
-    totalTypedChars = 0;
-
-    document.getElementById('text-display').style.display = 'none';
-    document.getElementById('stats-bar').style.display = 'none';
-    document.getElementById('result-controls').style.display = 'none';
-    document.getElementById('lobby-controls').style.display = 'block';
-
-    document.getElementById('input-field').style.display = 'none';
-    document.getElementById('input-field').value = '';
-    document.getElementById('input-field').classList.remove('error');
-    document.getElementById('input-field').disabled = false;
-
-    document.querySelectorAll('.progress-track').forEach(el => {
-        el.style.display = 'none';
-        el.querySelector('.progress-fill').style.width = '0%';
-    });
-
-    document.querySelectorAll('.player-row').forEach(row => {
-        row.classList.remove('finished');
-        const id = row.id.replace('player-', '');
-        const statsEl = document.getElementById('live-stats-' + id);
-        if (statsEl) {
-            statsEl.style.display = 'none';
-            statsEl.innerHTML = `<span class="live-wpm" id="wpm-${id}">0 WPM</span><span class="live-word" id="word-${id}">...</span>`;
-        }
-    });
-
-    document.querySelectorAll('.player-status').forEach(el => {
-        el.style.display = 'inline-block';
-        el.textContent = 'Laukiama';
-        el.className = 'player-status not-ready';
-    });
-
-    document.getElementById('btn-ready').textContent = 'Pasiruošęs';
-
-    for (let id in players) {
-        players[id].progress = 0;
-        players[id].isReady = false;
-    }
-
-    updateStartButtonState();
-});
-connection.on("Error", function(msg) {
-    alert(msg);
-    window.location.href = "/"; // pvz. ištremti atgal į Pradžią
-});
-
-async function addPlayerRow(connectionId, username, isMe, isReady) {
-    const bar = document.getElementById('players-bar');
-
-    const div = document.createElement('div');
-    div.className = 'player-row' + (isMe ? ' me' : '');
-    div.id = 'player-' + connectionId;
-
-    div.innerHTML = `
-        <div class="player-hover">
-            <span class="player-name">${username}</span>
-
-            <div class="stats-dropdown" id="stats-${connectionId}">
-                <div class="stats-loading">Loading...</div>
-            </div>
-        </div>
-
-        <div class="progress-track" id="track-${connectionId}">
-            <div class="progress-fill" id="fill-${connectionId}"></div>
-        </div>
-
-        <div class="live-stats" id="live-stats-${connectionId}" style="display:none;">
-            <span class="live-wpm" id="wpm-${connectionId}">0 WPM</span>
-            <span class="live-word" id="word-${connectionId}">...</span>
-        </div>
-
-        <span class="player-status ${isReady ? 'ready' : 'not-ready'}" id="status-${connectionId}">
-            ${isReady ? 'Pasiruošęs' : 'Laukiama'}
-        </span>
-    `;
-
-    bar.appendChild(div);
-
-    players[connectionId] = {
-        username,
-        progress: 0,
-        isReady: isReady
-    };
-
-    if (!username.includes("(Svečias)")) {
-        const cleanUsername = username.replace(" (tu)", "").trim();
-
-        try {
-            const res = await fetch(`/api/stats/${encodeURIComponent(cleanUsername)}`);
-
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
-            }
-
-            const data = await res.json();
-
-            // išsaugom stats
-            playersStats[connectionId] = {
-                PB: data.bestWpm,
-                acc: data.averageAccuracy,
-                races: data.totalRaces
-            };
-
-            // sukuriam dropdown
-            const dropdown = document.getElementById(`stats-${connectionId}`);
-
-            if (dropdown) {
-                dropdown.innerHTML = `
-                    <div class="stats-item">
-                        <span>PB:</span>
-                        <strong>${data.bestWpm}</strong>
-                    </div>
-
-                    <div class="stats-item">
-                        <span>Tikslumas:</span>
-                        <strong>${Math.round(data.averageAccuracy)}%</strong>
-                    </div>
-
-                    <div class="stats-item">
-                        <span>Žaidimų:</span>
-                        <strong>${data.totalRaces}</strong>
-                    </div>
-                `;
-            }
-
-        } catch (err) {
-            console.error("Failed to load user stats", err);
-            const dropdown = document.getElementById(`stats-${connectionId}`);
-            if (dropdown) {
-                dropdown.innerHTML = `<div class="stats-loading">Duomenys nepasiekiami.</div>`;
-            }
-        }
-    } else {
-        // jeigu svečias
-        const dropdown = document.getElementById(`stats-${connectionId}`);
-        if (dropdown) {
-            dropdown.innerHTML = `<div class="stats-loading">Neprisijungęs.</div>`;
-        }
+    if (state.status === "Lobby") {
+        setStatus("Laukiame varžovų...", `${state.players.length}/4 žaidėjai`);
+        document.getElementById("race-title").textContent = "Laukiame varžovų";
+        startLobbyClock(state.lobbyDeadlineUtc, state.serverNowUtc);
+    } else if (state.status === "Countdown") {
+        prepareCountdown(state.startAtUtc, state.serverNowUtc, targetText);
+    } else if (state.status === "Racing") {
+        prepareRace(state.startAtUtc, state.serverNowUtc, targetText);
     }
 }
 
-
-function resetRoom() {
-    connection.invoke("ResetRoom", ROOM_ID);
+function startLobbyClock(deadline, serverNowUtc) {
+    clearInterval(countdownTimer);
+    const deadlineMs = Date.parse(deadline);
+    serverOffsetMs = Date.parse(serverNowUtc) - Date.now();
+    countdownTimer = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((deadlineMs - serverNow()) / 1000));
+        queueMeta.textContent = `${Object.keys(players).length}/4 žaidėjai · startas po ${remaining} s`;
+        if (remaining === 0) clearInterval(countdownTimer);
+    }, 100);
 }
 
-function updateProgressBar(connectionId, progress) {
-    const fill = document.getElementById('fill-' + connectionId);
-    if (fill) fill.style.width = progress + '%';
-    if (players[connectionId]) players[connectionId].progress = progress;
-}
-
-function updateStartButtonState() {
-    if (!isHost) return;
-    const allReady = Object.values(players).every(p => p.isReady);
-    document.getElementById('btn-start').disabled = !allReady;
-}
-
-function toggleReady() {
-    connection.invoke("ToggleReady", ROOM_ID);
-}
-
-function startRace() {
-    connection.invoke("StartRace", ROOM_ID);
-}
-
-function startCountdown() {
-    isStarted = true;
-    document.getElementById('lobby-controls').style.display = 'none';
-
-    document.querySelectorAll('.progress-track').forEach(el => el.style.display = 'block');
-    document.querySelectorAll('.player-status').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.live-stats').forEach(el => el.style.display = 'flex');
-
+function prepareCountdown(startAt, serverNowUtc, text) {
+    clearInterval(countdownTimer);
+    targetText = text || targetText;
+    startAtUtc = Date.parse(startAt);
+    serverOffsetMs = Date.parse(serverNowUtc) - Date.now();
     renderText();
-
-    let count = 3;
-    const overlay = document.getElementById('countdown-overlay');
-    overlay.style.display = 'flex';
-    overlay.textContent = count;
-
-    const interval = setInterval(() => {
-        count--;
-        if (count > 0) {
-            overlay.textContent = count;
-        } else {
-            clearInterval(interval);
-            overlay.style.display = 'none';
-            beginTypingPhase();
-        }
-    }, 1000);
+    countdown.hidden = false;
+    input.disabled = true;
+    countdownTimer = setInterval(() => {
+        const remaining = Math.ceil((startAtUtc - serverNow()) / 1000);
+        countdown.textContent = remaining > 0 ? remaining : "GO!";
+        if (remaining <= 0) clearInterval(countdownTimer);
+    }, 50);
 }
 
-function renderText() {
-    targetWords = TARGET_TEXT.split(' ');
-    const container = document.getElementById('text-display');
-    container.innerHTML = '';
+function prepareRace(startAt, serverNowUtc, text) {
+    targetText = text || targetText;
+    startAtUtc = Date.parse(startAt);
+    serverOffsetMs = Date.parse(serverNowUtc) - Date.now();
+    renderText();
+    wordErrorStates = [];
+    wordHadError = [];
+    totalKeystrokes = 0;
+    wrongKeystrokes = 0;
+    raceStarted = true;
+    finished = false;
+    input.readOnly = false;
+    input.disabled = false;
+    input.placeholder = "Pradėk spausdinti...";
+    focusRaceInput();
+    clearInterval(raceTimer);
+    raceTimer = setInterval(updateTimer, 100);
+}
 
-    targetWords.forEach((word, index) => {
-        const wordSpan = document.createElement('span');
-        wordSpan.className = 'word' + (index === 0 ? ' active' : '');
-        wordSpan.id = 'word-elem-' + index;
-
-        for (let i = 0; i < word.length; i++) {
-            const charSpan = document.createElement('span');
-            charSpan.className = 'char';
-            charSpan.textContent = word[i];
-            wordSpan.appendChild(charSpan);
-        }
-        container.appendChild(wordSpan);
+function focusRaceInput() {
+    if (!raceStarted || finished || input.disabled) return;
+    input.focus({ preventScroll: true });
+    input.select();
+    window.requestAnimationFrame(() => {
+        if (document.activeElement !== input && !input.disabled)
+            input.focus({ preventScroll: true });
     });
-
-    document.getElementById('stats-bar').style.display = 'flex';
-    container.style.display = 'block';
 }
 
-function beginTypingPhase() {
-    const input = document.getElementById('input-field');
-    input.style.display = 'block';
-    input.placeholder = '';
-    input.focus();
+function deleteCurrentWord() {
+    const lastSpace = input.value.lastIndexOf(" ");
+    input.value = lastSpace < 0 ? "" : input.value.slice(0, lastSpace + 1);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
-    startTime = Date.now();
-    timerHandle = setInterval(updateTimer, 200);
+function showPersonalResult(data) {
+    finished = true;
+    input.disabled = true;
+    clearInterval(raceTimer);
+    document.getElementById("race-result").hidden = false;
+    document.getElementById("personal-result").hidden = false;
+    document.getElementById("personal-place").textContent = `#${data.place}`;
+    document.getElementById("personal-wpm").textContent = data.wpm;
+    document.getElementById("personal-accuracy").textContent =
+        `${Number(data.accuracy).toFixed(1)}%`;
+    document.getElementById("personal-time").textContent = `${data.timeSeconds} s`;
+    document.getElementById("personal-errors").textContent = data.errorCount;
+    document.getElementById("personal-reward").textContent = IS_AUTHENTICATED
+        ? "Bananai ir XP bus pridėti vėliau"
+        : "Prisijunk, kad kauptum";
+    finalizeWordErrors();
+    renderWordErrors();
+    renderTextAbout();
+}
 
-    input.addEventListener('input', function(e) {
-        if (isFinished) return;
+function renderTextAbout() {
+    document.getElementById("text-length").textContent = targetText.length;
+    document.getElementById("text-word-count").textContent =
+        targetText.trim() ? targetText.trim().split(/\s+/).length : 0;
+}
 
-        let typed = this.value;
-        const targetWord = targetWords[currentWordIndex];
-        if (!targetWord) return;
+connection.on("RaceState", applyState);
+connection.on("PlayerJoined", data => {
+    players[data.player.playerKey] = data.player;
+    renderPlayers();
+    if (!raceStarted) setStatus("Varžovai renkasi...", `${Object.keys(players).length}/4 žaidėjai`);
+});
+connection.on("Countdown", data => prepareCountdown(
+    data.startAtUtc, data.serverNowUtc, data.text));
+connection.on("RaceStarted", data => prepareRace(
+    data.startAtUtc, data.serverNowUtc, targetText));
+input.addEventListener("click", focusRaceInput);
+document.addEventListener("keydown", event => {
+    if (!raceStarted || finished || event.metaKey)
+        return;
+    if ((event.ctrlKey || event.altKey) && event.key === "Backspace") {
+        event.preventDefault();
+        deleteCurrentWord();
+        return;
+    }
+    if (event.ctrlKey || event.altKey)
+        return;
+    if (document.activeElement === input)
+        return;
 
-        const isLastWord = currentWordIndex === targetWords.length - 1;
+    if (event.key.length === 1 || event.key === "Backspace") {
+        event.preventDefault();
+        focusRaceInput();
+        if (event.key === "Backspace")
+            input.value = input.value.slice(0, -1);
+        else
+            input.value += event.key;
+        input.dispatchEvent(new InputEvent("input", {
+            bubbles: true,
+            inputType: event.key === "Backspace" ? "deleteContentBackward" : "insertText",
+            data: event.key === "Backspace" ? null : event.key
+        }));
+    }
+});
+input.addEventListener("paste", event => event.preventDefault());
+connection.on("Progress", data => {
+    const player = players[data.playerKey] || {};
+    Object.assign(player, data);
+    players[data.playerKey] = player;
+    const track = document.getElementById(`track-${cssId(data.playerKey)}`);
+    if (track) track.style.setProperty("--progress", `${data.progress}%`);
+    const wpm = document.getElementById(`wpm-${cssId(data.playerKey)}`);
+    if (wpm) wpm.textContent = `${data.wpm} WPM`;
+});
+connection.on("PlayerFinished", data => {
+    const track = document.getElementById(`track-${cssId(data.playerKey)}`);
+    if (track) {
+        const name = track.querySelector(".player-name");
+        if (name) name.innerHTML =
+            `${escapeHtml(data.username)} · #${data.place} ${botBadge(data)}`;
+    }
+    if (data.playerKey === PLAYER_KEY) showPersonalResult(data);
+});
+connection.on("RaceFinished", data => {
+    finished = true;
+    input.disabled = true;
+    clearInterval(raceTimer);
+    document.getElementById("race-result").hidden = false;
+    document.getElementById("race-title").textContent = "Lenktynės baigtos!";
+    document.getElementById("final-results").hidden = false;
+    const hasBots = data.players.some(player => player.isBot);
+    document.getElementById("bot-explanation").hidden = !hasBots;
+    document.getElementById("final-results-list").innerHTML = data.players.map(player => `
+        <div class="podium-item">
+            <strong>${player.place ? "#" + player.place : "DNF"}</strong>
+            <span class="result-player-name">${escapeHtml(player.username)}
+                ${botBadge(player)}</span>
+            <small>${player.wpm} WPM · ${Math.round(player.accuracy)}%${player.isDnf ? " · DNF" : ""}</small>
+        </div>`).join("");
+    raceTimeline = data.timeline;
+    raceAnalysis = data.analysis;
+    raceTextLength = data.textLength || targetText.length;
+    renderRaceHistory();
+    renderReplay();
+    renderWpmChart();
+    renderWordErrors();
+});
+function retryMatchmaking() {
+    window.location.href = `/race/quick?attempt=${ATTEMPT + 1}`;
+}
 
-        if (typed.endsWith(' ') && !isLastWord) {
-            const typedWord = typed.trim();
-            if (typedWord === targetWord) {
-                const chars = document.getElementById('word-elem-' + currentWordIndex).querySelectorAll('.char');
-                chars.forEach(c => c.classList.add('correct'));
-                document.getElementById('word-elem-' + currentWordIndex).classList.remove('active');
+connection.on("RaceUnavailable", retryMatchmaking);
+connection.onreconnected(() =>
+    connection.invoke("JoinRace", RACE_ID, PLAYER_KEY, USERNAME, TAB_ID));
 
-                totalTypedChars += targetWord.length + 1;
-                currentWordIndex++;
-
-                document.getElementById('word-elem-' + currentWordIndex).classList.add('active');
-                this.value = '';
-                this.classList.remove('error');
-
-                document.getElementById('wpm-display').textContent = calcWPM(totalTypedChars);
-                return;
-            } else {
-                this.value = typed.trim();
-            }
+input.addEventListener("input", event => {
+    if (!raceStarted || finished) return;
+    let typed = input.value;
+    const ranges = getTargetWordRanges();
+    const activeIndex = getActiveWordIndex(typed);
+    const activeRange = ranges[Math.max(0, activeIndex)];
+    if (activeRange && !typed.endsWith(" ")) {
+        const wordStart = activeRange.start;
+        const maxLength = activeRange.word.length + 8;
+        const activeTyped = typed.slice(wordStart);
+        if (activeTyped.length > maxLength) {
+            input.value = typed.slice(0, wordStart + maxLength);
+            typed = input.value;
         }
-
-        typed = this.value;
-
-        if (isLastWord && typed === targetWord) {
-            const chars = document.getElementById('word-elem-' + currentWordIndex).querySelectorAll('.char');
-            chars.forEach(c => c.classList.add('correct'));
-            totalTypedChars += targetWord.length;
-            document.getElementById('wpm-display').textContent = calcWPM(totalTypedChars);
-            finishRace(typed);
+    }
+    if (typed.endsWith(" ") && activeRange) {
+        const typedWord = typed.slice(activeRange.start, -1);
+        if (typedWord !== activeRange.word) {
+            input.value = typed.slice(0, -1);
+            updateCharacters(input.value);
+            flashWordError(activeIndex);
             return;
         }
-
-        updateCharColors(typed, targetWord);
-    });
-
-    document.addEventListener('click', () => { if (!isFinished) input.focus(); });
-}
-
-function updateCharColors(typed, targetWord) {
-    const wordElem = document.getElementById('word-elem-' + currentWordIndex);
-    const charElems = wordElem.querySelectorAll('.char');
-    let isError = false;
-
-    for (let i = 0; i < charElems.length; i++) {
-        charElems[i].classList.remove('correct', 'error', 'current');
-
-        if (i < typed.length) {
-            if (typed[i] === targetWord[i]) {
-                charElems[i].classList.add('correct');
-            } else {
-                charElems[i].classList.add('error');
-                isError = true;
-                klaidosSet.add(`${currentWordIndex}-${i}`); // track unique errors
-            }
-        } else if (i === typed.length) {
-            charElems[i].classList.add('current');
+        if (activeIndex === ranges.length - 1) {
+            input.value = typed.slice(0, -1);
+            typed = input.value;
         }
     }
-
-    const input = document.getElementById('input-field');
-    if (typed.length > targetWord.length || isError) {
-        input.classList.add('error');
-    } else {
-        input.classList.remove('error');
+    if (event.inputType === "insertText" && event.data) {
+        const insertionStart = Math.max(0, typed.length - event.data.length);
+        for (let index = 0; index < event.data.length; index++) {
+            const targetIndex = insertionStart + index;
+            const range = getTargetWordRanges().find(item =>
+                targetIndex >= item.start && targetIndex < item.end + 8);
+            const isWhitespace = /\s/.test(targetText[targetIndex] || "");
+            if ((!range && !isWhitespace) ||
+                (range && targetIndex >= range.end + 8))
+                continue;
+            totalKeystrokes++;
+            if (event.data[index] !== targetText[targetIndex])
+                wrongKeystrokes++;
+        }
     }
+    const correctChars = getCorrectChars(typed);
+    recordWordErrors(typed);
+    updateCharacters(typed);
+    connection.invoke("SendProgress", RACE_ID, PLAYER_KEY, correctChars,
+        totalKeystrokes, wrongKeystrokes)
+        .catch(console.error);
+    document.getElementById("accuracy-display").textContent =
+        totalKeystrokes === 0
+            ? "100.0"
+            : ((totalKeystrokes - wrongKeystrokes) * 100 /
+                totalKeystrokes).toFixed(1);
+    if (correctChars === targetText.length) {
+        input.disabled = true;
+        finished = true;
+    }
+});
+
+function getCorrectChars(typed) {
+    const ranges = getTargetWordRanges();
+    let correctChars = 0;
+    for (let index = 0; index < ranges.length; index++) {
+        const range = ranges[index];
+        const wordStart = range.start;
+        const wordEnd = Math.min(typed.length, wordStart + range.word.length);
+        let wordCorrect = 0;
+        while (wordStart + wordCorrect < wordEnd &&
+               typed[wordStart + wordCorrect] === range.word[wordCorrect]) {
+            wordCorrect++;
+        }
+        correctChars += wordCorrect;
+        if (wordCorrect < range.word.length)
+            return correctChars;
+        if (index < ranges.length - 1) {
+            if (typed[wordStart + range.word.length] !== " ")
+                return correctChars;
+            correctChars++;
+        }
+    }
+    return correctChars;
 }
 
-function calcWPM(charsTyped) {
-    if (!startTime || charsTyped === 0) return 0;
-    return Math.round((charsTyped / 5) / ((Date.now() - startTime) / 60000));
+function recordWordErrors(typed) {
+    const ranges = getTargetWordRanges();
+    ranges.forEach((range, wordIndex) => {
+        const typedWord = typed.slice(range.start, range.end);
+        for (let index = 0; index < typedWord.length; index++) {
+            if (typedWord[index] !== range.word[index])
+                wordHadError[wordIndex] = true;
+        }
+        if (typed.length >= range.end) {
+            wordErrorStates[wordIndex] = typedWord === range.word &&
+                !wordHadError[wordIndex] ? 0 :
+                typedWord === range.word ? 1 : 2;
+        }
+    });
 }
 
-function calcAccuracy() {
-    let totalTarget = TARGET_TEXT.length;
-    if (totalTarget === 0) return 100;
-    let accuracy = Math.round(((totalTarget - klaidosSet.size) / totalTarget) * 100);
-    return Math.max(0, accuracy);
+function finalizeWordErrors() {
+    getTargetWordRanges().forEach((range, index) => {
+        const typedWord = input.value.slice(range.start, range.end);
+        wordErrorStates[index] = typedWord === range.word
+            ? (wordHadError[index] ? 1 : 0)
+            : 2;
+    });
+}
+
+function getTargetWordRanges() {
+    const ranges = [];
+    const expression = /\S+/g;
+    let match;
+    while ((match = expression.exec(targetText)) !== null) {
+        ranges.push({
+            word: match[0],
+            start: match.index,
+            end: match.index + match[0].length
+        });
+    }
+    return ranges;
 }
 
 function updateTimer() {
-    if (!startTime) return;
-    document.getElementById('timer-display').textContent = Math.floor((Date.now() - startTime) / 1000);
-    if (!isFinished) {
-        document.getElementById('accuracy-display').textContent = calcAccuracy();
-    }
+    if (!raceStarted || !startAtUtc) return;
+    document.getElementById("timer-display").textContent =
+        Math.max(0, Math.floor((serverNow() - startAtUtc) / 1000));
 }
 
-    async function finishRace() {
-        isFinished = true;
-        clearInterval(timerHandle);
-        document.getElementById('input-field').disabled = true;
-
-        const timeSeconds = Math.round((Date.now() - startTime) / 1000);
-        const wpm = calcWPM(totalTypedChars);
-        const accuracy = calcAccuracy();
-        const klaidos = klaidosSet.size;
-
-        // Notify SignalR (for multiplayer)
-        await connection.invoke("FinishRace", ROOM_ID, wpm, accuracy, timeSeconds, klaidos);
-
-        updateProgressBar(myConnectionId, 100);
-
-        document.getElementById('result-controls').style.display = 'block';
-        if (isHost) {
-            document.getElementById('btn-reset').style.display = 'inline-block';
+function updateCharacters(typed) {
+    const ranges = getTargetWordRanges();
+    const activeIndex = getActiveWordIndex(typed);
+    if (activeIndex < 0) return;
+    const range = ranges[activeIndex];
+    const typedWord = typed.slice(range.start, Math.max(range.start, typed.length));
+    const wordElement = document.querySelector(
+        `#text-display .word[data-word-index="${activeIndex}"]`);
+    if (!wordElement) return;
+    const rendered = renderWord(range.word, typedWord);
+    wordElement.querySelectorAll(".char").forEach((element, index) => {
+        const state = rendered[index];
+        element.className = `char ${state.state === "wrong" ? "char-wrong" :
+            state.state === "correct" ? "correct" : ""}`;
+        element.textContent = state.state === "wrong" ? state.ch : state.expected;
+        if (state.state === "wrong") {
+            const expected = document.createElement("span");
+            expected.className = "char-expected";
+            expected.textContent = state.expected;
+            element.appendChild(expected);
         }
-    }
 
-let lastSentProgress = -1;
-setInterval(() => {
-    if (!startTime || isFinished) return;
-    const typed = document.getElementById('input-field').value;
-    const typedLength = totalTypedChars + typed.length;
-    const progress = Math.round((typedLength / TARGET_TEXT.length) * 100);
-    const currentWpm = calcWPM(typedLength);
-    const currentWord = targetWords[currentWordIndex] || "";
+        function getActiveWordIndex(typed) {
+            const completedWords = (typed.match(/ /g) || []).length;
+            return Math.min(completedWords, Math.max(0, getTargetWordRanges().length - 1));
+        }
 
-    if (progress !== lastSentProgress || currentWpm > 0) {
-        connection.invoke("UpdateProgress", ROOM_ID, progress, currentWpm, currentWord);
-        lastSentProgress = progress;
-    }
-}, 300);
-
-async function startConnection() {
-    await connection.start();
-    await connection.invoke("JoinRoom", ROOM_ID, USERNAME);
+        function flashWordError(index) {
+            const word = document.querySelector(
+                `#text-display .word[data-word-index="${index}"]`);
+            if (!word) return;
+            word.classList.remove("word-input-error");
+            void word.offsetWidth;
+            word.classList.add("word-input-error");
+            setTimeout(() => word.classList.remove("word-input-error"), 180);
+        }
+        if (index === typedWord.length && index < range.word.length)
+            element.classList.add("current");
+    });
+    wordElement.querySelectorAll(".char-extra").forEach(element => element.remove());
+    rendered.filter(item => item.state === "extra").forEach(item => {
+        const extra = document.createElement("span");
+        extra.className = "char-extra";
+        extra.textContent = item.ch;
+        wordElement.appendChild(extra);
+    });
 }
 
-startConnection();
+function renderText() {
+    document.getElementById("text-display").innerHTML = getTargetWordRanges()
+        .map((range, index) =>
+            `<span class="word ${index === 0 ? "active" : ""}" data-word-index="${index}">` +
+            [...range.word].map(char =>
+                `<span class="char">${escapeHtml(char)}</span>`).join("") +
+            `</span>`).join(" ");
+}
+
+function renderWord(expectedWord, typedWord) {
+    const result = [];
+    for (let index = 0; index < expectedWord.length; index++) {
+        const typed = typedWord[index];
+        result.push({
+            ch: typed || expectedWord[index],
+            expected: expectedWord[index],
+            state: typed
+                ? typed === expectedWord[index] ? "correct" : "wrong"
+                : "pending"
+        });
+    }
+    for (let index = expectedWord.length;
+         index < Math.min(typedWord.length, expectedWord.length + 8);
+         index++) {
+        result.push({ ch: typedWord[index], expected: "", state: "extra" });
+    }
+    return result;
+}
+
+function renderRaceHistory() {
+    const bar = document.getElementById("result-leader-bar");
+    const status = document.getElementById("result-history-status");
+    if (!raceAnalysis || !raceTimeline || !raceTimeline.players.length) return;
+    const timelinePlayers = Object.fromEntries(raceTimeline.players.map(player =>
+        [player.id, player]));
+    const names = Object.fromEntries(raceTimeline.players.map(player =>
+        [player.id, player.name]));
+    const total = Math.max(1, raceAnalysis.totalMs);
+    bar.innerHTML = raceAnalysis.leaderSegments.map(segment => `
+        <span style="width:${(segment.toMs - segment.fromMs) * 100 / total}%"
+              title="${escapeHtml(names[segment.playerId] || segment.playerId)}">
+            ${escapeHtml(names[segment.playerId] || segment.playerId)}
+            ${botBadge(timelinePlayers[segment.playerId])}
+        </span>`).join("");
+    status.textContent = "Lenktynių istorija paruošta";
+    document.getElementById("result-overtakes-list").innerHTML =
+        raceAnalysis.overtakes.length
+            ? raceAnalysis.overtakes.map(item =>
+                `<p>${(item.atMs / 1000).toFixed(1)} s
+                 ${escapeHtml(names[item.passerId] || item.passerId)}
+                 ${botBadge(timelinePlayers[item.passerId])}
+                 aplenkė ${escapeHtml(names[item.passedId] || item.passedId)}
+                 ${botBadge(timelinePlayers[item.passedId])}</p>`).join("")
+            : "<p>Aplenkimų nebuvo.</p>";
+    const leader = raceAnalysis.leaderTimeMs[PLAYER_KEY] || 0;
+    document.getElementById("result-leader-summary").textContent =
+        `Tu pirmavai ${(leader * 100 / total).toFixed(1)}% laiko · ` +
+        `${raceAnalysis.leaderChanges} lyderio pasikeitimai`;
+}
+
+function renderReplay() {
+    document.getElementById("replay-race").hidden = false;
+    const track = document.getElementById("replay-track");
+    track.innerHTML = raceTimeline.players.map((player, index) => `
+        <div class="replay-lane" data-replay-player="${escapeHtml(player.id)}">
+            <span class="replay-player-name">
+                ${escapeHtml(player.name)} ${botBadge(player)}
+            </span>
+            <div class="replay-lane-track" data-replay-track="${escapeHtml(player.id)}">
+                <div class="replay-monkey" data-replay-monkey="${escapeHtml(player.id)}">
+                ${monkeyTemplate(getBotColorIndex(player, index))}
+                </div>
+            </div>
+        </div>`).join("");
+    const range = document.getElementById("replay-range");
+    range.max = Math.max(0, (raceTimeline.players[0]?.series.length || 1) - 1);
+    range.value = 0;
+    replayIndex = 0;
+    updateReplayFrame();
+}
+
+function updateReplayFrame() {
+    if (!raceTimeline || !raceTimeline.players.length) return;
+    raceTimeline.players.forEach(player => {
+        const series = player.series;
+        const value = series[Math.min(replayIndex, series.length - 1)] || 0;
+        const percent = raceTextLength ? Math.min(1, value / raceTextLength) : 0;
+        const monkey = document.querySelector(
+            `[data-replay-monkey="${CSS.escape(player.id)}"]`);
+        const track = document.querySelector(
+            `[data-replay-track="${CSS.escape(player.id)}"]`);
+        if (monkey && track) {
+            const travel = Math.max(0, track.clientWidth - monkey.offsetWidth);
+            monkey.style.transform = `translateX(${percent * travel}px)`;
+        }
+    });
+    const totalTicks = raceTimeline.players[0]?.series.length || 1;
+    const currentSeconds = replayIndex * (raceTimeline.tickMs || 250) / 1000;
+    const totalSeconds = Math.max(0, (totalTicks - 1) *
+        (raceTimeline.tickMs || 250) / 1000);
+    document.getElementById("replay-range").value = replayIndex;
+    document.getElementById("replay-time").textContent =
+        `${currentSeconds.toFixed(1).replace(".", ",")} s / ` +
+        `${totalSeconds.toFixed(1).replace(".", ",")} s`;
+}
+
+function renderWpmChart() {
+    const player = raceTimeline.players.find(item => item.id === PLAYER_KEY);
+    if (!player) return;
+    const totalTicks = Math.max(...raceTimeline.players.map(item =>
+        item.series.length), player.series.length, 1);
+    const lastValue = player.series[player.series.length - 1] || 0;
+    const fullSeries = Array.from({ length: totalTicks }, (_, index) =>
+        player.series[index] === undefined ? lastValue : player.series[index]);
+    const points = fullSeries.map((value, index) => {
+        const from = Math.max(0, index - 12);
+        const elapsed = (index - from) * 250 / 60000;
+        return elapsed ? (value - fullSeries[from]) / 5 / elapsed : 0;
+    });
+    const peak = Math.max(1, ...points);
+    const step = peak <= 25 ? 5 : peak <= 100 ? 25 : 50;
+    const chartMax = Math.max(step, Math.ceil(peak / step) * step);
+    const chartWidth = 640;
+    const chartHeight = 180;
+    const left = 42;
+    const right = 12;
+    const top = 12;
+    const bottom = 30;
+    const plotWidth = chartWidth - left - right;
+    const plotHeight = chartHeight - top - bottom;
+    const x = index => left + index * plotWidth /
+        Math.max(1, points.length - 1);
+    const y = value => top + plotHeight - value * plotHeight / chartMax;
+    const linePoints = points.map((value, index) =>
+        `${x(index)},${y(value)}`).join(" ");
+    const areaPoints = `${left},${top + plotHeight} ${linePoints} ` +
+        `${x(Math.max(0, points.length - 1))},${top + plotHeight}`;
+    const grid = [];
+    for (let value = 0; value <= chartMax; value += step) {
+        grid.push(`<line class="chart-grid-line" x1="${left}" x2="${chartWidth - right}"
+            y1="${y(value)}" y2="${y(value)}"/>
+            <text class="chart-axis-label" x="${left - 7}" y="${y(value) + 4}"
+            text-anchor="end">${value}</text>`);
+    }
+    const totalSeconds = Math.max(0.001,
+        (totalTicks - 1) * (raceTimeline.tickMs || 250) / 1000);
+    const average = lastValue / 5 / (totalSeconds / 60);
+    const highIndex = points.indexOf(peak);
+    const seconds = index => (index * (raceTimeline.tickMs || 250) / 1000).toFixed(1);
+    document.getElementById("result-wpm-chart").innerHTML = `
+        ${grid.join("")}
+        <line class="chart-axis" x1="${left}" x2="${left}"
+              y1="${top}" y2="${top + plotHeight}"/>
+        <line class="chart-axis" x1="${left}" x2="${chartWidth - right}"
+              y1="${top + plotHeight}" y2="${top + plotHeight}"/>
+        <text class="chart-axis-title" x="12" y="${top + plotHeight / 2}"
+              transform="rotate(-90 12 ${top + plotHeight / 2})">WPM</text>
+        <text class="chart-axis-title" x="${chartWidth - right}" y="${chartHeight - 4}"
+              text-anchor="end">s</text>
+        <polygon class="chart-area" points="${areaPoints}"/>
+        <line class="chart-average" x1="${left}" x2="${chartWidth - right}"
+              y1="${y(average)}" y2="${y(average)}"/>
+        <text class="chart-average-label" x="${chartWidth - right - 3}"
+              y="${y(average) - 5}" text-anchor="end">vid. ${Math.round(average)}</text>
+        <polyline class="chart-line" points="${linePoints}"/>
+        <circle class="chart-high-point" cx="${x(highIndex)}" cy="${y(peak)}" r="4"/>
+        <text class="chart-high-label" x="${x(highIndex) + 6}" y="${y(peak) - 7}">${Math.round(peak)}</text>`;
+    document.getElementById("result-wpm-average").textContent =
+        `${Math.round(average)} WPM`;
+    document.getElementById("result-wpm-high").textContent =
+        `${Math.round(max)} WPM`;
+}
+
+function renderWordErrors() {
+    const words = getTargetWordRanges().map(range => range.word);
+    const markup = words.map((word, index) => {
+        const state = wordErrorStates[index] || 0;
+        return `<span class="${state === 1 ? "word-fixed" : state === 2 ? "word-wrong" : ""}">
+            ${escapeHtml(word)}</span>`;
+    }).join(" ");
+    document.getElementById("result-error-words").innerHTML = markup;
+    document.getElementById("result-error-list").innerHTML = words
+        .filter((word, index) => wordErrorStates[index] > 0)
+        .map(word => `<li>${escapeHtml(word)}</li>`).join("") || "<li>Nėra klaidingų žodžių.</li>";
+}
+
+document.getElementById("replay-play").addEventListener("click", () => {
+    if (replayTimer || !raceTimeline) return;
+    setReplayPlayingState(true);
+    replayTimer = setInterval(() => {
+        const length = raceTimeline.players[0]?.series.length || 0;
+        if (replayIndex >= length - 1) {
+            clearInterval(replayTimer);
+            replayTimer = null;
+            setReplayPlayingState(false);
+            return;
+        }
+        replayIndex++;
+        updateReplayFrame();
+    }, Math.max(16, 250 / replaySpeed));
+});
+document.getElementById("replay-pause").addEventListener("click", () => {
+    clearInterval(replayTimer);
+    replayTimer = null;
+    setReplayPlayingState(false);
+});
+document.getElementById("replay-reset").addEventListener("click", () => {
+    clearInterval(replayTimer);
+    replayTimer = null;
+    setReplayPlayingState(false);
+    replayIndex = 0;
+    updateReplayFrame();
+});
+document.querySelectorAll("[data-replay-speed]").forEach(button => {
+    button.addEventListener("click", () => {
+        replaySpeed = Number(button.dataset.replaySpeed);
+        document.querySelectorAll("[data-replay-speed]").forEach(speedButton =>
+            speedButton.setAttribute("aria-pressed", speedButton === button ? "true" : "false"));
+        if (replayTimer) {
+            clearInterval(replayTimer);
+            replayTimer = null;
+            document.getElementById("replay-play").click();
+        }
+    });
+});
+document.getElementById("replay-range").addEventListener("input", event => {
+    clearInterval(replayTimer);
+    replayTimer = null;
+    setReplayPlayingState(false);
+    replayIndex = Number(event.target.value);
+    updateReplayFrame();
+});
+window.addEventListener("resize", () => {
+    if (raceTimeline) updateReplayFrame();
+});
+
+function setReplayPlayingState(isPlaying) {
+    const button = document.getElementById("replay-play");
+    button.setAttribute("aria-pressed", String(isPlaying));
+    button.setAttribute("aria-label",
+        isPlaying ? "Paleisti lenktynių replay iš naujo" :
+            "Paleisti lenktynių replay");
+    button.innerHTML = isPlaying
+        ? `<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
+             <path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg><span>Vyksta</span>`
+        : `<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
+             <path d="M8 5v14l11-7z"/></svg><span>Paleisti</span>`;
+}
+
+function renderPlayers() {
+    document.getElementById("players-track").innerHTML =
+        Object.values(players).map((player, index) => `
+        <div class="player-track" id="track-${cssId(player.playerKey)}" style="--progress: 0%">
+            <span class="player-monkey ${player.isBot ? "player-monkey-bot" : ""}">
+                ${player.isBot ? monkeyTemplate(getBotColorIndex(player, index)) : "🐒"}
+            </span>
+            <span class="player-name">${escapeHtml(player.username)}
+                ${botBadge(player)}</span>
+            <span class="player-wpm" id="wpm-${cssId(player.playerKey)}">${player.wpm || 0} WPM</span>
+        </div>`).join("");
+}
+
+function cssId(value) {
+    return value.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
+}
+
+async function leaveRace() {
+    const leaveButton = document.getElementById("leave-button");
+    if (leaveButton) {
+        leaveButton.disabled = true;
+        leaveButton.textContent = "Išeinama...";
+    }
+    if (finished) {
+        window.location.href = "/";
+        return;
+    }
+    try {
+        if (connection.state === signalR.HubConnectionState.Connected)
+            await connection.invoke("LeaveRace", RACE_ID, PLAYER_KEY);
+    } catch (error) {
+        console.warn("Nepavyko pranešti serveriui apie išėjimą.", error);
+    } finally {
+        window.location.href = "/";
+    }
+}
+
+connection.start()
+    .then(() => connection.invoke("JoinRace", RACE_ID, PLAYER_KEY, USERNAME, TAB_ID))
+    .catch(retryMatchmaking);
 </script>

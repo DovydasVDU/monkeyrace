@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 public class Startup
 {
@@ -28,6 +29,7 @@ public class Startup
         services.AddSession();
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
+        services.Configure<BotOptions>(_configuration.GetSection("Bots"));
 
         // Vystymui naudojame naują SQLite DB failą. Schema sukuriama paleidimo metu.
         string connectionString = _configuration.GetConnectionString("DefaultConnection")
@@ -56,6 +58,8 @@ public class Startup
 
         // Naudojami services: 
         services.AddScoped<RaceService>(); // atsakingas už teksto parinkimą spausdinimo metu
+        services.AddSingleton<MatchmakingService>();
+        services.AddSingleton<BotSkillProvider>();
     }
 
     // Pagrindiniai konfigūracijos nustatymai, kurie apibrėžia, kaip bus tvarkomi užklausos.

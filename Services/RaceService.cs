@@ -9,6 +9,9 @@ using Microsoft.EntityFrameworkCore; //countAsync, skip, firstAsync
 // Renkamas pagal vartotojo pasirinktą sunkumą bei filtruojamas pagal paskutinių 3 žaidimų tekstų id, kad nesikartotų. 
 public class RaceService
 {
+    // Greitesnis rezultatas laikomas sukčiavimu (pasaulio rekordai siekia ~200-300 WPM)
+    public const int MaxWpm = 250;
+
     private readonly AppDbContext _db;
     private static readonly Random _random = new Random();
     public RaceService(AppDbContext db) // prijungiame duomenų bazę
