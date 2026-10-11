@@ -8,34 +8,52 @@
 }
 
 <div class="match-page">
-    <section class="race-card" id="race-panel">
+    @* Būsena be JS klasių: kol #text-display tuščias – laukimas (race.css :has()) *@
+    <section class="race-screen" id="race-panel">
         <div class="race-topbar">
-            <button class="text-button" id="leave-button" type="button"
-                    onclick="leaveRace()">
-                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m14.5 5-7 7 7 7M8 12h12"/>
-                </svg>
+            <button class="btn btn-g race-leave" id="leave-button" type="button" onclick="leaveRace()">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
                 <span>Išeiti</span>
             </button>
             <div class="race-title-wrap">
-                <p class="eyebrow"><span class="live-dot"></span> MonkeyRace</p>
+                <p class="eyebrow">Žaisti internetu</p>
                 <h1 id="race-title">Laukiame varžovų</h1>
             </div>
             <div class="race-stats" aria-label="Lenktynių statistika">
-                <span><strong id="wpm-display">0</strong><small>WPM</small></span>
-                <span><strong id="accuracy-display">100</strong><small>%</small></span>
-                <span><strong id="timer-display">0</strong><small>sek</small></span>
+                <span class="stat-pill"><small>WPM</small><strong id="wpm-display">0</strong></span>
+                <span class="stat-pill"><small>Tikslumas</small><strong><span id="accuracy-display">100</span>%</strong></span>
+                <span class="stat-pill"><small>Laikas</small><strong><span id="timer-display">0</span> s</strong></span>
             </div>
         </div>
+
+        <div class="lobby-ring" aria-hidden="true">
+            <strong id="lobby-seconds">–</strong>
+            <span>Ieškome varžovų</span>
+        </div>
+        <div class="xp-track is-banana lobby-bar" aria-hidden="true"><span id="lobby-bar-fill" style="width:0%"></span></div>
+
         <div class="queue-status" id="queue-status" aria-live="polite">Jungiama prie lenktynių...</div>
         <div class="queue-meta" id="queue-meta"></div>
         <div class="countdown" id="countdown" aria-live="polite" hidden></div>
-        <div class="players-track" id="players-track"></div>
-        <div class="race-lane-label"><span>Startas</span><span>Finišas</span></div>
-        <div class="text-display" id="text-display"></div>
-        <input type="text" id="input-field" class="word-input"
-               autocomplete="off" autocorrect="off" autocapitalize="off"
-               spellcheck="false" placeholder="Laukite starto..." disabled />
+
+        <div class="card tracks-card">
+            <div class="players-track" id="players-track"></div>
+            <div class="lobby-slots" aria-hidden="true">
+                <div class="slot"><span class="slot-avatar"></span>Laukiama žaidėjo</div>
+                <div class="slot"><span class="slot-avatar"></span>Laukiama žaidėjo</div>
+                <div class="slot"><span class="slot-avatar"></span>Laukiama žaidėjo</div>
+            </div>
+            <div class="race-lane-label"><span>Startas</span><span>Finišas</span></div>
+        </div>
+        <p class="lobby-note">Tuščios vietos bus užpildytos botais. Botų rezultatai neįskaitomi.</p>
+
+        <div class="card text-card">
+            <div class="text-display" id="text-display"></div>
+            <input type="text" id="input-field" class="word-input" aria-label="Rašymo laukas"
+                   autocomplete="off" autocorrect="off" autocapitalize="off"
+                   spellcheck="false" placeholder="Laukite starto..." disabled />
+        </div>
+        <p class="race-hint">Žodis su klaida neleidžia pereiti toliau. Ištaisyk jį, kad tęstum.</p>
 
         <div class="race-result" id="race-result" hidden>
             <div class="personal-result" id="personal-result" hidden>
@@ -119,7 +137,7 @@
                 <div id="replay-monkey-templates" hidden>
                     @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#8D5A2B", HatColor = "#FFC93C" })
                     @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#5D4037", HatColor = "#E53935" })
-                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#6D4C41", HatColor = "#2E7D32" })
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#8B5E3C", HatColor = "#2E8B4F" })
                     @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#795548", HatColor = "#7E57C2" })
                 </div>
             </section>
@@ -235,7 +253,7 @@ function getBotColorIndex(player, fallbackIndex) {
 function botBadge(player) {
     return isBotPlayer(player)
         ? `<span class="bot-badge" title="Botas: kompiuterio valdomas žaidėjas"
-             aria-label="Botas">BOT</span>`
+             aria-label="Botas">Botas</span>`
         : "";
 }
 
@@ -273,9 +291,13 @@ function startLobbyClock(deadline, serverNowUtc) {
     clearInterval(countdownTimer);
     const deadlineMs = Date.parse(deadline);
     serverOffsetMs = Date.parse(serverNowUtc) - Date.now();
+    const lobbyTotalMs = Math.max(1, deadlineMs - serverNow());
     countdownTimer = setInterval(() => {
         const remaining = Math.max(0, Math.ceil((deadlineMs - serverNow()) / 1000));
         queueMeta.textContent = `${Object.keys(players).length}/4 žaidėjai · startas po ${remaining} s`;
+        document.getElementById("lobby-seconds").textContent = remaining;
+        document.getElementById("lobby-bar-fill").style.width =
+            `${Math.min(100, 100 - (deadlineMs - serverNow()) * 100 / lobbyTotalMs)}%`;
         if (remaining === 0) clearInterval(countdownTimer);
     }, 100);
 }
@@ -887,13 +909,13 @@ function setReplayPlayingState(isPlaying) {
 function renderPlayers() {
     document.getElementById("players-track").innerHTML =
         Object.values(players).map((player, index) => `
-        <div class="player-track" id="track-${cssId(player.playerKey)}" style="--progress: 0%"
+        <div class="player-track ${player.playerKey === PLAYER_KEY ? "is-me" : ""}" id="track-${cssId(player.playerKey)}" style="--progress: 0%"
              tabindex="0" aria-label="${escapeHtml(player.username)}: žaidėjo kortelė">
             <span class="player-monkey ${player.isBot ? "player-monkey-bot" : "player-monkey-human"}">
-                ${monkeyTemplate(player.isBot ? getBotColorIndex(player, index) : index, playerLevel(player))}
+                ${monkeyTemplate(player.playerKey === PLAYER_KEY ? 2 : player.isBot ? getBotColorIndex(player, index) : index, playerLevel(player))}
             </span>
             <span class="player-name">${escapeHtml(player.username)}
-                ${botBadge(player)}</span>
+                ${player.playerKey === PLAYER_KEY ? `<span class="tag tag-me">Tu</span>` : botBadge(player) || `<span class="tag">Žaidėjas</span>`}</span>
             <span class="player-wpm" id="wpm-${cssId(player.playerKey)}">${player.wpm || 0} WPM</span>
             <div class="player-card-pop" role="tooltip">${playerCardHtml(player)}</div>
         </div>`).join("");

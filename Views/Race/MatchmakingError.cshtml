@@ -2,8 +2,12 @@
     ViewData["Title"] = "Nepavyko prisijungti - MonkeyRace";
 }
 
-<main class="matchmaking-error">
+<section class="card notice-card">
+    <span class="notice-monkey" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "lose", HatColor = "none" })</span>
     <h1>Nepavyko prisijungti prie lenktynių</h1>
     <p>Kambarys nepasiekiamas arba pasikeitė žaidėjo sesija. Pabandyk dar kartą.</p>
-    <a class="monkey-button" href="/race/quick?attempt=0">Bandyti dar kartą</a>
-</main>
+    <div class="notice-actions">
+        <a class="btn btn-p" href="/race/quick?attempt=0">Bandyti dar kartą</a>
+        <a class="btn btn-s" href="/">Į pradžią</a>
+    </div>
+</section>
