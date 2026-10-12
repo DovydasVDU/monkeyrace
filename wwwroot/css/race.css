@@ -1122,3 +1122,39 @@
     overflow: hidden;
     position: relative;
 }
+
+/* Žodžių režimas online: progreso takelio nėra, šalia beždžionėlės – varžovo rašomas žodis (JS rašo į typing-{id}) */
+.player-typing {
+    display: none;
+}
+
+.words-mode .player-track::before,
+.words-mode .race-lane-label {
+    display: none;
+}
+
+.words-mode .player-typing {
+    background: var(--cream-2);
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    display: block;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    grid-column: 2;
+    grid-row: 1;
+    line-height: 26px;
+    margin-left: 44px;
+    min-height: 30px;
+    overflow: hidden;
+    padding: 0 .9rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.words-mode .player-track.is-me .player-typing {
+    background: var(--banana);
+}
+
+.race-screen:has(#text-display:empty) .player-typing {
+    display: none;
+}

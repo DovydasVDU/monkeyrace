@@ -167,6 +167,48 @@ public sealed class MatchmakingRewardTests : IDisposable
         Assert.Equal(0, scope.ServiceProvider.GetRequiredService<AppDbContext>().RaceResults.Count());
     }
 
+    [Fact]
+    public async Task WordsMode_EndsOnTime_PlacesByWpm_NobodyDnf()
+    {
+        var fastId = CreateUser("greitas");
+        // klasikinis ir žodžių režimas į tą patį kambarį nepatenka
+        Assert.NotEqual(_matchmaking.JoinOrCreate("guest:classic", "Klasika", null, null),
+            _matchmaking.JoinOrCreate("guest:other", "Kitas", null, null, durationSeconds: 15));
+        var raceId = _matchmaking.JoinOrCreate("user:" + fastId, "greitas", fastId, null, durationSeconds: 15);
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "user:" + fastId, "greitas", "tab", "conn-user:" + fastId)).IsSuccess);
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:other", "Kitas", "tab", "conn-guest:other")).IsSuccess);
+
+        await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(30));
+        var startedAt = DateTime.UtcNow;
+        // greitas 18 simb./s, botai 10 simb./s (120 WPM), lėtas 6 simb./s – rašo, kol serveris priima
+        async Task TypeFor(string key, double charsPerSecond)
+        {
+            while (DateTime.UtcNow - startedAt < TimeSpan.FromSeconds(16))
+            {
+                await Task.Delay(200);
+                var chars = (int)((DateTime.UtcNow - startedAt).TotalSeconds * charsPerSecond);
+                await _matchmaking.SendProgressAsync(raceId, key, "conn-" + key, chars, chars, 0, "zod");
+            }
+        }
+        await Task.WhenAll(TypeFor("user:" + fastId, 18), TypeFor("guest:other", 6));
+        var finished = await _hub.WaitFor("RaceFinished", TimeSpan.FromSeconds(30));
+
+        Assert.Equal(15, finished.GetProperty("durationSeconds").GetInt32());
+        Assert.All(finished.GetProperty("players").EnumerateArray(),
+            player => Assert.False(player.GetProperty("isDnf").GetBoolean()));
+        var fast = PlayerResult(finished, "user:" + fastId);
+        Assert.Equal(1, fast.GetProperty("place").GetInt32());
+        Assert.Equal(4, PlayerResult(finished, "guest:other").GetProperty("place").GetInt32());
+        Assert.Equal(15, fast.GetProperty("timeSeconds").GetInt32());
+        Assert.InRange(fast.GetProperty("wpm").GetInt32(), 180, 230);
+
+        using var scope = _services.CreateScope();
+        var race = scope.ServiceProvider.GetRequiredService<AppDbContext>().Races
+            .Single(r => r.Results.Any(result => result.UserId == fastId));
+        Assert.Equal(15, race.DurationSeconds);
+        Assert.Null(race.TextSnippetId);
+    }
+
     public void Dispose()
     {
         _services.Dispose();

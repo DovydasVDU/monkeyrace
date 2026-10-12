@@ -55,7 +55,9 @@ public sealed class MatchmakingService
         }
     }
 
-    public string JoinOrCreate(string playerKey, string username, int? userId, PlayerCard card)
+    // durationSeconds > 0: žodžių režimas (WordService), 0: klasikinis tekstas iki finišo
+    public string JoinOrCreate(string playerKey, string username, int? userId, PlayerCard card,
+        int durationSeconds = 0)
     {
         lock (_sync)
         {
@@ -73,6 +75,7 @@ public sealed class MatchmakingService
 
             var room = _rooms.Values.FirstOrDefault(candidate =>
                 candidate.Status == RaceRoomStatus.Lobby &&
+                candidate.DurationSeconds == durationSeconds &&
                 candidate.Players.Count < 4 &&
                 candidate.LobbyDeadlineUtc - DateTime.UtcNow >= TimeSpan.FromSeconds(1));
             if (room == null)
@@ -80,6 +83,7 @@ public sealed class MatchmakingService
                 room = new RaceRoom
                 {
                     RaceId = Guid.NewGuid().ToString("N"),
+                    DurationSeconds = durationSeconds,
                     LobbyDeadlineUtc = DateTime.UtcNow.Add(LobbyDuration)
                 };
                 _rooms.Add(room.RaceId, room);
@@ -283,7 +287,7 @@ public sealed class MatchmakingService
 
     public async Task SendProgressAsync(
         string raceId, string playerKey, string connectionId,
-        int correctChars, int totalKeystrokes, int wrongKeystrokes)
+        int correctChars, int totalKeystrokes, int wrongKeystrokes, string typing = null)
     {
         RaceRoom room;
         RacePlayer player;
@@ -337,10 +341,7 @@ public sealed class MatchmakingService
         var elapsedSeconds = Math.Max(0.1,
             (DateTime.UtcNow - room.StartAtUtc).TotalSeconds);
         var wpm = (int)Math.Round(player.CorrectChars / 5d / (elapsedSeconds / 60d));
-        var accuracy = player.TotalKeystrokes == 0
-            ? 100d
-            : (player.TotalKeystrokes - player.ErrorCount) * 100d /
-              player.TotalKeystrokes;
+        var accuracy = AccuracyOf(player);
 
         if (player.CorrectChars >= room.Text.Length)
         {
@@ -359,7 +360,9 @@ public sealed class MatchmakingService
                 ? 0
                 : player.CorrectChars * 100 / room.Text.Length,
             wpm,
-            accuracy
+            accuracy,
+            // žodžių režime varžovai mato rašomą žodį; ilgis ribojamas, nes ateina iš naršyklės
+            typing = (typing ?? "").Substring(0, Math.Min(30, (typing ?? "").Length))
             ,isBot = false
         });
     }
@@ -410,11 +413,14 @@ public sealed class MatchmakingService
         using (var scope = _scopeFactory.CreateScope())
         {
             var raceService = scope.ServiceProvider.GetRequiredService<RaceService>();
-            snippet = await raceService.GetRandomSnippetAsync(new List<int>());
+            snippet = room.DurationSeconds > 0
+                ? null
+                : await raceService.GetRandomSnippetAsync(new List<int>());
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var race = new Race
             {
-                TextSnippetId = snippet.Id,
+                TextSnippetId = snippet?.Id,
+                DurationSeconds = room.DurationSeconds > 0 ? room.DurationSeconds : null,
                 StartedAt = DateTime.UtcNow,
                 IsMultiplayer = true
             };
@@ -427,7 +433,7 @@ public sealed class MatchmakingService
                     room.Status != RaceRoomStatus.Lobby)
                     return;
                 room.DatabaseRaceId = race.Id;
-                room.Text = snippet.Content;
+                room.Text = snippet?.Content ?? WordService.Generate(room.DurationSeconds);
                 room.StartAtUtc = DateTime.UtcNow.AddSeconds(3);
                 var botOptions = _botOptions.Value;
                 var humans = room.Players.Where(player => !player.IsBot).ToList();
@@ -511,7 +517,9 @@ public sealed class MatchmakingService
             serverNowUtc = DateTime.UtcNow
         });
         _ = RecordTimelineAsync(raceId);
-        _ = FinishOnTimeoutAsync(raceId, RaceTimeoutFor(room.Text));
+        _ = FinishOnTimeoutAsync(raceId, room.DurationSeconds > 0
+            ? TimeSpan.FromSeconds(room.DurationSeconds)
+            : RaceTimeoutFor(room.Text));
     }
 
     private async Task RecordTimelineAsync(string raceId)
@@ -544,7 +552,7 @@ public sealed class MatchmakingService
                     AtMs = elapsedMs,
                     Values = room.Players.Where(player => !player.IsDnf).ToDictionary(
                         player => player.PlayerKey,
-                        player => player.IsFinished
+                        player => player.IsFinished && room.DurationSeconds == 0
                             ? room.Text.Length
                             : player.CorrectChars)
                 };
@@ -580,7 +588,23 @@ public sealed class MatchmakingService
                 return;
             foreach (var player in room.Players.Where(item =>
                 !item.IsFinished && !item.IsDnf))
-                player.IsDnf = true;
+            {
+                if (room.DurationSeconds == 0)
+                {
+                    player.IsDnf = true;
+                    continue;
+                }
+                // žodžių režime laikas baigiasi visiems kartu: rezultatas – kiek spėjo parašyti
+                if (player.IsBot && player.BotPlan != null)
+                    player.CorrectChars = player.BotPlan.CorrectCharsAt(room.DurationSeconds * 1000);
+                player.IsFinished = true;
+                player.Wpm = (int)Math.Round(player.CorrectChars / 5d / (room.DurationSeconds / 60d));
+                player.Accuracy = player.IsBot && player.BotPlan != null
+                    ? player.BotPlan.Accuracy * 100
+                    : AccuracyOf(player);
+                player.TimeSeconds = room.DurationSeconds;
+                player.FinishAtMs = room.DurationSeconds * 1000;
+            }
         }
         await FinishRoomAsync(room);
     }
@@ -639,8 +663,9 @@ public sealed class MatchmakingService
             if (humans.Any(player => !player.IsFinished && !player.IsDnf))
                 return;
             room.Completing = true;
-            finishBots = room.Players.Any(player => player.IsBot &&
-                !player.IsFinished);
+            // žodžių režime botų finišo nelaukiame: jie rikiuojami pagal tai, kiek spėjo parašyti
+            finishBots = room.DurationSeconds == 0 &&
+                room.Players.Any(player => player.IsBot && !player.IsFinished);
         }
         if (finishBots)
         {
@@ -677,8 +702,9 @@ public sealed class MatchmakingService
                 return;
             var ordered = room.Players
                 .Where(player => !player.IsDnf)
-                .OrderBy(player => player.FinishAtMs == 0
-                    ? int.MaxValue : player.FinishAtMs)
+                .OrderBy(player => room.DurationSeconds > 0
+                    ? -player.CorrectChars
+                    : player.FinishAtMs == 0 ? int.MaxValue : player.FinishAtMs)
                 .ToList();
             for (var index = 0; index < ordered.Count; index++)
                 ordered[index].Place = index + 1;
@@ -715,7 +741,8 @@ public sealed class MatchmakingService
                 .Select(ToResultState),
             timeline = RaceAnalyzer.CreateTimeline(room),
             analysis = RaceAnalyzer.CreateAnalysis(room),
-            textLength = room.Text.Length
+            textLength = room.Text.Length,
+            durationSeconds = room.DurationSeconds
         });
         _ = RemoveFinishedRoomAsync(room.RaceId);
     }
@@ -746,6 +773,7 @@ public sealed class MatchmakingService
             LobbyDeadlineUtc = room.LobbyDeadlineUtc,
             StartAtUtc = room.StartAtUtc,
             ServerNowUtc = DateTime.UtcNow,
+            DurationSeconds = room.DurationSeconds,
             Text = room.Status >= RaceRoomStatus.Countdown ? room.Text : null,
             Players = room.Players.Select(ToPlayerState).ToList()
         };
@@ -777,7 +805,8 @@ public sealed class MatchmakingService
             Wpm = player.Wpm,
             Accuracy = player.Accuracy,
             IsDnf = player.IsDnf,
-            ErrorCount = player.ErrorCount
+            ErrorCount = player.ErrorCount,
+            TimeSeconds = player.TimeSeconds
             ,IsBot = player.IsBot
             ,Reward = player.Reward
         };
@@ -801,9 +830,23 @@ public sealed class MatchmakingService
             accuracy,
             totalKeystrokes = player.TotalKeystrokes,
             wrongKeystrokes = player.ErrorCount,
+            typing = TypedPartOfWord(room.Text, correctChars),
             isBot = true
         };
     }
+
+    // Kurią žodžio dalį botas jau "parašė": nuo paskutinio tarpo iki correctChars
+    private static string TypedPartOfWord(string text, int correctChars)
+    {
+        correctChars = Math.Min(correctChars, text.Length);
+        var start = correctChars == 0 ? 0 : text.LastIndexOf(' ', correctChars - 1) + 1;
+        return text.Substring(start, correctChars - start);
+    }
+
+    private static double AccuracyOf(RacePlayer player) =>
+        player.TotalKeystrokes == 0
+            ? 100d
+            : (player.TotalKeystrokes - player.ErrorCount) * 100d / player.TotalKeystrokes;
 
     private static int StableSeed(string raceId, int botIndex)
     {
@@ -837,6 +880,7 @@ public sealed class RaceState
     public DateTime LobbyDeadlineUtc { get; set; }
     public DateTime StartAtUtc { get; set; }
     public DateTime ServerNowUtc { get; set; }
+    public int DurationSeconds { get; set; }
     public string Text { get; set; }
     public List<RacePlayerState> Players { get; set; } = new List<RacePlayerState>();
 }
@@ -863,6 +907,7 @@ public sealed class RaceResultState
     public int Wpm { get; set; }
     public double Accuracy { get; set; }
     public int ErrorCount { get; set; }
+    public int TimeSeconds { get; set; }
     public bool IsDnf { get; set; }
     public bool IsBot { get; set; }
     // null botams ir DNF; svečiui Saved = false
@@ -873,6 +918,8 @@ public sealed class RaceRoom
 {
     public string RaceId { get; set; }
     public int DatabaseRaceId { get; set; }
+    // 0 = klasikinės lenktynės, kitaip žodžių režimo trukmė
+    public int DurationSeconds { get; set; }
     public RaceRoomStatus Status { get; set; } = RaceRoomStatus.Lobby;
     public DateTime LobbyDeadlineUtc { get; set; }
     public DateTime StartAtUtc { get; set; }

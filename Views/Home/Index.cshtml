@@ -56,7 +56,10 @@
                                 aria-pressed="@(seconds == 30 ? "true" : "false")">@(seconds < 60 ? $"{seconds} s" : $"{seconds / 60} min")</button>
                     }
                 </div>
-                <a class="btn btn-p" id="words-solo" href="/race/words?seconds=30">Pradėti</a>
+                <div class="mode-actions">
+                    <a class="btn btn-p" id="words-solo" href="/race/words?seconds=30">Solo</a>
+                    <a class="btn btn-s" id="words-online" href="/race/quick?seconds=30">Online</a>
+                </div>
             </article>
 
             <article class="card card--soon mode-card">
@@ -114,12 +117,14 @@
     }
     loadTop10();
 
-    // Žodžių režimo trukmės pasirinkimas keičia „Pradėti" nuorodą
+    // Žodžių režimo trukmės pasirinkimas keičia Solo ir Online nuorodas
     document.querySelectorAll("[data-words-seconds]").forEach(button =>
         button.addEventListener("click", () => {
             document.querySelectorAll("[data-words-seconds]").forEach(other =>
                 other.setAttribute("aria-pressed", String(other === button)));
             document.getElementById("words-solo").href =
                 `/race/words?seconds=${button.dataset.wordsSeconds}`;
+            document.getElementById("words-online").href =
+                `/race/quick?seconds=${button.dataset.wordsSeconds}`;
         }));
 </script>

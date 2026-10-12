@@ -43,11 +43,11 @@ public sealed class RaceHub : Hub
 
     public Task SendProgress(
         string raceId, string playerKey, int correctChars,
-        int totalKeystrokes, int wrongKeystrokes)
+        int totalKeystrokes, int wrongKeystrokes, string typing)
     {
         return _matchmaking.SendProgressAsync(
             raceId, playerKey, Context.ConnectionId, correctChars,
-            totalKeystrokes, wrongKeystrokes);
+            totalKeystrokes, wrongKeystrokes, typing);
     }
 
     public Task LeaveRace(string raceId, string playerKey)

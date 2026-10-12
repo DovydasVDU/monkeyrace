@@ -5,6 +5,8 @@
     var playerKey = (string)ViewBag.PlayerKey;
     var username = (string)ViewBag.Username;
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var seconds = (int)(ViewBag.Seconds ?? 0);
+    var quickUrl = seconds > 0 ? $"/race/quick?seconds={seconds}" : "/race/quick";
 }
 
 <div class="match-page">
@@ -94,7 +96,7 @@
                 </p>
             </section>
             <div class="result-actions">
-                <a class="btn btn-p" href="/race/quick">
+                <a class="btn btn-p" href="@quickUrl">
                     <svg class="ui-icon" aria-hidden="true"><use href="#icon-redo"></use></svg>Žaisti dar kartą
                 </a>
                 <a class="btn btn-g" href="/">
@@ -197,6 +199,7 @@ const RACE_ID = @Html.Raw(JsonSerializer.Serialize(raceId));
 const PLAYER_KEY = @Html.Raw(JsonSerializer.Serialize(playerKey));
 const USERNAME = @Html.Raw(JsonSerializer.Serialize(username));
 const ATTEMPT = @((int)(ViewBag.Attempt ?? 0));
+const QUICK_URL = @Html.Raw(JsonSerializer.Serialize(quickUrl));
 const IS_AUTHENTICATED = @isAuthenticated.ToString().ToLowerInvariant();
 const TAB_ID = sessionStorage.getItem("monkeyrace-tab-id") ||
     (crypto.randomUUID ? crypto.randomUUID() :
@@ -222,6 +225,8 @@ let wordHadError = [];
 let raceTimeline = null;
 let raceAnalysis = null;
 let raceTextLength = 0;
+// 0 = klasikinės lenktynės, kitaip žodžių režimo trukmė (ateina su RaceState)
+let durationSeconds = 0;
 let replayTimer = null;
 let replaySpeed = 1;
 let replayIndex = 0;
@@ -280,6 +285,8 @@ function monkeyTemplate(colorIndex, level) {
 
 function applyState(state) {
     targetText = state.text || targetText;
+    durationSeconds = state.durationSeconds || 0;
+    document.getElementById("race-panel").classList.toggle("words-mode", durationSeconds > 0);
     state.players.forEach(player => players[player.playerKey] = player);
     renderPlayers();
 
@@ -365,6 +372,11 @@ function deleteCurrentWord() {
 }
 
 function showPersonalResult(data) {
+    if (durationSeconds) {
+        // žodžių režime klaidos ir teksto statistika skaičiuojamos tik iki žodžio, kurį rašei baigiantis laikui
+        const range = getTargetWordRanges()[getActiveWordIndex(input.value)];
+        if (range) targetText = targetText.slice(0, range.end);
+    }
     finished = true;
     input.disabled = true;
     clearInterval(raceTimer);
@@ -439,9 +451,11 @@ connection.on("Progress", data => {
     Object.assign(player, data);
     players[data.playerKey] = player;
     const track = document.getElementById(`track-${cssId(data.playerKey)}`);
-    if (track) track.style.setProperty("--progress", `${data.progress}%`);
+    if (track && !durationSeconds) track.style.setProperty("--progress", `${data.progress}%`);
     const wpm = document.getElementById(`wpm-${cssId(data.playerKey)}`);
     if (wpm) wpm.textContent = `${data.wpm} WPM`;
+    const typing = document.getElementById(`typing-${cssId(data.playerKey)}`);
+    if (typing) typing.textContent = data.typing || "";
 });
 connection.on("PlayerFinished", data => {
     const track = document.getElementById(`track-${cssId(data.playerKey)}`);
@@ -465,6 +479,10 @@ connection.on("RaceFinished", data => {
     const hasBots = data.players.some(player => player.isBot);
     document.getElementById("bot-explanation").hidden = !hasBots;
     const me = data.players.find(player => player.playerKey === PLAYER_KEY);
+    // žodžių režime PlayerFinished nesiunčiamas: visų laikas baigiasi kartu
+    if (durationSeconds && me && !me.isDnf &&
+        document.getElementById("personal-result").hidden)
+        showPersonalResult(me);
     if (me && me.reward)
         renderReward(document.getElementById("personal-reward"), me.reward);
     document.getElementById("final-results-list").innerHTML = data.players.map(player => `
@@ -479,12 +497,14 @@ connection.on("RaceFinished", data => {
     raceAnalysis = data.analysis;
     raceTextLength = data.textLength || targetText.length;
     renderRaceHistory();
-    renderReplay();
+    // perklausa rodo kelią iki finišo, o žodžių režime finišo nėra
+    if (durationSeconds) document.getElementById("replay-race").hidden = true;
+    else renderReplay();
     renderWpmChart();
     renderWordErrors();
 });
 function retryMatchmaking() {
-    window.location.href = `/race/quick?attempt=${ATTEMPT + 1}`;
+    window.location.href = `${QUICK_URL}${QUICK_URL.includes("?") ? "&" : "?"}attempt=${ATTEMPT + 1}`;
 }
 
 connection.on("RaceUnavailable", retryMatchmaking);
@@ -539,7 +559,7 @@ input.addEventListener("input", event => {
     recordWordErrors(typed);
     updateCharacters(typed);
     connection.invoke("SendProgress", RACE_ID, PLAYER_KEY, correctChars,
-        totalKeystrokes, wrongKeystrokes)
+        totalKeystrokes, wrongKeystrokes, typed.slice(typed.lastIndexOf(" ") + 1))
         .catch(console.error);
     document.getElementById("accuracy-display").textContent =
         totalKeystrokes === 0
@@ -617,8 +637,19 @@ function getTargetWordRanges() {
 
 function updateTimer() {
     if (!raceStarted || !startAtUtc) return;
-    const elapsedMs = Math.max(0, serverNow() - startAtUtc);
-    document.getElementById("timer-display").textContent = Math.floor(elapsedMs / 1000);
+    let elapsedMs = Math.max(0, serverNow() - startAtUtc);
+    if (durationSeconds) {
+        // žodžių režime laikas skaičiuojamas atgal; pasibaigus laukiama RaceFinished iš serverio
+        elapsedMs = Math.min(elapsedMs, durationSeconds * 1000);
+        document.getElementById("timer-display").textContent =
+            durationSeconds - Math.floor(elapsedMs / 1000);
+        if (elapsedMs >= durationSeconds * 1000 && !finished) {
+            finished = true;
+            input.disabled = true;
+        }
+    } else {
+        document.getElementById("timer-display").textContent = Math.floor(elapsedMs / 1000);
+    }
     // ta pati formulė kaip serveryje (MatchmakingService): teisingi simboliai / 5 per minutę
     document.getElementById("wpm-display").textContent = elapsedMs < 1000 ? 0 :
         Math.round(getCorrectChars(input.value) / 5 / (elapsedMs / 60000));
@@ -633,6 +664,10 @@ function updateCharacters(typed) {
     const wordElement = document.querySelector(
         `#text-display .word[data-word-index="${activeIndex}"]`);
     if (!wordElement) return;
+    // žodžių režime matomos 3 eilutės: aktyvi eilutė laikoma antra
+    if (durationSeconds)
+        document.getElementById("text-display").scrollTop =
+            Math.max(0, wordElement.offsetTop - wordElement.offsetHeight);
     const rendered = renderWord(range.word, typedWord);
     wordElement.querySelectorAll(".char").forEach((element, index) => {
         const state = rendered[index];
@@ -673,7 +708,10 @@ function flashWordError(index) {
 }
 
 function renderText() {
-    document.getElementById("text-display").innerHTML = getTargetWordRanges()
+    const textDisplay = document.getElementById("text-display");
+    textDisplay.classList.toggle("is-words", durationSeconds > 0);
+    textDisplay.scrollTop = 0;
+    textDisplay.innerHTML = getTargetWordRanges()
         .map((range, index) =>
             `<span class="word ${index === 0 ? "active" : ""}" data-word-index="${index}">` +
             [...range.word].map(char =>
@@ -927,6 +965,7 @@ function renderPlayers() {
             </span>
             <span class="player-name">${escapeHtml(player.username)}
                 ${player.playerKey === PLAYER_KEY ? `<span class="tag tag-me">Tu</span>` : botBadge(player) || `<span class="tag">Žaidėjas</span>`}</span>
+            <span class="player-typing" id="typing-${cssId(player.playerKey)}"></span>
             <span class="player-wpm" id="wpm-${cssId(player.playerKey)}">${player.wpm || 0} WPM</span>
             <div class="player-card-pop" role="tooltip">${playerCardHtml(player)}</div>
         </div>`).join("");

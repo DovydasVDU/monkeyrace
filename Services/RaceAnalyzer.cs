@@ -35,7 +35,8 @@ public static class RaceAnalyzer
             AtMs = elapsedMs,
             Values = room.Players.Where(player => !player.IsDnf).ToDictionary(
                 player => player.PlayerKey,
-                player => player.IsFinished ? room.Text.Length : player.CorrectChars)
+                player => player.IsFinished && room.DurationSeconds == 0
+                    ? room.Text.Length : player.CorrectChars)
         };
         room.Timeline.Add(tick);
         foreach (var player in room.Players.Where(player => !player.IsDnf))

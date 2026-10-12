@@ -69,8 +69,10 @@ public class RaceController : Controller
     }
 
     [HttpGet("/race/quick")]
-    public async Task<IActionResult> Quick(string username, int attempt = 0)
+    public async Task<IActionResult> Quick(string username, int attempt = 0, int seconds = 0)
     {
+        if (seconds != 0 && !WordService.AllowedSeconds.Contains(seconds))
+            return BadRequest("Unsupported duration.");
         if (attempt >= 2)
             return View("MatchmakingError");
 
@@ -80,9 +82,10 @@ public class RaceController : Controller
         var userId = PlayerIdentity.GetUserId(HttpContext);
         // kortelė keliauja su žaidėju, kad trasoje užvedus pele nereikėtų papildomų užklausų
         var card = userId == null ? null : await _raceService.GetPlayerCardAsync(userId.Value);
-        var raceId = _matchmaking.JoinOrCreate(playerKey, displayName, userId, card);
+        var raceId = _matchmaking.JoinOrCreate(playerKey, displayName, userId, card, seconds);
 
-        return RedirectToAction(nameof(MultiPlay), new { raceId, attempt });
+        // seconds lieka adrese, kad pakartotinė paieška liktų tame pačiame režime
+        return RedirectToAction(nameof(MultiPlay), new { raceId, attempt, seconds = seconds == 0 ? (int?)null : seconds });
     }
 
     [HttpGet("/race/multiplay/{raceId}")]
@@ -98,6 +101,8 @@ public class RaceController : Controller
         ViewBag.PlayerKey = playerKey;
         ViewBag.Username = username;
         ViewBag.Attempt = attempt;
+        int.TryParse(Request.Query["seconds"], out var seconds);
+        ViewBag.Seconds = seconds;
         return View("MultiPlay");
     }
 

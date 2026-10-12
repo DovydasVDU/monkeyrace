@@ -778,6 +778,15 @@ main {
     width: 100%;
 }
 
+/* du mygtukai vienoje kortelėje (žodžių režimas: Solo / Online) */
+.mode-actions {
+    display: grid;
+    gap: .5rem;
+    grid-template-columns: 1fr 1fr;
+    margin-top: auto;
+    width: 100%;
+}
+
 .mode-icon {
     align-items: center;
     background: var(--banana-soft);
