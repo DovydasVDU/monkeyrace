@@ -65,8 +65,9 @@ public class RaceService
                     existing.XpGained, existing.BananasGained, firstRace: false, saved: true);
 
             var isFirstRace = !await _db.RaceResults.AnyAsync(r => r.UserId == userId);
+            var race = await _db.Races.FindAsync(raceId);
             var reward = Progression.RewardFor(mode, place, wpm, accuracy,
-                finished: true, isFirstRace, user.Xp);
+                finished: true, isFirstRace, user.Xp, race?.DurationSeconds);
 
             _db.RaceResults.Add(new RaceResult
             {
@@ -84,7 +85,6 @@ public class RaceService
             user.Xp += reward.Xp;
             user.Bananas += reward.Bananas;
 
-            var race = await _db.Races.FindAsync(raceId);
             if (race != null && race.Status != "finished")
                 race.Status = "finished";
 
@@ -126,10 +126,11 @@ public class RaceService
     }
 
     // Svečiui: kiek būtų gavęs, jei būtų prisijungęs. Niekur nesaugoma.
-    public static RaceReward GuestReward(RaceMode mode, int? place, int wpm, double accuracy)
+    public static RaceReward GuestReward(RaceMode mode, int? place, int wpm, double accuracy,
+        int? durationSeconds = null)
     {
         var reward = Progression.RewardFor(mode, place, wpm, accuracy,
-            finished: true, isFirstRace: false, xpBefore: 0);
+            finished: true, isFirstRace: false, xpBefore: 0, durationSeconds);
         return RaceReward.Create(0, reward.Xp, reward.Bananas,
             reward.Xp, reward.Bananas, firstRace: false, saved: false);
     }

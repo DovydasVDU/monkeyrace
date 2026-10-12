@@ -729,7 +729,8 @@ public sealed class MatchmakingService
                         player.Wpm, player.Accuracy, player.TimeSeconds,
                         player.ErrorCount)
                     : RaceService.GuestReward(RaceMode.Multiplayer, player.Place,
-                        player.Wpm, player.Accuracy);
+                        player.Wpm, player.Accuracy,
+                        room.DurationSeconds > 0 ? room.DurationSeconds : null);
             }
         }
 

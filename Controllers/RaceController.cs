@@ -153,7 +153,7 @@ public class RaceController : Controller
         // Svečias: tik parodome, kiek būtų gavęs. Nieko nesaugome.
         var userId = PlayerIdentity.GetUserId(HttpContext);
         if (userId == null)
-            return Json(new { success = true, reward = RaceService.GuestReward(RaceMode.Solo, null, dto.Wpm, dto.Accuracy) });
+            return Json(new { success = true, reward = RaceService.GuestReward(RaceMode.Solo, null, dto.Wpm, dto.Accuracy, duration) });
 
         var race = new Race { TextSnippetId = snippet?.Id, DurationSeconds = duration, StartedAt = startedAt };
         _db.Races.Add(race);

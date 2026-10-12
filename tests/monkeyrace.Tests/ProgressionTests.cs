@@ -56,6 +56,17 @@ public class ProgressionTests
     }
 
     [Fact]
+    public void WordsMode_XpScaledByDuration_MinuteAndLongerIsFull()
+    {
+        // (10 + 40/4) = 20 XP už minutę ar daugiau, 15 s – ketvirtis
+        Assert.Equal(5, Progression.RewardFor(RaceMode.Solo, null, 40, 100, true, false, 0, 15).Xp);
+        Assert.Equal(20, Progression.RewardFor(RaceMode.Solo, null, 40, 100, true, false, 0, 60).Xp);
+        Assert.Equal(20, Progression.RewardFor(RaceMode.Solo, null, 40, 100, true, false, 0, 120).Xp);
+        // pirmųjų lenktynių premija nemažinama
+        Assert.Equal(55, Progression.RewardFor(RaceMode.Solo, null, 40, 100, true, true, 0, 15).Xp);
+    }
+
+    [Fact]
     public void FirstRaceBonus_OnlyWhenFirst()
     {
         // wpm 20: 30 XP be bonuso, 80 XP su juo, lygio riba (100) nekertama

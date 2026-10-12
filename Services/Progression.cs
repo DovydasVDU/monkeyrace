@@ -51,10 +51,11 @@ public static class Progression
         return (double)(xp - floor) / (LevelThresholds[level] - floor);
     }
 
-    // accuracy procentais (0..100), kaip saugoma RaceResults; place null solo režime
+    // accuracy procentais (0..100), kaip saugoma RaceResults; place null solo režime;
+    // durationSeconds – žodžių režimo trukmė (null klasikiniam tekstui)
     public static Reward RewardFor(
         RaceMode mode, int? place, double wpm, double accuracy,
-        bool finished, bool isFirstRace, int xpBefore)
+        bool finished, bool isFirstRace, int xpBefore, int? durationSeconds = null)
     {
         var levelBefore = LevelFor(xpBefore);
         if (!finished)
@@ -77,6 +78,9 @@ public static class Progression
         }
 
         xp *= accuracyFactor;
+        // trumpas žodžių režimas neturi duoti tiek XP, kiek minutė rašymo
+        if (durationSeconds != null)
+            xp *= Math.Min(1, durationSeconds.Value / 60d);
         if (accuracy >= 95)
             bananas += 1;
         if (isFirstRace)
