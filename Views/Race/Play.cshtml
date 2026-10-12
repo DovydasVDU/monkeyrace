@@ -1,7 +1,12 @@
 ﻿@model TextSnippet
 @using Microsoft.AspNetCore.Http
 
-@{ ViewData["Title"] = "Rašyk - Monkeyrace"; }
+@{
+    ViewData["Title"] = "Rašyk - Monkeyrace";
+    // null = klasikinė solo treniruotė, kitaip žodžių režimo trukmė sekundėmis
+    int? duration = ViewBag.Duration;
+    var durationLabel = duration < 60 ? $"{duration} s" : $"{duration / 60} min";
+}
 
 
 <div class="race-page">
@@ -12,13 +17,13 @@
                 <span>Išeiti</span>
             </a>
             <div class="race-title-wrap">
-                <p class="eyebrow">Solo treniruotė</p>
-                <h1>Rašyk savo tempu</h1>
+                <p class="eyebrow">@(duration == null ? "Solo treniruotė" : "Dažniausi žodžiai")</p>
+                <h1>@(duration == null ? "Rašyk savo tempu" : $"Rašyk {durationLabel}")</h1>
             </div>
             <div class="race-stats" id="stats-bar" aria-label="Statistika">
                 <span class="stat-pill"><small>WPM</small><strong id="wpm-display">0</strong></span>
                 <span class="stat-pill"><small>Tikslumas</small><strong><span id="accuracy-display">100</span>%</strong></span>
-                <span class="stat-pill"><small>Laikas</small><strong><span id="timer-display">0</span> s</strong></span>
+                <span class="stat-pill"><small>@(duration == null ? "Laikas" : "Liko")</small><strong><span id="timer-display">@(duration ?? 0)</span> s</strong></span>
             </div>
         </div>
 
@@ -28,7 +33,7 @@
                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                    placeholder="Pradėk spausdinti..." autofocus />
         </div>
-        <p class="race-hint">Žodis su klaida neleidžia pereiti toliau. Ištaisyk jį, kad tęstum.</p>
+        <p class="race-hint">@(duration == null ? "" : "Laikas pradeda bėgti nuo pirmo klavišo. ")Žodis su klaida neleidžia pereiti toliau. Ištaisyk jį, kad tęstum.</p>
     </section>
 </div>
 <div class="results-overlay" id="results-overlay">
@@ -36,8 +41,8 @@
         <div class="result-head">
             <span class="place-badge" aria-hidden="true"><svg class="ui-icon" aria-hidden="true"><use href="#icon-flag"></use></svg></span>
             <div>
-                <p class="eyebrow">Solo treniruotė</p>
-                <h2 id="solo-result-title">Tekstas baigtas!</h2>
+                <p class="eyebrow">@(duration == null ? "Solo treniruotė" : $"Dažniausi žodžiai · {durationLabel}")</p>
+                <h2 id="solo-result-title">@(duration == null ? "Tekstas baigtas!" : "Laikas baigėsi!")</h2>
             </div>
         </div>
         <div class="personal-result-grid">
@@ -66,6 +71,8 @@
     <script>
          
         let TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
+        // 0 = klasikinis režimas (iki teksto pabaigos), kitaip rašoma tiek sekundžių
+        const DURATION_SECONDS = @(duration ?? 0);
 
         const klaidosSet = new Set();
         let targetWords = [];
@@ -87,6 +94,8 @@
             targetWords = TARGET_TEXT.split(' ');
             const container = document.getElementById('text-display');
             container.innerHTML = '';
+            container.classList.toggle('is-words', DURATION_SECONDS > 0);
+            container.scrollTop = 0;
 
             targetWords.forEach((word, index) => {
                 const wordSpan = document.createElement('span');
@@ -159,6 +168,7 @@
                         currentWordIndex++;
 
                         document.getElementById('word-elem-' + currentWordIndex).classList.add('active');
+                        scrollToActiveWord();
                         this.value = '';
                         this.classList.remove('error');
 
@@ -261,9 +271,20 @@
             setTimeout(() => word.classList.remove('word-input-error'), 180);
         }
 
+        // Žodžių režime matomos 3 eilutės: aktyvi eilutė laikoma antra, kad matytųsi ir kita
+        function scrollToActiveWord() {
+            if (!DURATION_SECONDS) return;
+            const active = document.getElementById('word-elem-' + currentWordIndex);
+            document.getElementById('text-display').scrollTop =
+                Math.max(0, active.offsetTop - active.offsetHeight);
+        }
+
         function calcWPM(charsTyped) {
             if (!startTime || charsTyped === 0) return 0;
-            return Math.round((charsTyped / 5) / ((Date.now() - startTime) / 60000));
+            let elapsedMs = Date.now() - startTime;
+            // laikmatis tikrina kas 200 ms, todėl vėlavimas neturi mažinti WPM
+            if (DURATION_SECONDS) elapsedMs = Math.min(elapsedMs, DURATION_SECONDS * 1000);
+            return Math.round((charsTyped / 5) / (elapsedMs / 60000));
         }
 
         function targetWordLength(word) {
@@ -278,7 +299,16 @@
 
         function updateTimer() {
             if (!startTime) return;
-            timerDisplay.textContent = Math.floor((Date.now() - startTime) / 1000);
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            if (DURATION_SECONDS) {
+                timerDisplay.textContent = Math.max(0, DURATION_SECONDS - elapsedSeconds);
+                if (Date.now() - startTime >= DURATION_SECONDS * 1000 && !isFinished) {
+                    finishRace();
+                    return;
+                }
+            } else {
+                timerDisplay.textContent = elapsedSeconds;
+            }
             if (!isFinished) {
                 accuracyDisplay.textContent = calcAccuracy().toFixed(1);
             }
@@ -289,7 +319,7 @@
             clearInterval(timerHandle);
             inputField.disabled = true;
 
-            const timeSeconds = Math.round((Date.now() - startTime) / 1000);
+            const timeSeconds = DURATION_SECONDS || Math.round((Date.now() - startTime) / 1000);
             const wpm         = calcWPM(totalTypedChars);
             const accuracy    = calcAccuracy();
             const klaidos     = wrongKeystrokes;
@@ -331,7 +361,7 @@
 
             wpmDisplay.textContent = '0';
             accuracyDisplay.textContent = '100';
-            timerDisplay.textContent = '0';
+            timerDisplay.textContent = DURATION_SECONDS;
 
             inputField.value = '';
             inputField.disabled = false;
@@ -342,7 +372,7 @@
         }
 
         function restartRace() {
-            window.location.href = `/Race/Play`;
+            window.location.href = DURATION_SECONDS ? `/race/words?seconds=${DURATION_SECONDS}` : `/Race/Play`;
         }
 
         init();

@@ -1115,3 +1115,10 @@
         transition: none;
     }
 }
+
+/* Žodžių režimas: matomos 3 eilutės, JS (scrollToActiveWord) slenka tekstą */
+.text-display.is-words {
+    height: calc(3 * 1.85em);
+    overflow: hidden;
+    position: relative;
+}

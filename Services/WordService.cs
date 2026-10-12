@@ -14,6 +14,8 @@ public static class WordService
         .Distinct()
         .ToArray();
 
+    public static readonly int[] AllowedSeconds = { 15, 30, 60, 120 };
+
     // Žodžių daugiau, nei leistų parašyti RaceService.MaxWpm per visą laiką, todėl tekstas žaidėjui "nesibaigia"
     public static string Generate(int seconds)
     {

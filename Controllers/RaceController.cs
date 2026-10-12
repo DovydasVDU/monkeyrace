@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
@@ -46,9 +47,25 @@ public class RaceController : Controller
         // Race įrašas DB kuriamas tik išsaugant rezultatą (SaveResult), o ne kiekvieną kartą atidarius puslapį.
         // Sesijoje prisimenam, kokį tekstą ir kada davėme - pagal tai SaveResult patikrina rezultatą.
         HttpContext.Session.SetInt32("SoloSnippetId", snippet.Id);
+        HttpContext.Session.Remove("SoloDuration");
         HttpContext.Session.SetString("SoloStartedAt", DateTime.UtcNow.ToString("O"));
 
         return View(snippet);
+    }
+
+    // Žodžių režimas: atsitiktiniai dažniausi žodžiai, rašoma tol, kol baigiasi pasirinktas laikas
+    [HttpGet("/race/words")]
+    public IActionResult Words(int seconds = 30)
+    {
+        if (!WordService.AllowedSeconds.Contains(seconds))
+            return BadRequest("Unsupported duration.");
+
+        HttpContext.Session.Remove("SoloSnippetId");
+        HttpContext.Session.SetInt32("SoloDuration", seconds);
+        HttpContext.Session.SetString("SoloStartedAt", DateTime.UtcNow.ToString("O"));
+
+        ViewBag.Duration = seconds;
+        return View("Play", new TextSnippet { Content = WordService.Generate(seconds) });
     }
 
     [HttpGet("/race/quick")]
@@ -97,20 +114,33 @@ public class RaceController : Controller
         // Naršyklei aklai netikime: tekstas ir pradžios laikas imami iš sesijos (nustatyti Play metu),
         // o WPM negali viršyti greičio, kurį leidžia serverio išmatuotas laikas nuo puslapio atidarymo.
         var snippetId = HttpContext.Session.GetInt32("SoloSnippetId");
+        var duration = HttpContext.Session.GetInt32("SoloDuration");
         var startedAtText = HttpContext.Session.GetString("SoloStartedAt");
-        if (snippetId == null || !DateTime.TryParse(startedAtText, null,
+        if ((snippetId == null && duration == null) || !DateTime.TryParse(startedAtText, null,
                 System.Globalization.DateTimeStyles.RoundtripKind, out var startedAt))
             return BadRequest("Race unavailable.");
-        // vienas rezultatas vienam Play atidarymui
+        // vienas rezultatas vienam Play / Words atidarymui
         HttpContext.Session.Remove("SoloSnippetId");
+        HttpContext.Session.Remove("SoloDuration");
         HttpContext.Session.Remove("SoloStartedAt");
 
-        var snippet = await _db.TextSnippets.FindAsync(snippetId.Value);
-        if (snippet == null)
-            return BadRequest("Race unavailable.");
-
-        var elapsedMinutes = Math.Max(1d / 60, (DateTime.UtcNow - startedAt).TotalMinutes);
-        var maxPossibleWpm = snippet.Content.Length / 5d / elapsedMinutes * 1.2;
+        var elapsed = DateTime.UtcNow - startedAt;
+        double maxPossibleWpm = RaceService.MaxWpm;
+        TextSnippet snippet = null;
+        if (duration != null)
+        {
+            // laikmatis naršyklėje startuoja nuo pirmo klavišo, todėl nuo puslapio atidarymo praeina bent visa trukmė
+            if (elapsed.TotalSeconds < duration.Value - 1)
+                return BadRequest("Implausible result.");
+        }
+        else
+        {
+            snippet = await _db.TextSnippets.FindAsync(snippetId.Value);
+            if (snippet == null)
+                return BadRequest("Race unavailable.");
+            var elapsedMinutes = Math.Max(1d / 60, elapsed.TotalMinutes);
+            maxPossibleWpm = snippet.Content.Length / 5d / elapsedMinutes * 1.2;
+        }
         if (dto.Wpm < 0 || dto.Wpm > RaceService.MaxWpm || dto.Wpm > maxPossibleWpm ||
             dto.Accuracy < 0 || dto.Accuracy > 100)
             return BadRequest("Implausible result.");
@@ -120,7 +150,7 @@ public class RaceController : Controller
         if (userId == null)
             return Json(new { success = true, reward = RaceService.GuestReward(RaceMode.Solo, null, dto.Wpm, dto.Accuracy) });
 
-        var race = new Race { TextSnippetId = snippet.Id, StartedAt = startedAt };
+        var race = new Race { TextSnippetId = snippet?.Id, DurationSeconds = duration, StartedAt = startedAt };
         _db.Races.Add(race);
         await _db.SaveChangesAsync();
 

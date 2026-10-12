@@ -1,4 +1,4 @@
-@using System.Security.Claims
+﻿@using System.Security.Claims
 @{
     ViewData["Title"] = "MonkeyRace";
     var currentUser = User.FindFirstValue(ClaimTypes.Name);
@@ -50,11 +50,13 @@
                 <h3>Dažniausi žodžiai</h3>
                 <p>Atsitiktiniai žodžiai iš 1000 dažniausių lietuviškų. Rašyk, kol baigsis laikas.</p>
                 <div class="tm-group" role="group" aria-label="Trukmė">
-                    <button class="tm" type="button" disabled>15 s</button>
-                    <button class="tm on" type="button" disabled>30 s</button>
-                    <button class="tm" type="button" disabled>1 min</button>
+                    @foreach (var seconds in WordService.AllowedSeconds)
+                    {
+                        <button class="tm" type="button" data-words-seconds="@seconds"
+                                aria-pressed="@(seconds == 30 ? "true" : "false")">@(seconds < 60 ? $"{seconds} s" : $"{seconds / 60} min")</button>
+                    }
                 </div>
-                <button class="btn btn-s" type="button" disabled>Netrukus</button>
+                <a class="btn btn-p" id="words-solo" href="/race/words?seconds=30">Pradėti</a>
             </article>
 
             <article class="card card--soon mode-card">
@@ -111,4 +113,13 @@
         }
     }
     loadTop10();
+
+    // Žodžių režimo trukmės pasirinkimas keičia „Pradėti" nuorodą
+    document.querySelectorAll("[data-words-seconds]").forEach(button =>
+        button.addEventListener("click", () => {
+            document.querySelectorAll("[data-words-seconds]").forEach(other =>
+                other.setAttribute("aria-pressed", String(other === button)));
+            document.getElementById("words-solo").href =
+                `/race/words?seconds=${button.dataset.wordsSeconds}`;
+        }));
 </script>
