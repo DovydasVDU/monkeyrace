@@ -1,6 +1,8 @@
 ﻿// Models/User.cs
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 // duomenų bazės lentelės
 public class User
@@ -26,6 +28,38 @@ public class TextSnippet
     public string Content { get; set; } = string.Empty;    // Tekstas spausdinimui
     public string Language { get; set; } = "lt";           // Kalba
     public int WordCount { get; set; }
+
+    // Importuoti tekstai (Data/texts-lt.jsonl). Seni seed tekstai šių laukų neturi ir į atranką nepatenka.
+    public string SourceId { get; set; }                   // candidates.jsonl id, pagal jį importas nekartoja įrašų
+    public string Author { get; set; }
+    public string Work { get; set; }                       // kūrinys arba Vikipedijos straipsnis
+    public string SourceUrl { get; set; }
+    public string License { get; set; }
+    public string Flags { get; set; }                      // kableliais: dialogue,digits,...
+
+    // „Apie tekstą“ skilčiai (solo Play ir online RaceFinished)
+    private static readonly Dictionary<string, string> FlagNames = new()
+    {
+        ["dialogue"] = "Dialogas",
+        ["digits"] = "Skaičiai",
+        ["many_caps"] = "Daug didžiųjų raidžių",
+        ["quotes"] = "Kabutės",
+        ["parens"] = "Skliaustai",
+        ["colon_semicolon"] = "Dvitaškis ar kabliataškis",
+        ["ellipsis"] = "Daugtaškis",
+        ["informational"] = "Informacinis tekstas",
+        ["wikipedia"] = "Vikipedija"
+    };
+
+    [NotMapped]
+    public string[] FlagLabels => (Flags ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(flag => FlagNames.GetValueOrDefault(flag, flag))
+        .ToArray();
+
+    // PD-PATIKRINTI: visi literatūros autoriai mirę daugiau nei prieš 70 metų
+    [NotMapped]
+    public string LicenseLabel => License == "PD-PATIKRINTI" ? "Viešasis domenas" : License;
 }
 
 // Models/Race.cs

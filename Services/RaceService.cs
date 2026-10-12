@@ -23,7 +23,8 @@ public class RaceService
 
     public async Task<TextSnippet> GetRandomSnippetAsync(List<int> lastIds)
     {
-        var query = _db.TextSnippets.AsQueryable(); // kreipiamės į duomenų bazę
+        // tik importuoti tekstai (su autoriumi ir šaltiniu); seni seed tekstai lieka DB dėl senų Race įrašų
+        var query = _db.TextSnippets.Where(t => t.SourceId != null); // kreipiamės į duomenų bazę
 
         if (lastIds.Any()) 
         {

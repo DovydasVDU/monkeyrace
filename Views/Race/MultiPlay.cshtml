@@ -178,6 +178,8 @@
                     <div id="text-author-row" hidden><dt>Autorius</dt><dd id="text-author"></dd></div>
                     <div id="text-work-row" hidden><dt>Kūrinys</dt><dd id="text-work"></dd></div>
                     <div id="text-source-row" hidden><dt>Šaltinis</dt><dd><a id="text-source" target="_blank" rel="noopener noreferrer"></a></dd></div>
+                    <div id="text-license-row" hidden><dt>Licencija</dt><dd id="text-license"></dd></div>
+                    <div id="text-flags-row" hidden><dt>Ypatybės</dt><dd id="text-flags"></dd></div>
                 </dl>
                 </div>
             </details>
@@ -401,6 +403,24 @@ function showPersonalResult(data) {
     renderTextAbout();
 }
 
+// teksto kilmė ateina su RaceFinished; žodžių režime info nėra ir eilutės lieka paslėptos
+function renderTextInfo(info) {
+    const rows = {
+        author: info?.author,
+        work: info?.work,
+        license: info?.license,
+        flags: info?.flags?.length ? info.flags.join(", ") : ""
+    };
+    Object.entries(rows).forEach(([key, value]) => {
+        document.getElementById(`text-${key}`).textContent = value || "";
+        document.getElementById(`text-${key}-row`).hidden = !value;
+    });
+    const source = document.getElementById("text-source");
+    source.href = info?.sourceUrl || "#";
+    source.textContent = info?.sourceUrl ? decodeURI(info.sourceUrl) : "";
+    document.getElementById("text-source-row").hidden = !info?.sourceUrl;
+}
+
 function renderTextAbout() {
     document.getElementById("text-length").textContent = targetText.length;
     document.getElementById("text-word-count").textContent =
@@ -496,6 +516,7 @@ connection.on("RaceFinished", data => {
     raceTimeline = data.timeline;
     raceAnalysis = data.analysis;
     raceTextLength = data.textLength || targetText.length;
+    renderTextInfo(data.textInfo);
     renderRaceHistory();
     // perklausa rodo kelią iki finišo, o žodžių režime finišo nėra
     if (durationSeconds) document.getElementById("replay-race").hidden = true;

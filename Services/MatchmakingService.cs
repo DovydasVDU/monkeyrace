@@ -434,6 +434,7 @@ public sealed class MatchmakingService
                     return;
                 room.DatabaseRaceId = race.Id;
                 room.Text = snippet?.Content ?? WordService.Generate(room.DurationSeconds);
+                room.Snippet = snippet;
                 room.StartAtUtc = DateTime.UtcNow.AddSeconds(3);
                 var botOptions = _botOptions.Value;
                 var humans = room.Players.Where(player => !player.IsBot).ToList();
@@ -743,7 +744,16 @@ public sealed class MatchmakingService
             timeline = RaceAnalyzer.CreateTimeline(room),
             analysis = RaceAnalyzer.CreateAnalysis(room),
             textLength = room.Text.Length,
-            durationSeconds = room.DurationSeconds
+            durationSeconds = room.DurationSeconds,
+            // „Apie tekstą“; null žodžių režime
+            textInfo = room.Snippet == null ? null : new
+            {
+                author = room.Snippet.Author,
+                work = room.Snippet.Work,
+                sourceUrl = room.Snippet.SourceUrl,
+                license = room.Snippet.LicenseLabel,
+                flags = room.Snippet.FlagLabels
+            }
         });
         _ = RemoveFinishedRoomAsync(room.RaceId);
     }
@@ -921,6 +931,8 @@ public sealed class RaceRoom
     public int DatabaseRaceId { get; set; }
     // 0 = klasikinės lenktynės, kitaip žodžių režimo trukmė
     public int DurationSeconds { get; set; }
+    // teksto kilmė „Apie tekstą“ skilčiai; null žodžių režime
+    public TextSnippet Snippet { get; set; }
     public RaceRoomStatus Status { get; set; } = RaceRoomStatus.Lobby;
     public DateTime LobbyDeadlineUtc { get; set; }
     public DateTime StartAtUtc { get; set; }

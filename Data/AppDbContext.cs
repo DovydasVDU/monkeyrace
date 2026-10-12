@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
         // Vienas rezultatas vienam žaidėjui vienose lenktynėse: apsauga nuo dvigubo apdovanojimo
         modelBuilder.Entity<RaceResult>().HasIndex(r => new { r.RaceId, r.UserId }).IsUnique();
+        // Importuotas tekstas DB tik vieną kartą
+        modelBuilder.Entity<TextSnippet>().HasIndex(t => t.SourceId).IsUnique();
 
         // Seed data – pradiniai duomenys. Tekstus padarome iškart, kad nereiktų jų suvedinėti ranka
         modelBuilder.Entity<TextSnippet>().HasData(

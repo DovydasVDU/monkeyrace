@@ -93,16 +93,37 @@ namespace monkeyrace.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Author")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Content")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Flags")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Language")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("License")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceUrl")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("WordCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Work")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SourceId")
+                        .IsUnique();
 
                     b.ToTable("TextSnippets");
 

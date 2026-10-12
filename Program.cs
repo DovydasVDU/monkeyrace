@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,7 @@ public class Program
             // Migrate() sukuria DB ir prideda naujus stulpelius (EnsureCreated to nedaro esamai DB).
             // Pakeitus modelį: dotnet ef migrations add <Pavadinimas>
             db.Database.Migrate();
+            TextImporter.Import(db, System.IO.Path.Combine(AppContext.BaseDirectory, "Data", "texts-lt.jsonl"));
         }
 
         host.Run();

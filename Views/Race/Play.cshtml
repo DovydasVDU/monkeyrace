@@ -65,6 +65,26 @@
                 <svg class="ui-icon" aria-hidden="true"><use href="#icon-home"></use></svg>Į pradžią
             </a>
         </div>
+
+        @* žodžių režimo tekstas sugeneruotas, todėl jo kilmės nėra *@
+        @if (Model.SourceId != null)
+        {
+            <details class="result-details text-about" id="text-about">
+                <summary>Apie tekstą</summary>
+                <div class="details-content">
+                    <dl>
+                        <div><dt>Autorius</dt><dd>@Model.Author</dd></div>
+                        <div><dt>Kūrinys</dt><dd>@Model.Work</dd></div>
+                        <div><dt>Šaltinis</dt><dd><a href="@Model.SourceUrl" target="_blank" rel="noopener noreferrer">@Uri.UnescapeDataString(Model.SourceUrl)</a></dd></div>
+                        <div><dt>Licencija</dt><dd>@Model.LicenseLabel</dd></div>
+                        @if (Model.FlagLabels.Length > 0)
+                        {
+                            <div><dt>Ypatybės</dt><dd>@string.Join(", ", Model.FlagLabels)</dd></div>
+                        }
+                    </dl>
+                </div>
+            </details>
+        }
     </section>
 </div>
 

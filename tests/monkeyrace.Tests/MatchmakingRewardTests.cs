@@ -31,6 +31,7 @@ public sealed class MatchmakingRewardTests : IDisposable
             db.Database.Migrate();
             // vienas trumpas tekstas, kad lenktynės truktų kelias sekundes
             db.TextSnippets.RemoveRange(db.TextSnippets.Where(t => t.Id != 25));
+            db.TextSnippets.Find(25)!.SourceId = "test"; // atranka ima tik importuotus tekstus
             db.SaveChanges();
             _text = db.TextSnippets.Single().Content;
         }

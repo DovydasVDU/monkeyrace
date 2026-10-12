@@ -18,8 +18,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- WordService skaito iš Data/ šalia dll -->
+		<!-- WordService ir TextImporter skaito iš Data/ šalia dll -->
 		<None Include="Data\words-lt.txt" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Data\texts-lt.jsonl" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>
