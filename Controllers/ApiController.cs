@@ -40,22 +40,28 @@ namespace monkeyrace.Controllers
         public async Task<IActionResult> GetTop10Races()
         {
             // 1. Fetch the top 10 best results from the database
+            // Tik klasikinės online lenktynės: solo ir žodžių režimo WPM nepalyginami (trumpas spurtas duoda daugiau)
             // We order by WPM (highest first), then by Accuracy to break ties
             var topResults = await _db.RaceResults
                 .Include(r => r.User) // This tells Entity Framework to fetch the User info so we can get the Username
+                .Include(r => r.Race)
+                .Where(r => r.Race.IsMultiplayer && r.Race.DurationSeconds == null)
                 .OrderByDescending(r => r.WPM)
                 .ThenByDescending(r => r.Accuracy)
                 .Take(10)
                 .ToListAsync();
 
-            // 2. Map the data and assign a "Place" (1 through 10) dynamically
-            var leaderboard = topResults.Select((race, index) => new 
+            // 2. Map the data and assign a "Rank" (1 through 10) dynamically
+            var leaderboard = topResults.Select((result, index) => new
             {
-                Place = index + 1,
-                Username = race.User != null ? race.User.Username : "Unknown",
-                Wpm = race.WPM,
-                Accuracy = Math.Round(race.Accuracy, 2),
-                Date = race.CompletedAt.ToString("yyyy-MM-dd")
+                Rank = index + 1,
+                Username = result.User != null ? result.User.Username : "Unknown",
+                Wpm = result.WPM,
+                Accuracy = Math.Round(result.Accuracy, 2),
+                Place = result.Place, // kelinta vieta tose lenktynėse; null seniems įrašams
+                TextId = result.Race.TextSnippetId,
+                ResultId = result.Id,
+                Date = result.CompletedAt.ToString("yyyy-MM-dd")
             });
 
             // 3. Return the JSON array

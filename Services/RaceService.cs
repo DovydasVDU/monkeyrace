@@ -78,6 +78,7 @@ public class RaceService
                 Accuracy = accuracy,
                 TimeSeconds = timeSeconds,
                 ErrorCount = errorCount,
+                Place = place,
                 XpGained = reward.Xp,
                 BananasGained = reward.Bananas
             });

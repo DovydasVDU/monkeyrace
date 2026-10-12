@@ -62,6 +62,9 @@ namespace monkeyrace.Migrations
                     b.Property<int>("ErrorCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("Place")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("RaceId")
                         .HasColumnType("INTEGER");
 

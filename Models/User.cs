@@ -89,6 +89,7 @@ public class RaceResult
     public double Accuracy { get; set; }   // 0.0 - 100.0
     public int TimeSeconds { get; set; }   // Kiek laiko užtruko
     public int ErrorCount { get; set; }
+    public int? Place { get; set; }        // vieta online lenktynėse; null solo ir seniems įrašams
     public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
 
     // Kiek gauta už šias lenktynes; saugoma, kad pakartotinis išsaugojimas grąžintų tą patį apdovanojimą

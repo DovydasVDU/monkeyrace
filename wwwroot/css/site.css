@@ -838,6 +838,16 @@ main {
     padding: .4rem .75rem;
 }
 
+/* Top 10: #, žaidėjas, WPM, tikslumas, vieta, teksto id, rezultato id, data */
+.lb-top10 {
+    grid-template-columns: 3rem minmax(0, 1fr) 4.5rem 5.5rem 3.5rem 4.5rem 5.5rem 6.5rem;
+}
+
+.lb-id {
+    color: var(--ink-a60);
+    font-size: .85rem;
+}
+
 .lb-row:last-child {
     border-bottom: 0;
 }
@@ -944,6 +954,14 @@ main {
     }
 
     .lb-date {
+        display: none;
+    }
+
+    .lb-top10 {
+        grid-template-columns: 2.5rem minmax(0, 1fr) 3.5rem 4.5rem 3rem;
+    }
+
+    .lb-id {
         display: none;
     }
 }

@@ -75,11 +75,12 @@
 
     <section class="card leaderboard" aria-labelledby="top10-title">
         <div class="leaderboard-head">
-            <h2 id="top10-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Top 10 žaidėjų</h2>
-            <span class="pill">Visą laiką</span>
+            <h2 id="top10-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Top 10 rezultatų</h2>
+            <span class="pill">Online · visą laiką</span>
         </div>
-        <div class="lb-row lb-header" aria-hidden="true">
-            <span>#</span><span>Žaidėjas</span><span>WPM</span><span>Tikslumas</span><span class="lb-date">Data</span>
+        <div class="lb-row lb-top10 lb-header" aria-hidden="true">
+            <span>#</span><span>Žaidėjas</span><span>WPM</span><span>Tikslumas</span><span>Vieta</span>
+            <span class="lb-id">Tekstas</span><span class="lb-id">Rezultatas</span><span class="lb-date">Data</span>
         </div>
         @* id naudoja navbar nuoroda „Lyderiai" ir loadTop10() *@
         <div id="top10-body" class="lb-body" role="list">
@@ -102,11 +103,14 @@
             const res = await fetch('/api/stats/top10/');
             const data = await res.json();
             body.innerHTML = data.length ? data.map((user, index) => `
-                <div class="lb-row ${user.username === CURRENT_USER ? "is-me" : ""}" role="listitem">
+                <div class="lb-row lb-top10 ${user.username === CURRENT_USER ? "is-me" : ""}" role="listitem">
                     <span class="lb-place ${index < 3 ? "lb-place-" + (index + 1) : ""}">${index + 1}</span>
                     <span class="lb-name">${escapeHtml(user.username)}</span>
                     <span class="lb-num"><strong>${user.wpm}</strong></span>
                     <span class="lb-num">${user.accuracy}%</span>
+                    <span class="lb-num">${user.place ?? "–"}</span>
+                    <span class="lb-num lb-id">${user.textId != null ? "#" + user.textId : "–"}</span>
+                    <span class="lb-num lb-id">#${user.resultId}</span>
                     <span class="lb-date">${user.date}</span>
                 </div>`).join("")
                 : `<p class="lb-empty">Dar nėra rezultatų. Būk pirmas!</p>`;

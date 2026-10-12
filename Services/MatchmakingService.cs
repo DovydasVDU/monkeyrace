@@ -98,11 +98,6 @@ public sealed class MatchmakingService
                 Card = card
             });
 
-            if (room.Players.Count == 4 && !room.CountdownStarted)
-            {
-                room.CountdownStarted = true;
-            }
-
             _logger.LogInformation(
                 "Matchmaking room={RoomId} player={PlayerKey} decision=reserved status={Status}",
                 room.RaceId, playerKey, room.Status);
@@ -186,8 +181,7 @@ public sealed class MatchmakingService
                 sameTabReconnect ? "restore-same-tab" : "restore-member",
                 room.Status);
             startFullRoom = room.Status == RaceRoomStatus.Lobby &&
-                room.CountdownStarted && !room.CountdownScheduled &&
-                room.Players.Count == 4;
+                !room.CountdownScheduled && room.Players.Count == 4;
             if (startFullRoom)
                 room.CountdownScheduled = true;
         }
@@ -228,10 +222,12 @@ public sealed class MatchmakingService
             {
                 player.ConnectionId = null;
                 player.DisconnectedAtUtc = DateTime.UtcNow;
-                player.IsDnf = true;
+                // finišavusio rezultatas lieka ir įrašomas lenktynių pabaigoje
+                if (!player.IsFinished)
+                    player.IsDnf = true;
                 removeRoom = !room.Players.Any(item =>
-                    !item.IsBot && item.PlayerKey != playerKey &&
-                    item.ConnectionId != null);
+                    !item.IsBot && (item.IsFinished ||
+                        (item.PlayerKey != playerKey && item.ConnectionId != null)));
             }
             if (removeRoom)
                 _rooms.Remove(raceId);
@@ -276,7 +272,9 @@ public sealed class MatchmakingService
             {
                 player.ConnectionId = null;
                 player.DisconnectedAtUtc = DateTime.UtcNow;
-                player.IsDnf = true;
+                // finišavęs gali uždaryti puslapį nelaukdamas kitų – rezultatas neprarandamas
+                if (!player.IsFinished)
+                    player.IsDnf = true;
             }
         }
 
@@ -375,7 +373,7 @@ public sealed class MatchmakingService
         {
             if (_rooms.TryGetValue(raceId, out var room) &&
                 room.Status == RaceRoomStatus.Lobby &&
-                !room.CountdownStarted)
+                !room.CountdownScheduled)
             {
                 room.Players.RemoveAll(item =>
                     item.ConnectionId == null &&
@@ -387,7 +385,6 @@ public sealed class MatchmakingService
                     _rooms.Remove(raceId);
                     return;
                 }
-                room.CountdownStarted = true;
                 room.CountdownScheduled = true;
                 shouldStart = true;
             }
@@ -937,7 +934,6 @@ public sealed class RaceRoom
     public DateTime LobbyDeadlineUtc { get; set; }
     public DateTime StartAtUtc { get; set; }
     public string Text { get; set; } = string.Empty;
-    public bool CountdownStarted { get; set; }
     public bool CountdownScheduled { get; set; }
     public bool Completing { get; set; }
     public List<RacePlayer> Players { get; set; } = new List<RacePlayer>();

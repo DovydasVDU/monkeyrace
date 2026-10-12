@@ -169,6 +169,43 @@ public sealed class MatchmakingRewardTests : IDisposable
     }
 
     [Fact]
+    public async Task FinishedPlayer_WhoClosesPage_KeepsResult()
+    {
+        var userId = CreateUser("iseinantis");
+        var key = "user:" + userId;
+        var raceId = await Join(key, "iseinantis", userId);
+
+        await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(30));
+        // greitesnis už botus, todėl serveris dar laukia jų finišo, o žaidėjas jau uždaro puslapį
+        // paskutinis SendProgress grįžta tik po botų finišo, todėl atsijungiame vos gavę PlayerFinished
+        var typing = Type(raceId, key, 18);
+        await _hub.WaitFor("PlayerFinished", TimeSpan.FromSeconds(30));
+        await _matchmaking.DisconnectAsync("conn-" + key);
+        await typing;
+        var finished = await _hub.WaitFor("RaceFinished", TimeSpan.FromSeconds(60));
+
+        var me = PlayerResult(finished, key);
+        Assert.False(me.GetProperty("isDnf").GetBoolean());
+        Assert.Equal(1, me.GetProperty("place").GetInt32());
+        Assert.True(me.GetProperty("reward").GetProperty("saved").GetBoolean());
+        Assert.Equal(1, UserState(userId).Results);
+        using var scope = _services.CreateScope();
+        Assert.Equal(1, scope.ServiceProvider.GetRequiredService<AppDbContext>()
+            .RaceResults.Single(r => r.UserId == userId).Place);
+    }
+
+    [Fact]
+    public async Task Lobby_StartsOnTime_WhenFourthReservedPlayerNeverConnects()
+    {
+        foreach (var name in new[] { "a", "b", "c" })
+            await Join("guest:" + name, name, null);
+        // ketvirta rezervacija užpildo kambarį, bet žaidėjas taip ir neprisijungia
+        _matchmaking.JoinOrCreate("guest:d", "d", null, null);
+
+        await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(25));
+    }
+
+    [Fact]
     public async Task WordsMode_EndsOnTime_PlacesByWpm_NobodyDnf()
     {
         var fastId = CreateUser("greitas");
