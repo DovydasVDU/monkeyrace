@@ -22,6 +22,9 @@ namespace monkeyrace.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsMultiplayer")
                         .HasColumnType("INTEGER");
 
@@ -31,7 +34,7 @@ namespace monkeyrace.Migrations
                     b.Property<string>("Status")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("TextSnippetId")
+                    b.Property<int?>("TextSnippetId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -443,9 +446,7 @@ namespace monkeyrace.Migrations
                 {
                     b.HasOne("TextSnippet", "TextSnippet")
                         .WithMany()
-                        .HasForeignKey("TextSnippetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("TextSnippetId");
 
                     b.Navigation("TextSnippet");
                 });

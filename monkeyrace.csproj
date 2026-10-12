@@ -17,4 +17,9 @@
 		</PackageReference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- WordService skaito iš Data/ šalia dll -->
+		<None Include="Data\words-lt.txt" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
 </Project>

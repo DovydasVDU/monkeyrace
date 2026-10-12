@@ -32,8 +32,9 @@ public class TextSnippet
 public class Race
 {
     public int Id { get; set; }
-    public int TextSnippetId { get; set; }
-    public TextSnippet TextSnippet { get; set; } = null!;  // jungiasi su TextSnippe
+    public int? TextSnippetId { get; set; }                // null žodžių režime (tekstas generuojamas, ne iš DB)
+    public TextSnippet TextSnippet { get; set; }           // jungiasi su TextSnippe
+    public int? DurationSeconds { get; set; }              // žodžių režimo trukmė; null klasikinėse lenktynėse
     public DateTime StartedAt { get; set; }
     public bool IsMultiplayer { get; set; } = false;
     public string Status { get; set; } = "waiting";        // waiting/finished
