@@ -6,7 +6,11 @@
     var username = (string)ViewBag.Username;
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var seconds = (int)(ViewBag.Seconds ?? 0);
-    var quickUrl = seconds > 0 ? $"/race/quick?seconds={seconds}" : "/race/quick";
+    var bots = Context.Request.Query["bots"].ToString();
+    var room = Context.Request.Query["room"].ToString();
+    var quickUrl = room != "" ? $"/race/room/join?code={Uri.EscapeDataString(room)}"
+        : bots != "" ? $"/race/bots?levels={Uri.EscapeDataString(bots)}"
+        : seconds > 0 ? $"/race/quick?seconds={seconds}" : "/race/quick";
 }
 
 <div class="match-page">
@@ -18,7 +22,7 @@
                 <span>Išeiti</span>
             </button>
             <div class="race-title-wrap">
-                <p class="eyebrow">Žaisti internetu</p>
+                <p class="eyebrow">@(room != "" ? "Kambarys su draugais" : bots != "" ? "Lenktynės su botais" : "Žaisti internetu")</p>
                 <h1 id="race-title">Laukiame varžovų</h1>
             </div>
             <div class="race-stats" aria-label="Lenktynių statistika">
@@ -34,6 +38,19 @@
         </div>
         <div class="xp-track is-banana lobby-bar" aria-hidden="true"><span id="lobby-bar-fill" style="width:0%"></span></div>
 
+        @if (room != "")
+        {
+            @* draugų lobby; JS rodo „Pradėti“ tik šeimininkui *@
+            <div class="card friend-lobby" id="friend-lobby">
+                <p class="eyebrow">Kambario kodas</p>
+                <strong class="room-code">@room</strong>
+                <button class="btn btn-s" type="button" id="room-copy">Kopijuoti pakvietimo nuorodą</button>
+                <p class="room-status" id="room-status" aria-live="polite">Jungiama...</p>
+                <button class="btn btn-p" type="button" id="room-start" hidden>
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Pradėti lenktynes
+                </button>
+            </div>
+        }
         <div class="queue-status" id="queue-status" aria-live="polite">Jungiama prie lenktynių...</div>
         <div class="queue-meta" id="queue-meta"></div>
         <div class="countdown" id="countdown" aria-live="polite" hidden></div>
@@ -87,6 +104,13 @@
                     </div>
                 </div>
             </section>
+            @* Kol kiti dar lenktyniauja – tik mažas langelis; RaceFinished prideda .is-open ir turinys išsiskleidžia *@
+            <div class="race-summary" id="race-summary">
+            <p class="race-summary-wait" aria-live="polite">
+                <span class="race-summary-dot" aria-hidden="true"></span>
+                Kiti dar lenktyniauja – bendri rezultatai atsiras, kai visi finišuos
+            </p>
+            <div class="race-summary-body"><div class="race-summary-inner">
             <div class="podium" id="podium"></div>
             <section class="card final-results" id="final-results" hidden>
                 <h2>Rezultatai</h2>
@@ -95,14 +119,6 @@
                     <span class="bot-badge">Botas</span> kompiuterio valdomas žaidėjas, rezultatai neįskaitomi
                 </p>
             </section>
-            <div class="result-actions">
-                <a class="btn btn-p" href="@quickUrl">
-                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-redo"></use></svg>Žaisti dar kartą
-                </a>
-                <a class="btn btn-g" href="/">
-                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-home"></use></svg>Į pradžią
-                </a>
-            </div>
             <section class="card race-history" id="result-race-history">
                 <h2>Lenktynių istorija</h2>
                 <p id="result-history-status">Laukiama kitų žaidėjų…</p>
@@ -150,6 +166,16 @@
                     @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#795548", HatColor = "#7E57C2" })
                 </div>
             </section>
+            </div></div>
+            </div>
+            <div class="result-actions">
+                <a class="btn btn-p" href="@quickUrl">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-redo"></use></svg>Žaisti dar kartą
+                </a>
+                <a class="btn btn-g" href="/">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-home"></use></svg>Į pradžią
+                </a>
+            </div>
             <section class="card speed-chart" id="result-speed-chart">
                 <h2>Mano greitis</h2>
                 <svg id="result-wpm-chart" viewBox="0 0 640 180" role="img"
@@ -201,6 +227,7 @@ const RACE_ID = @Html.Raw(JsonSerializer.Serialize(raceId));
 const PLAYER_KEY = @Html.Raw(JsonSerializer.Serialize(playerKey));
 const USERNAME = @Html.Raw(JsonSerializer.Serialize(username));
 const ATTEMPT = @((int)(ViewBag.Attempt ?? 0));
+const ROOM_CODE = @Html.Raw(JsonSerializer.Serialize(room));
 const QUICK_URL = @Html.Raw(JsonSerializer.Serialize(quickUrl));
 const IS_AUTHENTICATED = @isAuthenticated.ToString().ToLowerInvariant();
 const TAB_ID = sessionStorage.getItem("monkeyrace-tab-id") ||
@@ -264,11 +291,15 @@ function getBotColorIndex(player, fallbackIndex) {
     return Math.abs(value || 0) % BOT_MONKEY_COLORS.length;
 }
 
+const BOT_LEVEL_LABELS = { Adaptive: "Prisitaikantis", Easy: "Lengvas", Medium: "Vidutinis", Hard: "Sunkus" };
+
 function botBadge(player) {
-    return isBotPlayer(player)
-        ? `<span class="bot-badge" title="Botas: kompiuterio valdomas žaidėjas"
-             aria-label="Botas">Botas</span>`
-        : "";
+    if (!isBotPlayer(player)) return "";
+    // lygis žinomas tik lenktynėse su botais (RacePlayerState.botLevel)
+    const level = BOT_LEVEL_LABELS[players[player.playerKey || player.id]?.botLevel];
+    const label = level ? `Botas · ${level}` : "Botas";
+    return `<span class="bot-badge" title="${label}: kompiuterio valdomas žaidėjas"
+             aria-label="${label}">${label}</span>`;
 }
 
 // level (nebūtinas) rodomas kaip ženkliukas, toks pat kaip _Monkey.cshtml
@@ -289,10 +320,14 @@ function applyState(state) {
     targetText = state.text || targetText;
     durationSeconds = state.durationSeconds || 0;
     document.getElementById("race-panel").classList.toggle("words-mode", durationSeconds > 0);
+    // lobby metu žaidėjai gali išeiti, todėl sąrašas perrašomas, o ne papildomas
+    Object.keys(players).forEach(key => delete players[key]);
     state.players.forEach(player => players[player.playerKey] = player);
     renderPlayers();
 
-    if (state.status === "Lobby") {
+    if (state.status === "Lobby" && ROOM_CODE) {
+        updateFriendLobby(state);
+    } else if (state.status === "Lobby") {
         setStatus("Laukiame varžovų...", `${state.players.length}/4 žaidėjai`);
         document.getElementById("race-title").textContent = "Laukiame varžovų";
         startLobbyClock(state.lobbyDeadlineUtc, state.serverNowUtc);
@@ -301,6 +336,43 @@ function applyState(state) {
     } else if (state.status === "Racing") {
         prepareRace(state.startAtUtc, state.serverNowUtc, targetText);
     }
+}
+
+function updateFriendLobby(state) {
+    const isHost = state.hostKey === PLAYER_KEY;
+    const host = players[state.hostKey];
+    const count = state.players.length;
+    document.getElementById("race-title").textContent = "Laukiame draugų";
+    queueMeta.textContent = `${count}/4 žaidėjai`;
+    const start = document.getElementById("room-start");
+    start.hidden = !isHost;
+    start.disabled = count < 2;
+    document.getElementById("room-status").textContent = !isHost
+        ? `Laukiama, kol ${host ? host.username : "šeimininkas"} pradės lenktynes`
+        : count < 2 ? "Pasidalink kodu – reikia bent 2 žaidėjų" : "Visi susirinko? Spausk „Pradėti“";
+}
+
+if (ROOM_CODE) {
+    document.getElementById("room-start").addEventListener("click", async event => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        const error = await connection.invoke("StartFriendRace", RACE_ID, PLAYER_KEY).catch(() => "Nepavyko pradėti.");
+        if (error) {
+            document.getElementById("room-status").textContent = error;
+            button.disabled = false;
+        }
+    });
+    document.getElementById("room-copy").addEventListener("click", async event => {
+        const button = event.currentTarget;
+        const link = `${location.origin}/race/room/join?code=${ROOM_CODE}`;
+        try {
+            await navigator.clipboard.writeText(link);
+            button.textContent = "Nukopijuota!";
+        } catch {
+            // be HTTPS clipboard gali būti neprieinamas – parodom nuorodą rankiniam kopijavimui
+            button.textContent = link;
+        }
+    });
 }
 
 function startLobbyClock(deadline, serverNowUtc) {
@@ -401,6 +473,12 @@ function showPersonalResult(data) {
     finalizeWordErrors();
     renderWordErrors();
     renderTextAbout();
+    // PlayerFinished atneša teksto kilmę ir laiko juostą iki finišo, todėl nereikia laukti kitų
+    if (data.textInfo !== undefined) renderTextInfo(data.textInfo);
+    if (data.timeline) {
+        raceTimeline = data.timeline;
+        renderWpmChart();
+    }
 }
 
 // teksto kilmė ateina su RaceFinished; žodžių režime info nėra ir eilutės lieka paslėptos
@@ -496,6 +574,7 @@ connection.on("RaceFinished", data => {
     document.getElementById("race-title").textContent = "Lenktynės baigtos!";
     setStatus("Rezultatai žemiau", "");
     document.getElementById("final-results").hidden = false;
+    document.getElementById("race-summary").classList.add("is-open");
     const hasBots = data.players.some(player => player.isBot);
     document.getElementById("bot-explanation").hidden = !hasBots;
     const me = data.players.find(player => player.playerKey === PLAYER_KEY);

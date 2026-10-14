@@ -55,26 +55,204 @@ public sealed class MatchmakingService
         }
     }
 
+    private RaceRoom FindActiveRoom(string playerKey)
+    {
+        RemoveExpiredReservations();
+        var existing = _rooms.Values.FirstOrDefault(room =>
+            room.Status != RaceRoomStatus.Finished &&
+            room.Players.Any(player => player.PlayerKey == playerKey));
+        if (existing != null)
+            _logger.LogInformation(
+                "Matchmaking room={RoomId} player={PlayerKey} decision=restore-active",
+                existing.RaceId, playerKey);
+        return existing;
+    }
+
+    // Privatus kambarys tik su botais: niekas kitas neprisijungia, countdown prasideda vos žaidėjas prisijungia
+    public string CreateBotRace(string playerKey, string username, int? userId, PlayerCard card,
+        BotLevel[] levels)
+    {
+        lock (_sync)
+        {
+            var existing = FindActiveRoom(playerKey);
+            if (existing != null)
+                return existing.RaceId;
+
+            var room = new RaceRoom
+            {
+                RaceId = Guid.NewGuid().ToString("N"),
+                BotLevels = levels,
+                LobbyDeadlineUtc = DateTime.UtcNow.Add(LobbyDuration)
+            };
+            room.Players.Add(new RacePlayer
+            {
+                PlayerKey = playerKey,
+                Username = username,
+                UserId = userId,
+                Card = card
+            });
+            _rooms.Add(room.RaceId, room);
+            // jei žaidėjas taip ir neprisijungs, lobby laikmatis kambarį išvalys
+            _ = StartLobbyTimerAsync(room.RaceId);
+            return room.RaceId;
+        }
+    }
+
+    // Kambarys su draugais: be painių simbolių (0/O, 1/I), kad kodą būtų lengva padiktuoti
+    private const string CodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    public const int CodeLength = 5;
+    // per tiek laiko rezervavęs žaidėjas turi atidaryti lenktynių puslapį, kitaip išmetamas iš lobby
+    private static readonly TimeSpan JoinWindow = TimeSpan.FromSeconds(30);
+
+    public string CodeOf(string raceId)
+    {
+        lock (_sync)
+            return _rooms.TryGetValue(raceId, out var room) ? room.Code : null;
+    }
+
+    public static bool IsValidCode(string code) =>
+        code?.Length == CodeLength && code.All(CodeAlphabet.Contains);
+
+    public (string RaceId, string Error) CreateFriendRoom(
+        string playerKey, string username, int? userId, PlayerCard card)
+    {
+        lock (_sync)
+        {
+            var active = LeaveOtherLobby(playerKey, null);
+            if (active != null)
+                return (active, null);
+            string code;
+            do
+                code = new string(Enumerable.Range(0, CodeLength)
+                    .Select(_ => CodeAlphabet[Random.Shared.Next(CodeAlphabet.Length)]).ToArray());
+            while (_rooms.Values.Any(room => room.Code == code));
+            return (AddToFriendRoom(NewFriendRoom(code), playerKey, username, userId, card), null);
+        }
+    }
+
+    // Klaidos: NotFound, Started, Full. Pasibaigusio kambario kodu sukuriamas naujas lobby (revanšas).
+    public (string RaceId, string Error) JoinFriendRoom(
+        string code, string playerKey, string username, int? userId, PlayerCard card)
+    {
+        lock (_sync)
+        {
+            var active = FindActiveRoom(playerKey);
+            if (active != null && (active.Status != RaceRoomStatus.Lobby || active.Code == code))
+                return (active.RaceId, null);
+            var sameCode = _rooms.Values.Where(room => room.Code == code).ToList();
+            if (sameCode.Count == 0)
+                return (null, "NotFound");
+            var room = sameCode.FirstOrDefault(item => item.Status != RaceRoomStatus.Finished);
+            if (room != null && (room.Status != RaceRoomStatus.Lobby || room.CountdownScheduled))
+                return (null, "Started");
+            if (room?.Players.Count >= 4)
+                return (null, "Full");
+            // iš kito lobby išimam tik tada, kai prisijungti tikrai pavyks; naujas kambarys kuriamas po to,
+            // nes FindActiveRoom (RemoveExpiredReservations) ištrintų dar tuščią lobby
+            LeaveOtherLobby(playerKey, code);
+            return (AddToFriendRoom(room ?? NewFriendRoom(code), playerKey, username, userId, card), null);
+        }
+    }
+
+    // Grąžina kambarį, į kurį žaidėją reikia grąžinti (vykstančios lenktynės ar tas pats kambarys);
+    // iš kito lobby išima, nes žaidėjas pasirinko draugų kambarį
+    private string LeaveOtherLobby(string playerKey, string code)
+    {
+        var active = FindActiveRoom(playerKey);
+        if (active == null)
+            return null;
+        if (active.Status != RaceRoomStatus.Lobby || (code != null && active.Code == code))
+            return active.RaceId;
+        active.Players.RemoveAll(player => player.PlayerKey == playerKey);
+        if (active.Players.Count == 0)
+            _rooms.Remove(active.RaceId);
+        else
+            _ = BroadcastStateAsync(active);
+        return null;
+    }
+
+    private RaceRoom NewFriendRoom(string code)
+    {
+        var room = new RaceRoom { RaceId = Guid.NewGuid().ToString("N"), Code = code };
+        _rooms.Add(room.RaceId, room);
+        return room;
+    }
+
+    private string AddToFriendRoom(RaceRoom room, string playerKey, string username,
+        int? userId, PlayerCard card)
+    {
+        room.Players.Add(new RacePlayer
+        {
+            PlayerKey = playerKey,
+            Username = username,
+            UserId = userId,
+            Card = card
+        });
+        _ = PurgeFriendLobbyLaterAsync(room.RaceId, JoinWindow + TimeSpan.FromSeconds(1));
+        _logger.LogInformation(
+            "Matchmaking room={RoomId} code={Code} player={PlayerKey} decision=friend-reserved",
+            room.RaceId, room.Code, playerKey);
+        return room.RaceId;
+    }
+
+    // Draugų lobby neturi laikmačio: išmetami neatėję (JoinWindow) ir atsijungę (ReconnectWindow)
+    private async Task PurgeFriendLobbyLaterAsync(string raceId, TimeSpan delay)
+    {
+        await Task.Delay(delay);
+        RaceRoom room;
+        lock (_sync)
+        {
+            if (!_rooms.TryGetValue(raceId, out room) || room.Status != RaceRoomStatus.Lobby)
+                return;
+            var removed = room.Players.RemoveAll(player => player.ConnectionId == null &&
+                (player.DisconnectedAtUtc.HasValue
+                    ? DateTime.UtcNow - player.DisconnectedAtUtc.Value > ReconnectWindow
+                    : DateTime.UtcNow - player.ReservedAtUtc > JoinWindow));
+            if (room.Players.Count == 0)
+            {
+                _rooms.Remove(raceId);
+                return;
+            }
+            if (removed == 0)
+                return;
+        }
+        await BroadcastStateAsync(room);
+    }
+
+    // null – pradėta; kitaip klaidos tekstas šeimininkui
+    public string StartFriendRace(string raceId, string playerKey)
+    {
+        lock (_sync)
+        {
+            if (!_rooms.TryGetValue(raceId, out var room) || room.Code == null ||
+                room.Status != RaceRoomStatus.Lobby || room.CountdownScheduled)
+                return "Lenktynės jau prasidėjo.";
+            if (room.Players.FirstOrDefault()?.PlayerKey != playerKey)
+                return "Pradėti gali tik kambario šeimininkas.";
+            if (room.Players.Count(player => player.ConnectionId != null) < 2)
+                return "Reikia bent 2 prisijungusių žaidėjų.";
+            // kas šiuo metu neprisijungęs, lenktynėse nedalyvauja (kitaip gautų DNF)
+            room.Players.RemoveAll(player => player.ConnectionId == null);
+            room.CountdownScheduled = true;
+        }
+        // nelaukiam countdown pabaigos, kad šeimininko užklausa grįžtų iškart
+        _ = StartCountdownAsync(raceId);
+        return null;
+    }
+
     // durationSeconds > 0: žodžių režimas (WordService), 0: klasikinis tekstas iki finišo
     public string JoinOrCreate(string playerKey, string username, int? userId, PlayerCard card,
         int durationSeconds = 0)
     {
         lock (_sync)
         {
-            RemoveExpiredReservations();
-            var existing = _rooms.Values.FirstOrDefault(room =>
-                room.Status != RaceRoomStatus.Finished &&
-                room.Players.Any(player => player.PlayerKey == playerKey));
+            var existing = FindActiveRoom(playerKey);
             if (existing != null)
-            {
-                _logger.LogInformation(
-                    "Matchmaking room={RoomId} player={PlayerKey} decision=restore-active",
-                    existing.RaceId, playerKey);
                 return existing.RaceId;
-            }
 
             var room = _rooms.Values.FirstOrDefault(candidate =>
                 candidate.Status == RaceRoomStatus.Lobby &&
+                candidate.BotLevels == null && candidate.Code == null &&
                 candidate.DurationSeconds == durationSeconds &&
                 candidate.Players.Count < 4 &&
                 candidate.LobbyDeadlineUtc - DateTime.UtcNow >= TimeSpan.FromSeconds(1));
@@ -181,7 +359,8 @@ public sealed class MatchmakingService
                 sameTabReconnect ? "restore-same-tab" : "restore-member",
                 room.Status);
             startFullRoom = room.Status == RaceRoomStatus.Lobby &&
-                !room.CountdownScheduled && room.Players.Count == 4;
+                !room.CountdownScheduled &&
+                (room.BotLevels != null || (room.Code == null && room.Players.Count == 4));
             if (startFullRoom)
                 room.CountdownScheduled = true;
         }
@@ -192,6 +371,9 @@ public sealed class MatchmakingService
                 replacedConnectionId, room.GroupName);
         await _hub.Clients.Group(room.GroupName).SendAsync("PlayerJoined",
             new { player = ToPlayerState(player) });
+        // draugų lobby visiems reikia naujo šeimininko ir žaidėjų sąrašo
+        if (room.Code != null)
+            await BroadcastStateAsync(room);
         if (startFullRoom)
             _ = StartCountdownAsync(room.RaceId);
         return RaceStateResult.Success(CreateState(room));
@@ -267,6 +449,8 @@ public sealed class MatchmakingService
                 // Dar galima grįžti (pvz. perkrovus puslapį); kas negrįš iki starto, gaus DNF
                 player.ConnectionId = null;
                 player.DisconnectedAtUtc = DateTime.UtcNow;
+                if (room.Code != null)
+                    _ = PurgeFriendLobbyLaterAsync(room.RaceId, ReconnectWindow + TimeSpan.FromSeconds(1));
             }
             else if (room.Status == RaceRoomStatus.Racing)
             {
@@ -419,7 +603,7 @@ public sealed class MatchmakingService
                 TextSnippetId = snippet?.Id,
                 DurationSeconds = room.DurationSeconds > 0 ? room.DurationSeconds : null,
                 StartedAt = DateTime.UtcNow,
-                IsMultiplayer = true
+                IsMultiplayer = room.BotLevels == null
             };
             db.Races.Add(race);
             await db.SaveChangesAsync();
@@ -438,9 +622,9 @@ public sealed class MatchmakingService
                 var desiredPlayers = humans.Count == 1
                     ? 4
                     : Math.Min(4, Math.Max(2, botOptions.FillToPlayers));
-                var botsToAdd = botOptions.Enabled
+                var botsToAdd = room.BotLevels?.Length ?? (botOptions.Enabled && room.Code == null
                     ? Math.Max(0, desiredPlayers - humans.Count)
-                    : 0;
+                    : 0);
                 for (var botIndex = 0; botIndex < botsToAdd; botIndex++)
                 {
                     var botKey = "bot:" + raceId + ":" + botIndex;
@@ -449,6 +633,7 @@ public sealed class MatchmakingService
                         PlayerKey = botKey,
                         Username = BotNames[botIndex % BotNames.Length],
                         IsBot = true,
+                        BotLevel = room.BotLevels?[botIndex],
                         ColorIndex = room.Players.Count
                     });
                 }
@@ -466,14 +651,25 @@ public sealed class MatchmakingService
         }
         for (var index = 0; index < bots.Count; index++)
         {
-            var targetWpm = await _botSkills.GetTargetWpmAsync(
-                humansForSkills, index);
-            var options = _botOptions.Value;
-            var accuracyMin = options.AccuracyRange?.Length > 0
-                ? options.AccuracyRange[0] : .92;
-            var accuracyMax = options.AccuracyRange?.Length > 1
-                ? options.AccuracyRange[1] : .98;
+            var level = bots[index].BotLevel ?? BotLevel.Adaptive;
             var random = new Random(StableSeed(raceId, index));
+            double targetWpm, accuracyMin, accuracyMax;
+            if (level == BotLevel.Adaptive)
+            {
+                targetWpm = await _botSkills.GetTargetWpmAsync(
+                    humansForSkills, index);
+                var options = _botOptions.Value;
+                accuracyMin = options.AccuracyRange?.Length > 0
+                    ? options.AccuracyRange[0] : .92;
+                accuracyMax = options.AccuracyRange?.Length > 1
+                    ? options.AccuracyRange[1] : .98;
+            }
+            else
+            {
+                (targetWpm, accuracyMin, accuracyMax) = BotSkillProvider.Preset(level);
+                // ±5 %, kad du vienodo lygio botai nevažiuotų greta
+                targetWpm *= .95 + random.NextDouble() * .1;
+            }
             var accuracy = accuracyMin +
                 random.NextDouble() * Math.Max(0, accuracyMax - accuracyMin);
             bots[index].BotPlan = BotPlan.Create(
@@ -611,6 +807,7 @@ public sealed class MatchmakingService
         RaceRoom room, RacePlayer player, int wpm,
         double accuracy, double elapsedSeconds)
     {
+        object timeline = null;
         lock (_sync)
         {
             if (player.IsFinished)
@@ -627,6 +824,9 @@ public sealed class MatchmakingService
                     : item.IsBot && item.BotPlan != null
                         ? item.BotPlan.FinishMs
                         : int.MaxValue) <= player.FinishAtMs);
+            // finišavęs žmogus iškart mato savo greičio grafiką; lock, nes RecordTimelineAsync pildo Timeline
+            if (!player.IsBot)
+                timeline = RaceAnalyzer.CreateTimeline(room);
         }
         if (!player.IsBot)
             _botSkills.RememberGuestWpm(player.PlayerKey, player.Wpm);
@@ -641,6 +841,8 @@ public sealed class MatchmakingService
                 timeSeconds = player.TimeSeconds,
                 errorCount = player.ErrorCount
                 ,isBot = player.IsBot
+                ,timeline
+                ,textInfo = player.IsBot ? null : TextInfoOf(room)
             });
         await FinishRoomIfCompleteAsync(room);
     }
@@ -714,6 +916,9 @@ public sealed class MatchmakingService
         using (var scope = _scopeFactory.CreateScope())
         {
             var raceService = scope.ServiceProvider.GetRequiredService<RaceService>();
+            // lenktynės su botais skaičiuojamos kaip solo: be vietos premijos ir ne į online Top 10
+            var mode = room.BotLevels == null ? RaceMode.Multiplayer : RaceMode.Solo;
+            int? place(RacePlayer player) => mode == RaceMode.Solo ? null : player.Place;
             // DNF nerašome: 0 WPM įrašai gadintų vidurkius ir botų greičio parinkimą
             // Botai neapdovanojami ir nerašomi; svečiai gauna tik hipotetinį apdovanojimą rodymui
             foreach (var player in room.Players.Where(item =>
@@ -723,10 +928,10 @@ public sealed class MatchmakingService
                 player.Reward = player.UserId.HasValue
                     ? await raceService.SaveRaceResultAsync(
                         player.UserId.Value, room.DatabaseRaceId,
-                        RaceMode.Multiplayer, player.Place,
+                        mode, place(player),
                         player.Wpm, player.Accuracy, player.TimeSeconds,
                         player.ErrorCount)
-                    : RaceService.GuestReward(RaceMode.Multiplayer, player.Place,
+                    : RaceService.GuestReward(mode, place(player),
                         player.Wpm, player.Accuracy,
                         room.DurationSeconds > 0 ? room.DurationSeconds : null);
             }
@@ -742,18 +947,20 @@ public sealed class MatchmakingService
             analysis = RaceAnalyzer.CreateAnalysis(room),
             textLength = room.Text.Length,
             durationSeconds = room.DurationSeconds,
-            // „Apie tekstą“; null žodžių režime
-            textInfo = room.Snippet == null ? null : new
-            {
-                author = room.Snippet.Author,
-                work = room.Snippet.Work,
-                sourceUrl = room.Snippet.SourceUrl,
-                license = room.Snippet.LicenseLabel,
-                flags = room.Snippet.FlagLabels
-            }
+            textInfo = TextInfoOf(room)
         });
         _ = RemoveFinishedRoomAsync(room.RaceId);
     }
+
+    // „Apie tekstą“; null žodžių režime
+    private static object TextInfoOf(RaceRoom room) => room.Snippet == null ? null : new
+    {
+        author = room.Snippet.Author,
+        work = room.Snippet.Work,
+        sourceUrl = room.Snippet.SourceUrl,
+        license = room.Snippet.LicenseLabel,
+        flags = room.Snippet.FlagLabels
+    };
 
     private async Task RemoveFinishedRoomAsync(string raceId)
     {
@@ -783,6 +990,8 @@ public sealed class MatchmakingService
             ServerNowUtc = DateTime.UtcNow,
             DurationSeconds = room.DurationSeconds,
             Text = room.Status >= RaceRoomStatus.Countdown ? room.Text : null,
+            Code = room.Code,
+            HostKey = room.Code == null ? null : room.Players.FirstOrDefault()?.PlayerKey,
             Players = room.Players.Select(ToPlayerState).ToList()
         };
     }
@@ -800,6 +1009,7 @@ public sealed class MatchmakingService
             ,IsBot = player.IsBot
             ,Card = player.Card
             ,BotWpm = player.IsBot ? (int)Math.Round(player.TargetWpm) : 0
+            ,BotLevel = player.BotLevel?.ToString()
         };
     }
 
@@ -890,6 +1100,9 @@ public sealed class RaceState
     public DateTime ServerNowUtc { get; set; }
     public int DurationSeconds { get; set; }
     public string Text { get; set; }
+    // tik draugų kambariui; šeimininkas – pirmas likęs žaidėjas
+    public string Code { get; set; }
+    public string HostKey { get; set; }
     public List<RacePlayerState> Players { get; set; } = new List<RacePlayerState>();
 }
 
@@ -905,6 +1118,8 @@ public sealed class RacePlayerState
     // null svečiams ir botams
     public PlayerCard Card { get; set; }
     public int BotWpm { get; set; }
+    // null žmonėms ir matchmaking botams
+    public string BotLevel { get; set; }
 }
 
 public sealed class RaceResultState
@@ -935,6 +1150,10 @@ public sealed class RaceRoom
     public DateTime StartAtUtc { get; set; }
     public string Text { get; set; } = string.Empty;
     public bool CountdownScheduled { get; set; }
+    // ne null – privačios lenktynės su botais (vienas botas kiekvienam lygiui)
+    public BotLevel[] BotLevels { get; set; }
+    // ne null – kambarys su draugais (prisijungiama kodu, pradeda šeimininkas)
+    public string Code { get; set; }
     public bool Completing { get; set; }
     public List<RacePlayer> Players { get; set; } = new List<RacePlayer>();
     public List<RaceTimelineTick> Timeline { get; set; } =
@@ -950,6 +1169,7 @@ public sealed class RacePlayer
     public string ConnectionId { get; set; }
     public string TabId { get; set; }
     public DateTime? DisconnectedAtUtc { get; set; }
+    public DateTime ReservedAtUtc { get; set; } = DateTime.UtcNow;
     public int CorrectChars { get; set; }
     public int ErrorCount { get; set; }
     public int TotalKeystrokes { get; set; }
@@ -964,6 +1184,7 @@ public sealed class RacePlayer
     public bool IsBot { get; set; }
     public int ColorIndex { get; set; }
     public double TargetWpm { get; set; }
+    public BotLevel? BotLevel { get; set; }
     public BotPlan BotPlan { get; set; }
     public RaceReward Reward { get; set; }
     public PlayerCard Card { get; set; }

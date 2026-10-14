@@ -88,6 +88,94 @@ public class RaceController : Controller
         return RedirectToAction(nameof(MultiPlay), new { raceId, attempt, seconds = seconds == 0 ? (int?)null : seconds });
     }
 
+    // Lenktynės tik su botais; levels – kiekvieno boto charakteris, pvz. "adaptive,easy,hard"
+    [HttpGet("/race/bots")]
+    public async Task<IActionResult> Bots(string levels, string username, int attempt = 0)
+    {
+        var parsed = (levels ?? "adaptive,adaptive,adaptive").Split(',')
+            .Select(value => Enum.TryParse<BotLevel>(value, true, out var level) &&
+                Enum.IsDefined(level) && !int.TryParse(value, out _) ? level : (BotLevel?)null)
+            .ToArray();
+        if (parsed.Length > 3 || parsed.Any(level => level == null))
+            return BadRequest("Unsupported bot level.");
+        if (attempt >= 2)
+            return View("MatchmakingError");
+
+        var playerKey = PlayerIdentity.GetPlayerKey(HttpContext);
+        var displayName = PlayerIdentity.GetUsername(HttpContext, username);
+        HttpContext.Session.SetString("MatchmakingUsername", displayName);
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        var card = userId == null ? null : await _raceService.GetPlayerCardAsync(userId.Value);
+        var raceId = _matchmaking.CreateBotRace(playerKey, displayName, userId, card,
+            parsed.Select(level => level.Value).ToArray());
+
+        // bots lieka adrese, kad „Žaisti dar kartą“ grąžintų į tas pačias lenktynes su botais
+        return RedirectToAction(nameof(MultiPlay), new { raceId, attempt,
+            bots = string.Join(",", parsed).ToLowerInvariant() });
+    }
+
+    [HttpGet("/race/room/create")]
+    public async Task<IActionResult> CreateRoom(string username)
+    {
+        if (!SetFriendName(username))
+            return Redirect("/#friends");
+        var (raceId, _) = _matchmaking.CreateFriendRoom(PlayerIdentity.GetPlayerKey(HttpContext),
+            PlayerIdentity.GetUsername(HttpContext), PlayerIdentity.GetUserId(HttpContext), await FriendCardAsync());
+        return RedirectToFriendRoom(raceId);
+    }
+
+    // Ta pati nuoroda tinka pakvietimui ir revanšui („Žaisti dar kartą“ po lenktynių)
+    [HttpGet("/race/room/join")]
+    public async Task<IActionResult> JoinRoom(string code, string username, int attempt = 0)
+    {
+        code = (code ?? "").Trim().ToUpperInvariant();
+        if (!MatchmakingService.IsValidCode(code))
+            return RoomError("Neteisingas kambario kodas. Jį sudaro 5 raidės ir skaičiai.", code);
+        if (attempt >= 2)
+            return RoomError("Nepavyko prisijungti prie kambario. Pabandyk dar kartą.", code);
+        // svečias be vardo (pvz. atidarė pakvietimo nuorodą) – pirma įveda vardą pradžios puslapyje
+        if (!SetFriendName(username))
+            return Redirect($"/?room={code}#friends");
+
+        var (raceId, error) = _matchmaking.JoinFriendRoom(code, PlayerIdentity.GetPlayerKey(HttpContext),
+            PlayerIdentity.GetUsername(HttpContext), PlayerIdentity.GetUserId(HttpContext), await FriendCardAsync());
+        return error switch
+        {
+            "NotFound" => RoomError($"Kambario {code} nėra. Gal jis jau uždarytas?", code),
+            "Started" => RoomError("Šiame kambaryje lenktynės jau vyksta. Palauk, kol baigsis, ir bandyk vėl.", code),
+            "Full" => RoomError("Kambarys pilnas – jame jau 4 žaidėjai.", code),
+            _ => RedirectToFriendRoom(raceId, attempt)
+        };
+    }
+
+    // Prisijungusiam vardas imamas iš paskyros; svečias privalo jį įvesti, kad draugai jį atpažintų
+    private bool SetFriendName(string username)
+    {
+        if (User.Identity?.IsAuthenticated == true)
+            return true;
+        username = username?.Trim();
+        if (!string.IsNullOrEmpty(username))
+            HttpContext.Session.SetString("MatchmakingUsername", username.Substring(0, Math.Min(20, username.Length)));
+        return HttpContext.Session.GetString("MatchmakingUsername") != null;
+    }
+
+    private async Task<PlayerCard> FriendCardAsync()
+    {
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        return userId == null ? null : await _raceService.GetPlayerCardAsync(userId.Value);
+    }
+
+    // room null, jei žaidėjas grąžintas į kitas vykstančias lenktynes (ne draugų kambarį)
+    private IActionResult RedirectToFriendRoom(string raceId, int attempt = 0) =>
+        RedirectToAction(nameof(MultiPlay), new { raceId, attempt, room = _matchmaking.CodeOf(raceId) });
+
+    private IActionResult RoomError(string message, string code)
+    {
+        ViewBag.Message = message;
+        ViewBag.RetryUrl = MatchmakingService.IsValidCode(code) ? $"/?room={code}#friends" : "/#friends";
+        return View("MatchmakingError");
+    }
+
     [HttpGet("/race/multiplay/{raceId}")]
     public IActionResult MultiPlay(string raceId)
     {

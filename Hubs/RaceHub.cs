@@ -50,6 +50,14 @@ public sealed class RaceHub : Hub
             totalKeystrokes, wrongKeystrokes, typing);
     }
 
+    // Draugų kambarys: lenktynes pradeda šeimininkas; grąžina klaidos tekstą arba null
+    public string StartFriendRace(string raceId, string playerKey)
+    {
+        if (playerKey != PlayerIdentity.GetPlayerKey(Context.GetHttpContext()))
+            return "Pasikeitė žaidėjo sesija.";
+        return _matchmaking.StartFriendRace(raceId, playerKey);
+    }
+
     public Task LeaveRace(string raceId, string playerKey)
     {
         var expectedPlayerKey = PlayerIdentity.GetPlayerKey(Context.GetHttpContext());

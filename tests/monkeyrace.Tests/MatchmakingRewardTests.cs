@@ -247,6 +247,81 @@ public sealed class MatchmakingRewardTests : IDisposable
         Assert.Null(race.TextSnippetId);
     }
 
+    [Fact]
+    public async Task BotRace_StartsWithoutLobby_UsesLevels_SavedAsSoloOutsideTop10()
+    {
+        var userId = CreateUser("botu-megejas");
+        var key = "user:" + userId;
+        var raceId = _matchmaking.CreateBotRace(key, "botu-megejas", userId, null,
+            new[] { BotLevel.Easy, BotLevel.Hard });
+        // kiti žaidėjai į privatų kambarį nepatenka
+        Assert.NotEqual(raceId, _matchmaking.JoinOrCreate("guest:x", "x", null, null));
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, key, "botu-megejas", "tab", "conn-" + key)).IsSuccess);
+
+        // be 10 s lobby: tik 3 s atgalinis skaičiavimas
+        await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(6));
+        var typing = Type(raceId, key, 18);
+        var mine = await _hub.WaitFor("PlayerFinished", TimeSpan.FromSeconds(30));
+        // greitesnis už abu botus, todėl pirmas PlayerFinished – mano, su grafiku ir teksto info
+        Assert.Equal(key, mine.GetProperty("playerKey").GetString());
+        Assert.Equal(JsonValueKind.Object, mine.GetProperty("timeline").ValueKind);
+        Assert.Equal(JsonValueKind.Object, mine.GetProperty("textInfo").ValueKind);
+        await typing;
+        var finished = await _hub.WaitFor("RaceFinished", TimeSpan.FromSeconds(90));
+
+        var players = finished.GetProperty("players").EnumerateArray().ToList();
+        Assert.Equal(3, players.Count);
+        Assert.Equal(1, PlayerResult(finished, key).GetProperty("place").GetInt32());
+        Assert.True(PlayerResult(finished, key).GetProperty("reward").GetProperty("saved").GetBoolean());
+        // sunkus botas (~75 WPM) aplenkia lengvą (~25 WPM)
+        var bots = players.Where(player => player.GetProperty("isBot").GetBoolean())
+            .OrderBy(player => player.GetProperty("place").GetInt32()).ToList();
+        Assert.True(bots[0].GetProperty("wpm").GetInt32() > bots[1].GetProperty("wpm").GetInt32());
+
+        using var scope = _services.CreateScope();
+        var result = scope.ServiceProvider.GetRequiredService<AppDbContext>().RaceResults
+            .Include(r => r.Race).Single(r => r.UserId == userId);
+        Assert.False(result.Race.IsMultiplayer);
+        Assert.Null(result.Place);
+    }
+
+    [Fact]
+    public async Task FriendRoom_JoinByCode_OnlyHostStarts_NoBots_RematchKeepsCode()
+    {
+        var (raceId, error) = _matchmaking.CreateFriendRoom("guest:host", "Šeimininkas", null, null);
+        Assert.Null(error);
+        var code = _matchmaking.CodeOf(raceId);
+        Assert.True(MatchmakingService.IsValidCode(code));
+        Assert.Equal((null, "NotFound"), _matchmaking.JoinFriendRoom("ZZZZZ", "guest:x", "x", null, null));
+        Assert.Equal((raceId, null), _matchmaking.JoinFriendRoom(code, "guest:friend", "Draugas", null, null));
+        // atsitiktinė paieška į draugų kambarį nepatenka
+        Assert.NotEqual(raceId, _matchmaking.JoinOrCreate("guest:random", "r", null, null));
+
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:host", "Šeimininkas", "t", "conn-guest:host")).IsSuccess);
+        Assert.NotNull(_matchmaking.StartFriendRace(raceId, "guest:host")); // draugas dar neatidarė puslapio
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:friend", "Draugas", "t", "conn-guest:friend")).IsSuccess);
+        Assert.NotNull(_matchmaking.StartFriendRace(raceId, "guest:friend")); // ne šeimininkas
+        Assert.Null(_matchmaking.StartFriendRace(raceId, "guest:host"));
+        Assert.Equal((null, "Started"), _matchmaking.JoinFriendRoom(code, "guest:late", "Vėluoja", null, null));
+
+        await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(6));
+        await Task.WhenAll(Type(raceId, "guest:host", 18), Type(raceId, "guest:friend", 12));
+        var finished = await _hub.WaitFor("RaceFinished", TimeSpan.FromSeconds(30));
+        var players = finished.GetProperty("players").EnumerateArray().ToList();
+        Assert.Equal(2, players.Count);
+        Assert.DoesNotContain(players, player => player.GetProperty("isBot").GetBoolean());
+        Assert.Equal(1, PlayerResult(finished, "guest:host").GetProperty("place").GetInt32());
+
+        // revanšas: tas pats kodas – naujas lobby, į kurį grįžta abu
+        var (rematchId, rematchError) = _matchmaking.JoinFriendRoom(code, "guest:friend", "Draugas", null, null);
+        Assert.Null(rematchError);
+        Assert.NotEqual(raceId, rematchId);
+        Assert.Equal((rematchId, null), _matchmaking.JoinFriendRoom(code, "guest:host", "Šeimininkas", null, null));
+        foreach (var key in new[] { "guest:a", "guest:b" })
+            _matchmaking.JoinFriendRoom(code, key, key, null, null);
+        Assert.Equal((null, "Full"), _matchmaking.JoinFriendRoom(code, "guest:c", "c", null, null));
+    }
+
     public void Dispose()
     {
         _services.Dispose();

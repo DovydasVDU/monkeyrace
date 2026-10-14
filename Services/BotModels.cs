@@ -17,8 +17,24 @@ public sealed class BotOptions
     public double[] AccuracyRange { get; set; } = new[] { .92, .98 };
 }
 
+// Boto charakteris kaip chess.com: Adaptive – pagal žaidėjo istoriją, kiti – fiksuotas greitis
+public enum BotLevel
+{
+    Adaptive,
+    Easy,
+    Medium,
+    Hard
+}
+
 public sealed class BotSkillProvider
 {
+    public static (double Wpm, double AccuracyMin, double AccuracyMax) Preset(BotLevel level) => level switch
+    {
+        BotLevel.Easy => (25, .88, .93),
+        BotLevel.Medium => (45, .92, .96),
+        _ => (75, .96, .99)
+    };
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOptions<BotOptions> _options;
     private readonly object _sync = new object();

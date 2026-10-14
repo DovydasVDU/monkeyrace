@@ -1,4 +1,5 @@
 ﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Http
 @{
     ViewData["Title"] = "MonkeyRace";
     var currentUser = User.FindFirstValue(ClaimTypes.Name);
@@ -39,6 +40,18 @@
         <h2 id="modes-title" class="section-title">Kiti režimai</h2>
         <div class="mode-grid">
             <article class="card mode-card">
+                <h3 class="bot-mode-title">
+                    <span class="bot-mode-monkey" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#7E57C2" })</span>
+                    Lenktyniauk su botais
+                </h3>
+                <p>Trys botai, kiekvienas su savo charakteriu: prisitaikantis, lengvas, vidutinis ar sunkus.</p>
+                <div class="mode-actions">
+                    <a class="btn btn-p" id="bots-play" href="/race/bots?levels=adaptive,adaptive,adaptive">Žaisti</a>
+                    <button class="btn btn-s" type="button" id="bots-settings-open">Botų nustatymai</button>
+                </div>
+            </article>
+
+            <article class="card mode-card">
                 <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg></span>
                 <h3>Solo treniruotė</h3>
                 <p>Treniruok greitį ir tikslumą savo tempu, be varžovų.</p>
@@ -62,16 +75,77 @@
                 </div>
             </article>
 
-            <article class="card card--soon mode-card">
+            <article class="card mode-card" id="friends">
                 <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg></span>
                 <h3>Su draugais</h3>
-                <p>Sukurk privatų kambarį ir pakviesk draugus kodu.</p>
-                <button class="btn btn-s" type="button" disabled>
-                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg>Netrukus
-                </button>
+                <p>Sukurk privatų kambarį ir pasidalink kodu. Lenktynes pradeda kambario kūrėjas.</p>
+                @* pakvietimo nuoroda be vardo grąžina čia su ?room=KODAS *@
+                <form class="friends-form" method="get" action="/race/room/join">
+                    @if (currentUser == null)
+                    {
+                        <label class="friends-field">Tavo vardas
+                            <input name="username" maxlength="20" required autocomplete="nickname"
+                                   placeholder="Kaip tave atpažins draugai" value="@Context.Session.GetString("MatchmakingUsername")">
+                        </label>
+                    }
+                    <button class="btn btn-p" type="submit" formaction="/race/room/create" id="room-create">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>Sukurti kambarį
+                    </button>
+                    <div class="friends-join">
+                        <input name="code" id="room-code-input" maxlength="@MatchmakingService.CodeLength"
+                               placeholder="Kodas" aria-label="Kambario kodas" autocomplete="off"
+                               value="@Context.Request.Query["room"]">
+                        <button class="btn btn-s" type="submit" id="room-join">Prisijungti</button>
+                    </div>
+                </form>
             </article>
         </div>
     </section>
+
+    @{
+        // vardai ir spalvos sutampa su MatchmakingService.BotNames ir MultiPlay beždžionių šablonais
+        var botSettings = new[]
+        {
+            (Name: "Bambukas", Body: "#5D4037", Hat: "#E53935"),
+            (Name: "Koko", Body: "#8B5E3C", Hat: "#2E8B4F"),
+            (Name: "Mango", Body: "#795548", Hat: "#7E57C2")
+        };
+        var botLevels = new[]
+        {
+            (Value: "adaptive", Label: "Prisitaikantis"),
+            (Value: "easy", Label: "Lengvas"),
+            (Value: "medium", Label: "Vidutinis"),
+            (Value: "hard", Label: "Sunkus")
+        };
+    }
+    <dialog class="modal-box bot-dialog" id="bots-settings" aria-labelledby="bots-settings-title">
+        <button class="modal-close" type="button" id="bots-settings-close" aria-label="Uždaryti">
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+        </button>
+        <h3 id="bots-settings-title" class="bot-mode-title">
+            <span class="bot-mode-monkey" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#7E57C2" })</span>
+            Botų nustatymai
+        </h3>
+        <p class="bot-dialog-lead">Prisitaikantis botas važiuoja tavo tempu, kiti – pastoviu greičiu: lengvas ~25, vidutinis ~45, sunkus ~75 WPM.</p>
+        @for (var index = 0; index < botSettings.Length; index++)
+        {
+            var bot = botSettings[index];
+            <div class="bot-setting">
+                <span class="bot-setting-monkey" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { BodyColor = bot.Body, HatColor = bot.Hat })</span>
+                <strong>@bot.Name</strong>
+                <div class="tm-group" role="group" aria-label="@bot.Name charakteris">
+                    @foreach (var level in botLevels)
+                    {
+                        <button class="tm" type="button" data-bot-index="@index" data-bot-level="@level.Value"
+                                aria-pressed="@(level.Value == "adaptive" ? "true" : "false")">@level.Label</button>
+                    }
+                </div>
+            </div>
+        }
+        <a class="btn btn-p" id="bots-settings-play" href="/race/bots?levels=adaptive,adaptive,adaptive">
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Žaisti su šiais botais
+        </a>
+    </dialog>
 
     <section class="card leaderboard" aria-labelledby="top10-title">
         <div class="leaderboard-head">
@@ -131,4 +205,37 @@
             document.getElementById("words-online").href =
                 `/race/quick?seconds=${button.dataset.wordsSeconds}`;
         }));
+
+    // Botų charakteriai: pasirinkimas prisimenamas naršyklėje ir keliauja į /race/bots?levels=
+    const botDialog = document.getElementById("bots-settings");
+    let botLevels = JSON.parse(localStorage.getItem("monkeyrace-bot-levels") || "null") ||
+        ["adaptive", "adaptive", "adaptive"];
+    function applyBotLevels() {
+        document.querySelectorAll("[data-bot-level]").forEach(button =>
+            button.setAttribute("aria-pressed",
+                String(botLevels[button.dataset.botIndex] === button.dataset.botLevel)));
+        const href = `/race/bots?levels=${botLevels.join(",")}`;
+        document.getElementById("bots-play").href = href;
+        document.getElementById("bots-settings-play").href = href;
+    }
+    document.querySelectorAll("[data-bot-level]").forEach(button =>
+        button.addEventListener("click", () => {
+            botLevels[button.dataset.botIndex] = button.dataset.botLevel;
+            localStorage.setItem("monkeyrace-bot-levels", JSON.stringify(botLevels));
+            applyBotLevels();
+        }));
+    document.getElementById("bots-settings-open").addEventListener("click", () => botDialog.showModal());
+    document.getElementById("bots-settings-close").addEventListener("click", () => botDialog.close());
+    // paspaudus už lango ribų (ant ::backdrop) – uždaryti; target tas pats ir paspaudus ant paties lango paraštės
+    botDialog.addEventListener("click", event => {
+        const box = botDialog.getBoundingClientRect();
+        if (event.target === botDialog && (event.clientX < box.left || event.clientX > box.right ||
+            event.clientY < box.top || event.clientY > box.bottom)) botDialog.close();
+    });
+    applyBotLevels();
+
+    // kodas privalomas tik prisijungiant; kuriant kambarį tikrinamas tik vardas
+    const roomCodeInput = document.getElementById("room-code-input");
+    document.getElementById("room-create").addEventListener("click", () => roomCodeInput.required = false);
+    document.getElementById("room-join").addEventListener("click", () => roomCodeInput.required = true);
 </script>

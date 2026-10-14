@@ -356,6 +356,46 @@
     margin-top: -.75rem;
 }
 
+/* Draugų lobby: vietoj paieškos laikmačio – kodas ir šeimininko „Pradėti“ */
+.friend-lobby {
+    display: none;
+}
+
+.race-screen:has(#text-display:empty) .friend-lobby {
+    display: grid;
+    gap: .75rem;
+    justify-items: center;
+    padding: 1.5rem;
+}
+
+/* dvigubas :has(), kad nusvertų .race-screen:has(#text-display:empty) .lobby-ring specifiškumą */
+.race-screen:has(#friend-lobby):has(#text-display:empty) :is(.lobby-ring, .lobby-bar, .lobby-note) {
+    display: none;
+}
+
+.room-code {
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 9vw, 3.6rem);
+    letter-spacing: .2em;
+    line-height: 1;
+    /* letter-spacing prideda tarpą po paskutinės raidės */
+    margin-right: -.2em;
+}
+
+.friend-lobby .eyebrow {
+    color: var(--ink-a60);
+}
+
+.friend-lobby #room-copy {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.room-status {
+    color: var(--ink-a60);
+    font-weight: 700;
+}
+
 .slot {
     align-items: center;
     border: 2px dashed var(--ink-a18);
@@ -565,6 +605,95 @@
 
 .podium:empty {
     display: none;
+}
+
+/* Bendri rezultatai: kol kiti lenktyniauja – mažas langelis, RaceFinished (.is-open) išskleidžia */
+.race-summary-wait {
+    align-items: center;
+    align-self: center;
+    background: var(--cream);
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    color: var(--ink);
+    display: flex;
+    font-size: .9rem;
+    font-weight: 700;
+    gap: .6rem;
+    justify-self: center;
+    padding: .55rem 1.1rem;
+}
+
+.race-summary-dot {
+    animation: summary-pulse 1.2s ease-in-out infinite;
+    background: var(--leaf);
+    border-radius: 50%;
+    flex: none;
+    height: 10px;
+    width: 10px;
+}
+
+.race-summary {
+    display: grid;
+}
+
+.race-summary-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: translateY(16px) scale(.97);
+    transition: grid-template-rows .7s cubic-bezier(.2, .8, .2, 1),
+        opacity .5s ease .15s, transform .7s cubic-bezier(.2, .8, .2, 1);
+}
+
+.race-summary-inner {
+    display: grid;
+    gap: 1.25rem;
+    min-height: 0;
+    overflow: hidden;
+    /* kad overflow nenukirptų kortelių šešėlio */
+    padding-bottom: 8px;
+}
+
+.race-summary:not(.is-open) .race-summary-inner {
+    padding-bottom: 0;
+}
+
+.race-summary.is-open .race-summary-wait {
+    display: none;
+}
+
+.race-summary.is-open .race-summary-body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: none;
+}
+
+.race-summary.is-open .final-results {
+    animation: summary-pop .6s cubic-bezier(.2, .8, .2, 1) .35s backwards;
+}
+
+@keyframes summary-pulse {
+    50% {
+        opacity: .35;
+        transform: scale(.7);
+    }
+}
+
+@keyframes summary-pop {
+    from {
+        transform: scale(.94);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .race-summary-dot,
+    .race-summary.is-open .final-results {
+        animation: none;
+    }
+
+    .race-summary-body {
+        transition: none;
+    }
 }
 
 .personal-result {

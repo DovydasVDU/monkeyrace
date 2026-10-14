@@ -754,7 +754,111 @@ main {
 .mode-grid {
     display: grid;
     gap: 1.25rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Su draugais: vardas (svečiui), „Sukurti kambarį“, apačioje kodas + „Prisijungti“ */
+.friends-form {
+    display: grid;
+    gap: .6rem;
+    margin-top: auto;
+    width: 100%;
+}
+
+.friends-field {
+    display: grid;
+    font-size: .85rem;
+    font-weight: 700;
+    gap: .3rem;
+}
+
+.friends-form input {
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font-size: 1rem;
+    min-height: 48px;
+    min-width: 0;
+    padding: .6rem .9rem;
+    width: 100%;
+}
+
+#room-code-input {
+    font-family: var(--font-display);
+    letter-spacing: .15em;
+    text-transform: uppercase;
+}
+
+.friends-join {
+    display: grid;
+    gap: .5rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.mode-card .friends-join .btn {
+    margin-top: 0;
+    width: auto;
+}
+
+/* Lenktynės su botais: beždžionėlė antraštėje, nustatymai <dialog> lange */
+.bot-mode-title {
+    align-items: center;
+    display: flex;
+    gap: .6rem;
+}
+
+.bot-mode-monkey {
+    display: block;
+    flex: none;
+    height: 48px;
+    width: 48px;
+}
+
+.bot-mode-monkey .monkey-svg,
+.bot-setting-monkey .monkey-svg {
+    height: 100%;
+    width: 100%;
+}
+
+/* .modal-box display:grid perrašytų naršyklės dialog:not([open]) { display:none } */
+.bot-dialog:not([open]) {
+    display: none;
+}
+
+.bot-dialog {
+    margin: auto;
+    max-height: calc(100dvh - 32px);
+    max-width: 560px;
+    overflow-y: auto;
+}
+
+.bot-dialog::backdrop {
+    background: var(--overlay);
+}
+
+.bot-dialog-lead {
+    color: var(--ink-a60);
+    font-weight: 600;
+}
+
+.bot-setting {
+    align-items: center;
+    border-top: 2px dashed var(--ink-a18);
+    display: grid;
+    gap: .4rem .75rem;
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding-top: .75rem;
+}
+
+.bot-setting-monkey {
+    grid-row: span 2;
+    height: 44px;
+    width: 44px;
+}
+
+.bot-dialog .btn {
+    margin-top: .5rem;
 }
 
 .mode-card {
