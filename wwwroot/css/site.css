@@ -969,6 +969,24 @@ main {
     border-radius: var(--radius-ctl);
 }
 
+/* Top 10 eilutė su perklausa (/race/replay/{resultId}) */
+a.lb-row {
+    border-radius: var(--radius-ctl);
+    color: inherit;
+    text-decoration: none;
+}
+
+a.lb-row:hover {
+    background: var(--cream-2);
+}
+
+.lb-replay-icon {
+    height: 14px;
+    margin-right: .2rem;
+    vertical-align: -2px;
+    width: 14px;
+}
+
 .lb-place {
     align-items: center;
     border: 2px solid transparent;

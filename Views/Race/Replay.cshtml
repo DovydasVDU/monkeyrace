@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = $"Perklausa #{ViewBag.ResultId} - MonkeyRace";
+}
+
+<div class="match-page">
+    <section class="race-screen">
+        <div class="race-topbar">
+            <a class="btn btn-g race-leave" href="/#top10-title">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+                <span>Į Top 10</span>
+            </a>
+            <div class="race-title-wrap">
+                <p class="eyebrow">Rezultatas #@ViewBag.ResultId · @ViewBag.Date</p>
+                <h1>@ViewBag.Username – @ViewBag.Wpm WPM</h1>
+            </div>
+        </div>
+
+        <partial name="_Replay" />
+
+        <section class="card final-results">
+            <h2>Rezultatai</h2>
+            <div id="replay-results"></div>
+        </section>
+    </section>
+</div>
+
+<script src="~/js/replay.js" asp-append-version="true"></script>
+<script>
+// RaceController.Replay pakeičia "<" į \u003c, todėl JSON saugu įdėti į <script>
+const REPLAY = @Html.Raw(ViewBag.ReplayJson);
+const RESULT_USER_ID = @ViewBag.UserId;
+
+const replayBadge = player => player.isBot
+    ? `<span class="bot-badge" title="Botas: kompiuterio valdomas žaidėjas">Botas</span>` : "";
+
+renderReplay(REPLAY, REPLAY.textLength, replayBadge);
+document.getElementById("replay-results").innerHTML = [...REPLAY.players]
+    .sort((a, b) => (a.place || Infinity) - (b.place || Infinity))
+    .map(player => `
+        <div class="podium-item lb-row ${player.userId === RESULT_USER_ID ? "is-me" : ""}">
+            <span class="lb-place ${player.place && player.place <= 3 ? "lb-place-" + player.place : ""}">${player.place || "–"}</span>
+            <span class="result-player-name">${progressEscape(player.name)} ${replayBadge(player)}</span>
+            <span class="lb-num"><strong>${player.wpm}</strong> WPM</span>
+            <span class="lb-num">${player.place ? "" : "DNF"}</span>
+        </div>`).join("");
+</script>

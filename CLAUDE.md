@@ -22,5 +22,5 @@ Numeriai iš audito; 1–3 jau sutvarkyti (commit `00a87f1`).
 - [ ] 13. `escapeHtml` kopijos (`Index.cshtml`, `MultiPlay.cshtml`) → naudoti `progressEscape` iš `progress.js`; ištrinti negyvą `Views/Home/Privacy.cshtml`.
 - [ ] 14. `BotSkillProvider._guestWpm` auga iki perkrovimo → `shortcut:` komentaras arba laikyti sesijoje.
 - [ ] Smulkmenos: solo `TimeSeconds`/`ErrorCount` netikrinami (gali būti neigiami); svečio vardas per `?username=` netikrinamas.
-- [ ] Idėja: replay paspaudus rezultatą Top 10 → įrašyti lenktynių laiko juostą į DB, puslapis `/race/replay/{resultId}`, replay JS iškelti iš `MultiPlay.cshtml`. Veiktų tik naujoms lenktynėms.
+- [x] Idėja: replay paspaudus rezultatą Top 10 → įrašyti lenktynių laiko juostą į DB, puslapis `/race/replay/{resultId}`, replay JS iškelti iš `MultiPlay.cshtml`. Veiktų tik naujoms lenktynėms.
 - [ ] Laukia vartotojo testavimo: ar užtenka vieno sakinio teksto lenktynėms; ką daryti su flags `digits`, `many_caps`, `parens`; bananai žodžių režime nepriklauso nuo trukmės.

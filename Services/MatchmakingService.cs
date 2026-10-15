@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -951,6 +952,27 @@ public sealed class MatchmakingService
                 {
                     _logger.LogError(exception, "Matchmaking room={RoomId} player={PlayerKey} decision=save-failed",
                         room.RaceId, player.PlayerKey);
+                }
+            }
+
+            // žodžių režime finišo nėra, todėl replay nerodomas
+            if (room.DurationSeconds == 0)
+            {
+                try
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var race = await db.Races.FindAsync(room.DatabaseRaceId);
+                    if (race != null)
+                    {
+                        // numatytasis koduotojas pakeičia < > & į <..., todėl JSON saugu įdėti į <script>
+                        race.ReplayJson = JsonSerializer.Serialize(RaceAnalyzer.CreateReplay(room),
+                            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                        await db.SaveChangesAsync();
+                    }
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Matchmaking room={RoomId} decision=replay-save-failed", room.RaceId);
                 }
             }
         }

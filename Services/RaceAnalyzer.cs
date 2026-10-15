@@ -16,13 +16,37 @@ public static class RaceAnalyzer
                 id = player.PlayerKey,
                 name = player.Username,
                 colorIndex = index,
-                series = room.Timeline
-                    .TakeWhile(tick => tick.Values.ContainsKey(player.PlayerKey))
-                    .Select(tick => tick.Values[player.PlayerKey])
-                    .ToList()
+                series = SeriesOf(room, player)
             }).ToList()
         };
     }
+
+    // Viešas replay (/race/replay/{resultId}): be PlayerKey, nes svečio raktas – jo sesijos Id
+    public static object CreateReplay(RaceRoom room)
+    {
+        return new
+        {
+            tickMs = 250,
+            textLength = room.Text.Length,
+            players = room.Players.Select((player, index) => new
+            {
+                id = "p" + index,
+                name = player.Username,
+                colorIndex = index,
+                isBot = player.IsBot,
+                userId = player.UserId,
+                place = player.IsDnf ? 0 : player.Place,
+                wpm = player.Wpm,
+                series = SeriesOf(room, player)
+            }).ToList()
+        };
+    }
+
+    private static List<int> SeriesOf(RaceRoom room, RacePlayer player) =>
+        room.Timeline
+            .TakeWhile(tick => tick.Values.ContainsKey(player.PlayerKey))
+            .Select(tick => tick.Values[player.PlayerKey])
+            .ToList();
 
     public static void AddTimelineTick(RaceRoom room, int elapsedMs)
     {

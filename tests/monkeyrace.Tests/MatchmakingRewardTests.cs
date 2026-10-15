@@ -134,6 +134,17 @@ public sealed class MatchmakingRewardTests : IDisposable
             Assert.Equal(fastReward.GetProperty("xpGained").GetInt32(), again.XpGained);
             Assert.Equal(before.Bananas, again.Bananas);
             Assert.Equal(2, db.RaceResults.Count()); // tik du žmonės, botai neįrašyti
+
+            // perklausa įrašyta: visi 4 žaidėjai su finišu, be PlayerKey (svečio raktas – sesijos Id)
+            var replayJson = db.Races.Find(dbRaceId)!.ReplayJson;
+            Assert.DoesNotContain("user:", replayJson);
+            using var replay = JsonDocument.Parse(replayJson!);
+            Assert.Equal(_text.Length, replay.RootElement.GetProperty("textLength").GetInt32());
+            var fastReplay = replay.RootElement.GetProperty("players").EnumerateArray()
+                .Single(player => player.TryGetProperty("userId", out var id) && id.ValueKind == JsonValueKind.Number && id.GetInt32() == fastId);
+            Assert.Equal(1, fastReplay.GetProperty("place").GetInt32());
+            Assert.Equal(_text.Length, fastReplay.GetProperty("series").EnumerateArray().Last().GetInt32());
+            Assert.Equal(4, replay.RootElement.GetProperty("players").GetArrayLength());
         }
         Assert.Equal(before, UserState(fastId));
     }
@@ -245,6 +256,7 @@ public sealed class MatchmakingRewardTests : IDisposable
             .Single(r => r.Results.Any(result => result.UserId == fastId));
         Assert.Equal(15, race.DurationSeconds);
         Assert.Null(race.TextSnippetId);
+        Assert.Null(race.ReplayJson); // žodžių režime finišo nėra – perklausa nerodoma
     }
 
     [Fact]

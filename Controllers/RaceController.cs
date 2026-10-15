@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 //saugumas ir [Authorize] 
 using Microsoft.AspNetCore.Authorization;
@@ -190,6 +191,34 @@ public class RaceController : Controller
         ViewBag.Message = message;
         ViewBag.RetryUrl = MatchmakingService.IsValidCode(code) ? $"/?room={code}#friends" : "/#friends";
         return View("MatchmakingError");
+    }
+
+    // Top 10 rezultato lenktynių perklausa; laiko juosta įrašoma tik naujoms klasikinėms lenktynėms
+    [HttpGet("/race/replay/{resultId:int}")]
+    public async Task<IActionResult> Replay(int resultId)
+    {
+        var result = await _db.RaceResults
+            .Where(r => r.Id == resultId && r.Race.ReplayJson != null)
+            .Select(r => new { r.UserId, r.User.Username, r.WPM, r.CompletedAt, r.Race.ReplayJson })
+            .FirstOrDefaultAsync();
+        if (result == null)
+        {
+            ViewBag.Heading = "Perklausos nėra";
+            ViewBag.Message = "Šių lenktynių perklausos nėra – ji įrašoma tik naujoms online lenktynėms.";
+            ViewBag.RetryUrl = "/#top10-title";
+            ViewBag.RetryLabel = "Į Top 10";
+            Response.StatusCode = 404;
+            return View("MatchmakingError");
+        }
+
+        ViewBag.ResultId = resultId;
+        ViewBag.UserId = result.UserId;
+        ViewBag.Username = result.Username;
+        ViewBag.Wpm = result.WPM;
+        ViewBag.Date = result.CompletedAt.ToString("yyyy-MM-dd");
+        // JSON eina į <script>: "<" galimas tik eilutėse, ten < reiškia tą patį, o </script> nebeužsidaro
+        ViewBag.ReplayJson = result.ReplayJson.Replace("<", "\\u003c");
+        return View();
     }
 
     [HttpGet("/race/multiplay/{raceId}")]

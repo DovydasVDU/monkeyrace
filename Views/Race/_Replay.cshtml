@@ -1,0 +1,41 @@
+@* Perklausos markup: MultiPlay ir Replay; JS – wwwroot/js/replay.js *@
+<section class="card race-replay" id="replay-race">
+    <h2>Perklausa</h2>
+    <div class="replay-track" id="replay-track"></div>
+    <div class="replay-controls">
+        <button type="button" id="replay-play" class="btn btn-p replay-main-button"
+                aria-label="Paleisti lenktynių replay" aria-pressed="false">
+            <svg class="control-icon icon-play" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5v14l11-7z"/>
+            </svg><span>Paleisti</span>
+        </button>
+        <button type="button" id="replay-pause" class="btn btn-s replay-pause-button"
+                aria-label="Pristabdyti lenktynių replay">
+            <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 5h4v14H7zm6 0h4v14h-4z"/>
+            </svg><span>Pauzė</span>
+        </button>
+        <button type="button" id="replay-reset" class="btn btn-s replay-reset-button"
+                aria-label="Paleisti replay iš naujo">
+            <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 5v6h6M5.5 11A7 7 0 1 0 7 6.1"/>
+            </svg><span>Iš naujo</span>
+        </button>
+        <div class="replay-speed tm-group" role="group" aria-label="Replay greitis">
+            <button type="button" class="tm" data-replay-speed="0.5" aria-pressed="false">0.5x</button>
+            <button type="button" class="tm" data-replay-speed="1" aria-pressed="true">1x</button>
+            <button type="button" class="tm" data-replay-speed="2" aria-pressed="false">2x</button>
+        </div>
+        <div class="replay-scrubber">
+            <output id="replay-time">0,0 s / 0,0 s</output>
+            <input type="range" id="replay-range" min="0" max="0" value="0"
+                   aria-label="Replay laiko pozicija">
+        </div>
+    </div>
+    <div id="replay-monkey-templates" hidden>
+        @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#8D5A2B", HatColor = "#FFC93C" })
+        @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#5D4037", HatColor = "#E53935" })
+        @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#8B5E3C", HatColor = "#2E8B4F" })
+        @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#795548", HatColor = "#7E57C2" })
+    </div>
+</section>

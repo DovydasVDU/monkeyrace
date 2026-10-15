@@ -28,6 +28,9 @@ namespace monkeyrace.Migrations
                     b.Property<bool>("IsMultiplayer")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ReplayJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("TEXT");
 

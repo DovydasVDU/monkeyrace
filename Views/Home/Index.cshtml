@@ -176,17 +176,19 @@
         try {
             const res = await fetch('/api/stats/top10/');
             const data = await res.json();
+            // eilutė su perklausa – nuoroda į /race/replay/{resultId}; seni rezultatai be jos
             body.innerHTML = data.length ? data.map((user, index) => `
-                <div class="lb-row lb-top10 ${user.username === CURRENT_USER ? "is-me" : ""}" role="listitem">
+                <${user.hasReplay ? `a href="/race/replay/${user.resultId}" title="Žiūrėti perklausą"` : "div"}
+                    class="lb-row lb-top10 ${user.username === CURRENT_USER ? "is-me" : ""}" role="listitem">
                     <span class="lb-place ${index < 3 ? "lb-place-" + (index + 1) : ""}">${index + 1}</span>
                     <span class="lb-name">${escapeHtml(user.username)}</span>
                     <span class="lb-num"><strong>${user.wpm}</strong></span>
                     <span class="lb-num">${user.accuracy}%</span>
                     <span class="lb-num">${user.place ?? "–"}</span>
                     <span class="lb-num lb-id">${user.textId != null ? "#" + user.textId : "–"}</span>
-                    <span class="lb-num lb-id">#${user.resultId}</span>
+                    <span class="lb-num lb-id">${user.hasReplay ? `<svg class="ui-icon lb-replay-icon" aria-hidden="true"><use href="#icon-play"></use></svg>` : ""}#${user.resultId}</span>
                     <span class="lb-date">${user.date}</span>
-                </div>`).join("")
+                </${user.hasReplay ? "a" : "div"}>`).join("")
                 : `<p class="lb-empty">Dar nėra rezultatų. Būk pirmas!</p>`;
         } catch (err) {
             body.innerHTML = `<p class="lb-empty">Nepavyko įkelti lyderių.</p>`;

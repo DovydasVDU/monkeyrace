@@ -125,46 +125,7 @@
                 <div class="overtakes-list" id="result-overtakes-list"></div>
                 <p id="result-leader-summary"></p>
             </section>
-            <section class="card race-replay" id="replay-race">
-                <h2>Perklausa</h2>
-                <div class="replay-track" id="replay-track"></div>
-                <div class="replay-controls">
-                    <button type="button" id="replay-play" class="btn btn-p replay-main-button"
-                            aria-label="Paleisti lenktynių replay" aria-pressed="false">
-                        <svg class="control-icon icon-play" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M8 5v14l11-7z"/>
-                        </svg><span>Paleisti</span>
-                    </button>
-                    <button type="button" id="replay-pause" class="btn btn-s replay-pause-button"
-                            aria-label="Pristabdyti lenktynių replay">
-                        <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M7 5h4v14H7zm6 0h4v14h-4z"/>
-                        </svg><span>Pauzė</span>
-                    </button>
-                    <button type="button" id="replay-reset" class="btn btn-s replay-reset-button"
-                            aria-label="Paleisti replay iš naujo">
-                        <svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M5 5v6h6M5.5 11A7 7 0 1 0 7 6.1"/>
-                        </svg><span>Iš naujo</span>
-                    </button>
-                    <div class="replay-speed tm-group" role="group" aria-label="Replay greitis">
-                        <button type="button" class="tm" data-replay-speed="0.5" aria-pressed="false">0.5x</button>
-                        <button type="button" class="tm" data-replay-speed="1" aria-pressed="true">1x</button>
-                        <button type="button" class="tm" data-replay-speed="2" aria-pressed="false">2x</button>
-                    </div>
-                    <div class="replay-scrubber">
-                        <output id="replay-time">0,0 s / 0,0 s</output>
-                        <input type="range" id="replay-range" min="0" max="0" value="0"
-                               aria-label="Replay laiko pozicija">
-                    </div>
-                </div>
-                <div id="replay-monkey-templates" hidden>
-                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#8D5A2B", HatColor = "#FFC93C" })
-                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#5D4037", HatColor = "#E53935" })
-                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#8B5E3C", HatColor = "#2E8B4F" })
-                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { Mood = "run", BodyColor = "#795548", HatColor = "#7E57C2" })
-                </div>
-            </section>
+            <partial name="_Replay" />
             </div></div>
             </div>
             <div class="result-actions">
@@ -222,6 +183,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
 <script src="~/js/typing.js" asp-append-version="true"></script>
+<script src="~/js/replay.js" asp-append-version="true"></script>
 <script>
 const RACE_ID = @Html.Raw(JsonSerializer.Serialize(raceId));
 const PLAYER_KEY = @Html.Raw(JsonSerializer.Serialize(playerKey));
@@ -252,12 +214,8 @@ let wordErrorStates = [];
 let wordHadError = [];
 let raceTimeline = null;
 let raceAnalysis = null;
-let raceTextLength = 0;
 // 0 = klasikinės lenktynės, kitaip žodžių režimo trukmė (ateina su RaceState)
 let durationSeconds = 0;
-let replayTimer = null;
-let replaySpeed = 1;
-let replayIndex = 0;
 const players = {};
 const BOT_MONKEY_COLORS = ["#8D5A2B", "#5D4037", "#6D4C41", "#795548"];
 
@@ -299,20 +257,6 @@ function botBadge(player) {
     const label = level ? `Botas · ${level}` : "Botas";
     return `<span class="bot-badge" title="${label}: kompiuterio valdomas žaidėjas"
              aria-label="${label}">${label}</span>`;
-}
-
-// level (nebūtinas) rodomas kaip ženkliukas, toks pat kaip _Monkey.cshtml
-function monkeyTemplate(colorIndex, level) {
-    const templates = document.querySelectorAll(
-        "#replay-monkey-templates .monkey-svg");
-    const template = templates[Math.abs(colorIndex || 0) % templates.length];
-    if (!template) return "";
-    if (level == null) return template.outerHTML;
-    const svg = template.cloneNode(true);
-    svg.insertAdjacentHTML("beforeend",
-        `<g class="monkey-level"><circle cx="134" cy="134" r="24"/>` +
-        `<text x="134" y="144" text-anchor="middle">${Number(level)}</text></g>`);
-    return svg.outerHTML;
 }
 
 function applyState(state) {
@@ -593,12 +537,11 @@ connection.on("RaceFinished", data => {
         </div>`).join("");
     raceTimeline = data.timeline;
     raceAnalysis = data.analysis;
-    raceTextLength = data.textLength || targetText.length;
     renderTextInfo(data.textInfo);
     renderRaceHistory();
     // perklausa rodo kelią iki finišo, o žodžių režime finišo nėra
     if (durationSeconds) document.getElementById("replay-race").hidden = true;
-    else renderReplay();
+    else renderReplay(raceTimeline, data.textLength || targetText.length, botBadge);
     renderWpmChart();
     renderWordErrors();
 });
@@ -842,52 +785,6 @@ function renderRaceHistory() {
         `${raceAnalysis.leaderChanges} lyderio pasikeitimai`;
 }
 
-function renderReplay() {
-    document.getElementById("replay-race").hidden = false;
-    const track = document.getElementById("replay-track");
-    track.innerHTML = raceTimeline.players.map((player, index) => `
-        <div class="replay-lane" data-replay-player="${escapeHtml(player.id)}">
-            <span class="replay-player-name">
-                ${escapeHtml(player.name)} ${botBadge(player)}
-            </span>
-            <div class="replay-lane-track" data-replay-track="${escapeHtml(player.id)}">
-                <div class="replay-monkey" data-replay-monkey="${escapeHtml(player.id)}">
-                ${monkeyTemplate(getBotColorIndex(player, index))}
-                </div>
-            </div>
-        </div>`).join("");
-    const range = document.getElementById("replay-range");
-    range.max = Math.max(0, (raceTimeline.players[0]?.series.length || 1) - 1);
-    range.value = 0;
-    replayIndex = 0;
-    updateReplayFrame();
-}
-
-function updateReplayFrame() {
-    if (!raceTimeline || !raceTimeline.players.length) return;
-    raceTimeline.players.forEach(player => {
-        const series = player.series;
-        const value = series[Math.min(replayIndex, series.length - 1)] || 0;
-        const percent = raceTextLength ? Math.min(1, value / raceTextLength) : 0;
-        const monkey = document.querySelector(
-            `[data-replay-monkey="${CSS.escape(player.id)}"]`);
-        const track = document.querySelector(
-            `[data-replay-track="${CSS.escape(player.id)}"]`);
-        if (monkey && track) {
-            const travel = Math.max(0, track.clientWidth - monkey.offsetWidth);
-            monkey.style.transform = `translateX(${percent * travel}px)`;
-        }
-    });
-    const totalTicks = raceTimeline.players[0]?.series.length || 1;
-    const currentSeconds = replayIndex * (raceTimeline.tickMs || 250) / 1000;
-    const totalSeconds = Math.max(0, (totalTicks - 1) *
-        (raceTimeline.tickMs || 250) / 1000);
-    document.getElementById("replay-range").value = replayIndex;
-    document.getElementById("replay-time").textContent =
-        `${currentSeconds.toFixed(1).replace(".", ",")} s / ` +
-        `${totalSeconds.toFixed(1).replace(".", ",")} s`;
-}
-
 function renderWpmChart() {
     const player = raceTimeline.players.find(item => item.id === PLAYER_KEY);
     if (!player) return;
@@ -967,68 +864,6 @@ function renderWordErrors() {
         .map(word => `<li>${escapeHtml(word)}</li>`).join("") || "<li>Nėra klaidingų žodžių.</li>";
 }
 
-document.getElementById("replay-play").addEventListener("click", () => {
-    if (replayTimer || !raceTimeline) return;
-    setReplayPlayingState(true);
-    replayTimer = setInterval(() => {
-        const length = raceTimeline.players[0]?.series.length || 0;
-        if (replayIndex >= length - 1) {
-            clearInterval(replayTimer);
-            replayTimer = null;
-            setReplayPlayingState(false);
-            return;
-        }
-        replayIndex++;
-        updateReplayFrame();
-    }, Math.max(16, 250 / replaySpeed));
-});
-document.getElementById("replay-pause").addEventListener("click", () => {
-    clearInterval(replayTimer);
-    replayTimer = null;
-    setReplayPlayingState(false);
-});
-document.getElementById("replay-reset").addEventListener("click", () => {
-    clearInterval(replayTimer);
-    replayTimer = null;
-    setReplayPlayingState(false);
-    replayIndex = 0;
-    updateReplayFrame();
-});
-document.querySelectorAll("[data-replay-speed]").forEach(button => {
-    button.addEventListener("click", () => {
-        replaySpeed = Number(button.dataset.replaySpeed);
-        document.querySelectorAll("[data-replay-speed]").forEach(speedButton =>
-            speedButton.setAttribute("aria-pressed", speedButton === button ? "true" : "false"));
-        if (replayTimer) {
-            clearInterval(replayTimer);
-            replayTimer = null;
-            document.getElementById("replay-play").click();
-        }
-    });
-});
-document.getElementById("replay-range").addEventListener("input", event => {
-    clearInterval(replayTimer);
-    replayTimer = null;
-    setReplayPlayingState(false);
-    replayIndex = Number(event.target.value);
-    updateReplayFrame();
-});
-window.addEventListener("resize", () => {
-    if (raceTimeline) updateReplayFrame();
-});
-
-function setReplayPlayingState(isPlaying) {
-    const button = document.getElementById("replay-play");
-    button.setAttribute("aria-pressed", String(isPlaying));
-    button.setAttribute("aria-label",
-        isPlaying ? "Paleisti lenktynių replay iš naujo" :
-            "Paleisti lenktynių replay");
-    button.innerHTML = isPlaying
-        ? `<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
-             <path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg><span>Vyksta</span>`
-        : `<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true">
-             <path d="M8 5v14l11-7z"/></svg><span>Paleisti</span>`;
-}
 
 function renderPlayers() {
     document.getElementById("players-track").innerHTML =

@@ -72,6 +72,8 @@ public class Race
     public DateTime StartedAt { get; set; }
     public bool IsMultiplayer { get; set; } = false;
     public string Status { get; set; } = "waiting";        // waiting/finished
+    // RaceAnalyzer.CreateReplay JSON; tik klasikinėms lenktynėms, baigtoms po replay atsiradimo
+    public string ReplayJson { get; set; }
 
     public ICollection<RaceResult> Results { get; set; } = new List<RaceResult>();
 }
