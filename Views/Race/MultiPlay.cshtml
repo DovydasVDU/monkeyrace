@@ -3,7 +3,6 @@
     ViewData["Title"] = "Lenktynės - MonkeyRace";
     var raceId = (string)ViewBag.RaceId;
     var playerKey = (string)ViewBag.PlayerKey;
-    var username = (string)ViewBag.Username;
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     var seconds = (int)(ViewBag.Seconds ?? 0);
     var bots = Context.Request.Query["bots"].ToString();
@@ -222,10 +221,10 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+<script src="~/js/typing.js" asp-append-version="true"></script>
 <script>
 const RACE_ID = @Html.Raw(JsonSerializer.Serialize(raceId));
 const PLAYER_KEY = @Html.Raw(JsonSerializer.Serialize(playerKey));
-const USERNAME = @Html.Raw(JsonSerializer.Serialize(username));
 const ATTEMPT = @((int)(ViewBag.Attempt ?? 0));
 const ROOM_CODE = @Html.Raw(JsonSerializer.Serialize(room));
 const QUICK_URL = @Html.Raw(JsonSerializer.Serialize(quickUrl));
@@ -609,7 +608,7 @@ function retryMatchmaking() {
 
 connection.on("RaceUnavailable", retryMatchmaking);
 connection.onreconnected(() =>
-    connection.invoke("JoinRace", RACE_ID, PLAYER_KEY, USERNAME, TAB_ID));
+    connection.invoke("JoinRace", RACE_ID, PLAYER_KEY, TAB_ID));
 
 input.addEventListener("input", event => {
     if (!raceStarted || finished) return;
@@ -662,10 +661,7 @@ input.addEventListener("input", event => {
         totalKeystrokes, wrongKeystrokes, typed.slice(typed.lastIndexOf(" ") + 1))
         .catch(console.error);
     document.getElementById("accuracy-display").textContent =
-        totalKeystrokes === 0
-            ? "100.0"
-            : ((totalKeystrokes - wrongKeystrokes) * 100 /
-                totalKeystrokes).toFixed(1);
+        typingAccuracy(totalKeystrokes, wrongKeystrokes).toFixed(1);
     if (correctChars === targetText.length) {
         input.disabled = true;
         finished = true;
@@ -750,9 +746,8 @@ function updateTimer() {
     } else {
         document.getElementById("timer-display").textContent = Math.floor(elapsedMs / 1000);
     }
-    // ta pati formulė kaip serveryje (MatchmakingService): teisingi simboliai / 5 per minutę
     document.getElementById("wpm-display").textContent = elapsedMs < 1000 ? 0 :
-        Math.round(getCorrectChars(input.value) / 5 / (elapsedMs / 60000));
+        typingWpm(getCorrectChars(input.value), elapsedMs);
 }
 
 function updateCharacters(typed) {
@@ -817,26 +812,6 @@ function renderText() {
             [...range.word].map(char =>
                 `<span class="char">${escapeHtml(char)}</span>`).join("") +
             `</span>`).join(" ");
-}
-
-function renderWord(expectedWord, typedWord) {
-    const result = [];
-    for (let index = 0; index < expectedWord.length; index++) {
-        const typed = typedWord[index];
-        result.push({
-            ch: typed || expectedWord[index],
-            expected: expectedWord[index],
-            state: typed
-                ? typed === expectedWord[index] ? "correct" : "wrong"
-                : "pending"
-        });
-    }
-    for (let index = expectedWord.length;
-         index < Math.min(typedWord.length, expectedWord.length + 8);
-         index++) {
-        result.push({ ch: typedWord[index], expected: "", state: "extra" });
-    }
-    return result;
 }
 
 function renderRaceHistory() {
@@ -1110,6 +1085,6 @@ async function leaveRace() {
 }
 
 connection.start()
-    .then(() => connection.invoke("JoinRace", RACE_ID, PLAYER_KEY, USERNAME, TAB_ID))
+    .then(() => connection.invoke("JoinRace", RACE_ID, PLAYER_KEY, TAB_ID))
     .catch(retryMatchmaking);
 </script>

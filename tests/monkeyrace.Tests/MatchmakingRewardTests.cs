@@ -60,7 +60,7 @@ public sealed class MatchmakingRewardTests : IDisposable
     private async Task<string> Join(string key, string name, int? userId)
     {
         var raceId = _matchmaking.JoinOrCreate(key, name, userId, null);
-        var result = await _matchmaking.JoinRaceAsync(raceId, key, name, "tab-" + key, "conn-" + key);
+        var result = await _matchmaking.JoinRaceAsync(raceId, key, "tab-" + key, "conn-" + key);
         Assert.True(result.IsSuccess, result.Error);
         return raceId;
     }
@@ -213,8 +213,8 @@ public sealed class MatchmakingRewardTests : IDisposable
         Assert.NotEqual(_matchmaking.JoinOrCreate("guest:classic", "Klasika", null, null),
             _matchmaking.JoinOrCreate("guest:other", "Kitas", null, null, durationSeconds: 15));
         var raceId = _matchmaking.JoinOrCreate("user:" + fastId, "greitas", fastId, null, durationSeconds: 15);
-        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "user:" + fastId, "greitas", "tab", "conn-user:" + fastId)).IsSuccess);
-        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:other", "Kitas", "tab", "conn-guest:other")).IsSuccess);
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "user:" + fastId, "tab", "conn-user:" + fastId)).IsSuccess);
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:other", "tab", "conn-guest:other")).IsSuccess);
 
         await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(30));
         var startedAt = DateTime.UtcNow;
@@ -256,7 +256,7 @@ public sealed class MatchmakingRewardTests : IDisposable
             new[] { BotLevel.Easy, BotLevel.Hard });
         // kiti žaidėjai į privatų kambarį nepatenka
         Assert.NotEqual(raceId, _matchmaking.JoinOrCreate("guest:x", "x", null, null));
-        Assert.True((await _matchmaking.JoinRaceAsync(raceId, key, "botu-megejas", "tab", "conn-" + key)).IsSuccess);
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, key, "tab", "conn-" + key)).IsSuccess);
 
         // be 10 s lobby: tik 3 s atgalinis skaičiavimas
         await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(6));
@@ -297,9 +297,9 @@ public sealed class MatchmakingRewardTests : IDisposable
         // atsitiktinė paieška į draugų kambarį nepatenka
         Assert.NotEqual(raceId, _matchmaking.JoinOrCreate("guest:random", "r", null, null));
 
-        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:host", "Šeimininkas", "t", "conn-guest:host")).IsSuccess);
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:host", "t", "conn-guest:host")).IsSuccess);
         Assert.NotNull(_matchmaking.StartFriendRace(raceId, "guest:host")); // draugas dar neatidarė puslapio
-        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:friend", "Draugas", "t", "conn-guest:friend")).IsSuccess);
+        Assert.True((await _matchmaking.JoinRaceAsync(raceId, "guest:friend", "t", "conn-guest:friend")).IsSuccess);
         Assert.NotNull(_matchmaking.StartFriendRace(raceId, "guest:friend")); // ne šeimininkas
         Assert.Null(_matchmaking.StartFriendRace(raceId, "guest:host"));
         Assert.Equal((null, "Started"), _matchmaking.JoinFriendRoom(code, "guest:late", "Vėluoja", null, null));

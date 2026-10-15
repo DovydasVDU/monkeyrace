@@ -7,6 +7,10 @@ using Microsoft.Extensions.Hosting;
 using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using System.Threading.RateLimiting;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 
 public class Startup
 {
@@ -30,6 +34,16 @@ public class Startup
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
         services.Configure<BotOptions>(_configuration.GetSection("Bots"));
+        // Login/Register: ne daugiau 10 bandymų per minutę iš vieno IP (apsauga nuo slaptažodžių spėliojimo)
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = 429;
+            options.OnRejected = (context, token) => new ValueTask(context.HttpContext.Response.WriteAsJsonAsync(
+                new { message = "Per daug bandymų. Pabandyk po minutės." }, token));
+            options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+        });
 
         // Vystymui naudojame naują SQLite DB failą. Schema sukuriama paleidimo metu.
         string connectionString = _configuration.GetConnectionString("DefaultConnection")
@@ -71,7 +85,7 @@ public class Startup
         }
         else
         {
-            //app.UseExceptionHandler("/Home/Error");
+            app.UseExceptionHandler("/Home/Error");
             app.UseHsts();
         }
 
@@ -86,6 +100,7 @@ public class Startup
         // SVARBU: tvarka būtina
         app.UseAuthentication();  // pirma: kas esi?
         app.UseAuthorization();   // antra: ką gali?
+        app.UseRateLimiter();
 
 
         // pasakome, kad pagrindinis maršrutas būtų HomeController ir jo Index metodas, kuris atidaro pagrindinį puslapį. 

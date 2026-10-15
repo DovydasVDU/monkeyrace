@@ -88,6 +88,7 @@
     </section>
 </div>
 
+    <script src="~/js/typing.js" asp-append-version="true"></script>
     <script>
          
         let TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
@@ -219,30 +220,6 @@
             document.addEventListener('click', () => { if (!isFinished) inputField.focus(); });
         }
 
-        function renderWord(expectedWord, typedWord) {
-            const result = [];
-            for (let index = 0; index < expectedWord.length; index++) {
-                const typed = typedWord[index];
-                result.push({
-                    ch: typed || expectedWord[index],
-                    expected: expectedWord[index],
-                    state: typed
-                        ? typed === expectedWord[index] ? "correct" : "wrong"
-                        : "pending"
-                });
-            }
-            for (let index = expectedWord.length;
-                 index < Math.min(typedWord.length, expectedWord.length + 8);
-                 index++) {
-                result.push({
-                    ch: typedWord[index],
-                    expected: "",
-                    state: "extra"
-                });
-            }
-            return result;
-        }
-
         function updateCurrentWord(typed, targetWord) {
             const wordElem = document.getElementById('word-elem-' + currentWordIndex);
             let isError = false;
@@ -304,17 +281,11 @@
             let elapsedMs = Date.now() - startTime;
             // laikmatis tikrina kas 200 ms, todėl vėlavimas neturi mažinti WPM
             if (DURATION_SECONDS) elapsedMs = Math.min(elapsedMs, DURATION_SECONDS * 1000);
-            return Math.round((charsTyped / 5) / (elapsedMs / 60000));
-        }
-
-        function targetWordLength(word) {
-            return word ? word.length : 0;
+            return typingWpm(charsTyped, elapsedMs);
         }
 
         function calcAccuracy() {
-            if (totalKeystrokes === 0) return 100;
-            return Math.max(0,
-                ((totalKeystrokes - wrongKeystrokes) / totalKeystrokes) * 100);
+            return typingAccuracy(totalKeystrokes, wrongKeystrokes);
         }
 
         function updateTimer() {

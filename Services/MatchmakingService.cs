@@ -286,7 +286,6 @@ public sealed class MatchmakingService
     public async Task<RaceStateResult> JoinRaceAsync(
         string raceId,
         string playerKey,
-        string username,
         string tabId,
         string connectionId)
     {
@@ -347,9 +346,6 @@ public sealed class MatchmakingService
                 return RaceStateResult.Failure("RaceUnavailable");
             }
 
-            if (!string.IsNullOrWhiteSpace(username))
-                player.Username = username.Trim().Substring(
-                    0, Math.Min(20, username.Trim().Length));
             player.ConnectionId = connectionId;
             player.TabId = tabId;
             player.DisconnectedAtUtc = null;
@@ -593,20 +589,33 @@ public sealed class MatchmakingService
 
         using (var scope = _scopeFactory.CreateScope())
         {
-            var raceService = scope.ServiceProvider.GetRequiredService<RaceService>();
-            snippet = room.DurationSeconds > 0
-                ? null
-                : await raceService.GetRandomSnippetAsync(new List<int>());
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var race = new Race
+            Race race;
+            // fone paleista užduotis: be catch DB klaida dingtų, o žaidėjai lauktų lobby amžinai
+            try
             {
-                TextSnippetId = snippet?.Id,
-                DurationSeconds = room.DurationSeconds > 0 ? room.DurationSeconds : null,
-                StartedAt = DateTime.UtcNow,
-                IsMultiplayer = room.BotLevels == null
-            };
-            db.Races.Add(race);
-            await db.SaveChangesAsync();
+                var raceService = scope.ServiceProvider.GetRequiredService<RaceService>();
+                snippet = room.DurationSeconds > 0
+                    ? null
+                    : await raceService.GetRandomSnippetAsync(new List<int>());
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                race = new Race
+                {
+                    TextSnippetId = snippet?.Id,
+                    DurationSeconds = room.DurationSeconds > 0 ? room.DurationSeconds : null,
+                    StartedAt = DateTime.UtcNow,
+                    IsMultiplayer = room.BotLevels == null
+                };
+                db.Races.Add(race);
+                await db.SaveChangesAsync();
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Matchmaking room={RoomId} decision=countdown-failed", raceId);
+                lock (_sync)
+                    _rooms.Remove(raceId);
+                await _hub.Clients.Group(room.GroupName).SendAsync("RaceUnavailable", "RaceUnavailable");
+                return;
+            }
 
             lock (_sync)
             {
@@ -925,15 +934,24 @@ public sealed class MatchmakingService
                 !item.IsBot && !item.IsDnf && !item.ResultSaved))
             {
                 player.ResultSaved = true;
-                player.Reward = player.UserId.HasValue
-                    ? await raceService.SaveRaceResultAsync(
-                        player.UserId.Value, room.DatabaseRaceId,
-                        mode, place(player),
-                        player.Wpm, player.Accuracy, player.TimeSeconds,
-                        player.ErrorCount)
-                    : RaceService.GuestReward(mode, place(player),
-                        player.Wpm, player.Accuracy,
-                        room.DurationSeconds > 0 ? room.DurationSeconds : null);
+                // vieno žaidėjo DB klaida neturi palikti kitų be RaceFinished
+                try
+                {
+                    player.Reward = player.UserId.HasValue
+                        ? await raceService.SaveRaceResultAsync(
+                            player.UserId.Value, room.DatabaseRaceId,
+                            mode, place(player),
+                            player.Wpm, player.Accuracy, player.TimeSeconds,
+                            player.ErrorCount)
+                        : RaceService.GuestReward(mode, place(player),
+                            player.Wpm, player.Accuracy,
+                            room.DurationSeconds > 0 ? room.DurationSeconds : null);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Matchmaking room={RoomId} player={PlayerKey} decision=save-failed",
+                        room.RaceId, player.PlayerKey);
+                }
             }
         }
 

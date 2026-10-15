@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,8 @@ public class AuthController : Controller
     // POST užklausa į /Auth/Register
     // Čia tikrinama, ar username ir password nėra tušti, ar username jau egzistuoja.
     // Jei viskas gerai, sukuriamas naujas User objektas, išsaugomas duomenų bazėje, ir vartotojo informacija saugoma sesijoje.
-    [HttpPost] 
+    [HttpPost]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Register(string username, string password) // registracijos metodas
     {
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password)) // tikrinam, ar duomenys nėra tušti
@@ -32,6 +34,8 @@ public class AuthController : Controller
         // Slapyvardis rodomas lentelėse, todėl leidžiame tik raides, skaičius ir _ (apsauga nuo HTML/JS įterpimo)
         if (!Regex.IsMatch(username, @"^[\p{L}\p{N}_]{3,20}$"))
             return BadRequest(new { message = "Slapyvardis: 3–20 raidžių, skaičių arba _" });
+        if (password.Length < 6)
+            return BadRequest(new { message = "Slaptažodis turi būti bent 6 simbolių" });
 
         var exists = await _db.Users.AnyAsync(u => u.Username == username);
 
@@ -54,6 +58,7 @@ public class AuthController : Controller
     }
 
     [HttpPost]
+    [EnableRateLimiting("auth")]
 
     // Login metodas, kuris tikrina, ar vartotojas su tokiu username egzistuoja, ir ar slaptažodžio Hash teisingas.
     // Jei taip, saugo vartotojo informaciją sesijoje.

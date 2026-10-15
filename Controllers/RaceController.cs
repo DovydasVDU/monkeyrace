@@ -44,28 +44,44 @@ public class RaceController : Controller
 
         HttpContext.Session.SetString("LastSnippetIds", JsonSerializer.Serialize(lastIds)); // atnaujiname ir išsaugom sesijoje lastIds
 
-        // Race įrašas DB kuriamas tik išsaugant rezultatą (SaveResult), o ne kiekvieną kartą atidarius puslapį.
-        // Sesijoje prisimenam, kokį tekstą ir kada davėme - pagal tai SaveResult patikrina rezultatą.
-        HttpContext.Session.SetInt32("SoloSnippetId", snippet.Id);
-        HttpContext.Session.Remove("SoloDuration");
-        HttpContext.Session.SetString("SoloStartedAt", DateTime.UtcNow.ToString("O"));
-
+        await StartSoloAsync(snippet.Id, null);
         return View(snippet);
     }
 
     // Žodžių režimas: atsitiktiniai dažniausi žodžiai, rašoma tol, kol baigiasi pasirinktas laikas
     [HttpGet("/race/words")]
-    public IActionResult Words(int seconds = 30)
+    public async Task<IActionResult> Words(int seconds = 30)
     {
         if (!WordService.AllowedSeconds.Contains(seconds))
             return BadRequest("Unsupported duration.");
 
-        HttpContext.Session.Remove("SoloSnippetId");
-        HttpContext.Session.SetInt32("SoloDuration", seconds);
-        HttpContext.Session.SetString("SoloStartedAt", DateTime.UtcNow.ToString("O"));
-
+        await StartSoloAsync(null, seconds);
         ViewBag.Duration = seconds;
         return View("Play", new TextSnippet { Content = WordService.Generate(seconds) });
+    }
+
+    // Sesijoje prisimenam, kokį tekstą ir kada davėme - pagal tai SaveResult patikrina rezultatą.
+    // Prisijungusiam Race įrašas kuriamas iškart: du lygiagretūs SaveResult gauna tą patį Id,
+    // todėl SaveRaceResultAsync apdovanoja tik kartą (sesija neužrakinama).
+    private async Task StartSoloAsync(int? snippetId, int? duration)
+    {
+        var session = HttpContext.Session;
+        session.Remove("SoloSnippetId");
+        session.Remove("SoloDuration");
+        session.Remove("SoloRaceId");
+        if (snippetId != null)
+            session.SetInt32("SoloSnippetId", snippetId.Value);
+        if (duration != null)
+            session.SetInt32("SoloDuration", duration.Value);
+        var startedAt = DateTime.UtcNow;
+        session.SetString("SoloStartedAt", startedAt.ToString("O"));
+
+        if (PlayerIdentity.GetUserId(HttpContext) == null)
+            return;
+        var race = new Race { TextSnippetId = snippetId, DurationSeconds = duration, StartedAt = startedAt };
+        _db.Races.Add(race);
+        await _db.SaveChangesAsync();
+        session.SetInt32("SoloRaceId", race.Id);
     }
 
     [HttpGet("/race/quick")]
@@ -180,14 +196,12 @@ public class RaceController : Controller
     public IActionResult MultiPlay(string raceId)
     {
         var playerKey = PlayerIdentity.GetPlayerKey(HttpContext);
-        var username = PlayerIdentity.GetUsername(HttpContext);
         var attempt = 0;
         if (Request.Query.TryGetValue("attempt", out var attemptValue))
             int.TryParse(attemptValue, out attempt);
 
         ViewBag.RaceId = raceId;
         ViewBag.PlayerKey = playerKey;
-        ViewBag.Username = username;
         ViewBag.Attempt = attempt;
         int.TryParse(Request.Query["seconds"], out var seconds);
         ViewBag.Seconds = seconds;
@@ -208,6 +222,7 @@ public class RaceController : Controller
         // o WPM negali viršyti greičio, kurį leidžia serverio išmatuotas laikas nuo puslapio atidarymo.
         var snippetId = HttpContext.Session.GetInt32("SoloSnippetId");
         var duration = HttpContext.Session.GetInt32("SoloDuration");
+        var raceId = HttpContext.Session.GetInt32("SoloRaceId");
         var startedAtText = HttpContext.Session.GetString("SoloStartedAt");
         if ((snippetId == null && duration == null) || !DateTime.TryParse(startedAtText, null,
                 System.Globalization.DateTimeStyles.RoundtripKind, out var startedAt))
@@ -215,11 +230,11 @@ public class RaceController : Controller
         // vienas rezultatas vienam Play / Words atidarymui
         HttpContext.Session.Remove("SoloSnippetId");
         HttpContext.Session.Remove("SoloDuration");
+        HttpContext.Session.Remove("SoloRaceId");
         HttpContext.Session.Remove("SoloStartedAt");
 
         var elapsed = DateTime.UtcNow - startedAt;
         double maxPossibleWpm = RaceService.MaxWpm;
-        TextSnippet snippet = null;
         if (duration != null)
         {
             // laikmatis naršyklėje startuoja nuo pirmo klavišo, todėl nuo puslapio atidarymo praeina bent visa trukmė
@@ -228,7 +243,7 @@ public class RaceController : Controller
         }
         else
         {
-            snippet = await _db.TextSnippets.FindAsync(snippetId.Value);
+            var snippet = await _db.TextSnippets.FindAsync(snippetId.Value);
             if (snippet == null)
                 return BadRequest("Race unavailable.");
             var elapsedMinutes = Math.Max(1d / 60, elapsed.TotalMinutes);
@@ -242,12 +257,11 @@ public class RaceController : Controller
         var userId = PlayerIdentity.GetUserId(HttpContext);
         if (userId == null)
             return Json(new { success = true, reward = RaceService.GuestReward(RaceMode.Solo, null, dto.Wpm, dto.Accuracy, duration) });
+        // puslapis atidarytas dar neprisijungus
+        if (raceId == null)
+            return BadRequest("Race unavailable.");
 
-        var race = new Race { TextSnippetId = snippet?.Id, DurationSeconds = duration, StartedAt = startedAt };
-        _db.Races.Add(race);
-        await _db.SaveChangesAsync();
-
-        var reward = await _raceService.SaveRaceResultAsync(userId.Value, race.Id, RaceMode.Solo, null,
+        var reward = await _raceService.SaveRaceResultAsync(userId.Value, raceId.Value, RaceMode.Solo, null,
             dto.Wpm, dto.Accuracy, dto.TimeSeconds, dto.ErrorCount);
 
         return Json(new { success = true, reward }); 

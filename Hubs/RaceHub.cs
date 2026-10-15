@@ -18,7 +18,6 @@ public sealed class RaceHub : Hub
     public async Task JoinRace(
         string raceId,
         string playerKey,
-        string username,
         string tabId)
     {
         var expectedPlayerKey = PlayerIdentity.GetPlayerKey(Context.GetHttpContext());
@@ -31,7 +30,7 @@ public sealed class RaceHub : Hub
             return;
         }
         var result = await _matchmaking.JoinRaceAsync(
-            raceId, playerKey, username, tabId, Context.ConnectionId);
+            raceId, playerKey, tabId, Context.ConnectionId);
         if (!result.IsSuccess)
         {
             await Clients.Caller.SendAsync("RaceUnavailable", result.Error);

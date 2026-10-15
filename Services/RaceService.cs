@@ -15,7 +15,6 @@ public class RaceService
     public const int MaxWpm = 250;
 
     private readonly AppDbContext _db;
-    private static readonly Random _random = new Random();
     public RaceService(AppDbContext db) // prijungiame duomenų bazę
     {
         _db = db;
@@ -36,7 +35,7 @@ public class RaceService
 
         // Ištrinta perteklinė if (count == 0) apsauga, nes žinome, kad tekstų visada liks.
 
-        var index = _random.Next(count); // sugeneruojame atsitiktinį indeksą
+        var index = Random.Shared.Next(count); // sugeneruojame atsitiktinį indeksą
 
         return await query
             .Skip(index)
