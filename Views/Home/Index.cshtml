@@ -178,10 +178,13 @@
             const data = await res.json();
             // eilutė su perklausa – nuoroda į /race/replay/{resultId}; seni rezultatai be jos
             body.innerHTML = data.length ? data.map((user, index) => `
-                <${user.hasReplay ? `a href="/race/replay/${user.resultId}" title="Žiūrėti perklausą"` : "div"}
+                <${user.hasReplay ? `a href="/race/replay/${user.resultId}" title="Žiūrėti perklausą"` : `div tabindex="0"`}
                     class="lb-row lb-top10 ${user.username === CURRENT_USER ? "is-me" : ""}" role="listitem">
                     <span class="lb-place ${index < 3 ? "lb-place-" + (index + 1) : ""}">${index + 1}</span>
-                    <span class="lb-name">${escapeHtml(user.username)}</span>
+                    <div class="lb-card" data-card-user="${escapeHtml(user.username)}">
+                        <span class="lb-name">${escapeHtml(user.username)}</span>
+                        <div class="player-card-pop" role="tooltip"></div>
+                    </div>
                     <span class="lb-num"><strong>${user.wpm}</strong></span>
                     <span class="lb-num">${user.accuracy}%</span>
                     <span class="lb-num">${user.place ?? "–"}</span>
@@ -196,6 +199,43 @@
         }
     }
     loadTop10();
+
+    // Žaidėjo kortelė ant vardo – ta pati kaip lenktynių trasoje (playerCardHtml); kraunama tik pirmą kartą
+    const top10Body = document.getElementById('top10-body');
+    const top10Cards = new Map();
+    async function openTop10Card(cardElement) {
+        const pop = cardElement.querySelector('.player-card-pop');
+        if (pop.dataset.loaded) return;
+        pop.dataset.loaded = "1";
+        const username = cardElement.dataset.cardUser;
+        pop.innerHTML = `<p>Kraunama...</p>`;
+        if (!top10Cards.has(username))
+            top10Cards.set(username, fetch('/api/stats/' + encodeURIComponent(username))
+                .then(res => res.ok ? res.json() : null).catch(() => null));
+        const card = await top10Cards.get(username);
+        pop.innerHTML = card ? playerCardHtml({ username, card }) : `<p>Nepavyko įkelti statistikos.</p>`;
+        if (!card) delete pop.dataset.loaded;
+    }
+    top10Body.addEventListener('mouseover', event => {
+        const card = event.target.closest('.lb-card');
+        if (card) openTop10Card(card);
+    });
+    top10Body.addEventListener('focusin', event => {
+        const card = event.target.closest('.lb-row')?.querySelector('.lb-card');
+        if (card) openTop10Card(card);
+    });
+    // Liečiamame ekrane hover nėra: paspaudus vardą atsidaro kortelė, o ne perklausa
+    top10Body.addEventListener('click', event => {
+        if (!matchMedia('(hover: none)').matches) return;
+        const card = event.target.closest('.lb-card');
+        top10Body.querySelectorAll('.lb-card.card-open').forEach(item => {
+            if (item !== card) item.classList.remove('card-open');
+        });
+        if (!card) return;
+        event.preventDefault();
+        card.classList.toggle('card-open');
+        openTop10Card(card);
+    });
 
     // Žodžių režimo trukmės pasirinkimas keičia Solo ir Online nuorodas
     document.querySelectorAll("[data-words-seconds]").forEach(button =>

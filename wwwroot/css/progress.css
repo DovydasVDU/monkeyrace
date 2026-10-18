@@ -147,6 +147,22 @@
     display: block;
 }
 
+/* Top 10 (Index): ta pati kortelė ant žaidėjo vardo */
+.lb-card {
+    min-width: 0;
+    position: relative;
+}
+
+.lb-card .lb-name {
+    display: block;
+}
+
+.lb-card:hover .player-card-pop,
+.lb-row:focus-within .player-card-pop,
+.lb-card.card-open .player-card-pop {
+    display: block;
+}
+
 .player-card-pop .pc-head {
     align-items: baseline;
     display: flex;
