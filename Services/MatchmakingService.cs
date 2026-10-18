@@ -1000,6 +1000,7 @@ public sealed class MatchmakingService
     // „Apie tekstą“; null žodžių režime
     private static object TextInfoOf(RaceRoom room) => room.Snippet == null ? null : new
     {
+        id = room.Snippet.Id, // /api/stats/text/{id} – šio teksto lyderiai
         author = room.Snippet.Author,
         work = room.Snippet.Work,
         sourceUrl = room.Snippet.SourceUrl,

@@ -155,7 +155,18 @@
                     <ul id="result-error-list"></ul>
                 </div>
             </details>
-            <details class="card result-details text-about" id="text-about">
+            @* Šio teksto lyderiai iš DB (/api/stats/text/{id}); žodžių režime paslepiama *@
+            <details class="card result-details race-statistics" id="text-leaderboard" open hidden>
+                <summary id="statistics-title">Šio teksto lyderiai</summary>
+                <div class="details-content">
+                    <p class="text-leaderboard-total" id="text-leaderboard-total"></p>
+                    <div class="lb-row lb-header" aria-hidden="true">
+                        <span>#</span><span>Žaidėjas</span><span>WPM</span><span>Tikslumas</span><span class="lb-date">Data</span>
+                    </div>
+                    <div id="text-leaderboard-body" role="list"></div>
+                </div>
+            </details>
+            <details class="card result-details text-about" id="text-about" open>
                 <summary>Apie tekstą</summary>
                 <div class="details-content">
                 <dl>
@@ -167,14 +178,6 @@
                     <div id="text-license-row" hidden><dt>Licencija</dt><dd id="text-license"></dd></div>
                     <div id="text-flags-row" hidden><dt>Ypatybės</dt><dd id="text-flags"></dd></div>
                 </dl>
-                </div>
-            </details>
-            <details class="card result-details race-statistics">
-                <summary id="statistics-title">Lenktynių statistika</summary>
-                <div class="details-content">
-                    <div class="statistics-chart" id="statistics-chart">
-                        <span>Netrukus</span>
-                    </div>
                 </div>
             </details>
         </div>
@@ -445,6 +448,33 @@ function renderTextInfo(info) {
     document.getElementById("text-source-row").hidden = !info?.sourceUrl;
 }
 
+// Šio teksto lyderiai: geriausi online rezultatai šiam tekstui; eilutė su perklausa – nuoroda kaip Top 10
+async function loadTextLeaderboard(textId, myName) {
+    const card = document.getElementById("text-leaderboard");
+    card.hidden = !textId;
+    if (!textId) return;
+    const body = document.getElementById("text-leaderboard-body");
+    try {
+        const res = await fetch(`/api/stats/text/${textId}`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        document.getElementById("text-leaderboard-total").textContent =
+            `Šis tekstas online rašytas ${data.total} k.`;
+        body.innerHTML = data.results.length ? data.results.map((row, index) => `
+            <${row.hasReplay ? `a href="/race/replay/${row.resultId}" title="Žiūrėti perklausą"` : "div"}
+                class="lb-row ${row.username === myName ? "is-me" : ""}" role="listitem">
+                <span class="lb-place ${index < 3 ? "lb-place-" + (index + 1) : ""}">${index + 1}</span>
+                <span class="lb-name">${escapeHtml(row.username)}</span>
+                <span class="lb-num"><strong>${row.wpm}</strong></span>
+                <span class="lb-num">${row.accuracy}%</span>
+                <span class="lb-date">${row.hasReplay ? `<svg class="ui-icon lb-replay-icon" aria-hidden="true"><use href="#icon-play"></use></svg>` : ""}${row.date}</span>
+            </${row.hasReplay ? "a" : "div"}>`).join("")
+            : `<p class="lb-empty">Šio teksto dar niekas neįrašė į rezultatus. Prisijunk – būsi pirmas.</p>`;
+    } catch {
+        body.innerHTML = `<p class="lb-empty">Nepavyko įkelti šio teksto lyderių.</p>`;
+    }
+}
+
 function renderTextAbout() {
     document.getElementById("text-length").textContent = targetText.length;
     document.getElementById("text-word-count").textContent =
@@ -541,6 +571,8 @@ connection.on("RaceFinished", data => {
     raceTimeline = data.timeline;
     raceAnalysis = data.analysis;
     renderTextInfo(data.textInfo);
+    // rezultatai į DB įrašomi prieš RaceFinished, todėl šios lenktynės jau sąraše
+    loadTextLeaderboard(data.textInfo?.id, IS_AUTHENTICATED ? me?.username : null);
     renderRaceHistory();
     // perklausa rodo kelią iki finišo, o žodžių režime finišo nėra
     if (durationSeconds) document.getElementById("replay-race").hidden = true;

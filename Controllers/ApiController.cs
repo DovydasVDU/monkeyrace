@@ -78,6 +78,42 @@ namespace monkeyrace.Controllers
             // 3. Return the JSON array
             return Ok(leaderboard);
         }
+
+        // Šio teksto lyderiai po lenktynių (MultiPlay): geriausi online rezultatai tam pačiam tekstui, kaip Top 10
+        [HttpGet("text/{textId:int}")]
+        public async Task<IActionResult> GetTextLeaderboard(int textId)
+        {
+            var results = _db.RaceResults.Where(r => r.Race.TextSnippetId == textId &&
+                r.Race.IsMultiplayer && r.Race.DurationSeconds == null);
+            var top = await results
+                .OrderByDescending(r => r.WPM)
+                .ThenByDescending(r => r.Accuracy)
+                .Take(10)
+                .Select(r => new
+                {
+                    r.User.Username,
+                    r.WPM,
+                    r.Accuracy,
+                    r.Id,
+                    r.CompletedAt,
+                    HasReplay = r.Race.ReplayJson != null
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                Total = await results.CountAsync(), // kiek kartų tekstas rašytas online
+                Results = top.Select(r => new
+                {
+                    r.Username,
+                    Wpm = r.WPM,
+                    Accuracy = Math.Round(r.Accuracy, 2),
+                    ResultId = r.Id,
+                    r.HasReplay,
+                    Date = r.CompletedAt.ToString("yyyy-MM-dd")
+                })
+            });
+        }
     }
     
 }

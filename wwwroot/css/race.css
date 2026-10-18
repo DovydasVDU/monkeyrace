@@ -1208,9 +1208,11 @@
     min-width: 6rem;
 }
 
-.statistics-chart {
+.text-leaderboard-total {
     color: var(--ink-a60);
+    font-size: .9rem;
     font-weight: 700;
+    margin-bottom: .25rem;
 }
 
 #replay-monkey-templates {
