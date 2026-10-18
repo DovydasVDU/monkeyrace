@@ -535,8 +535,9 @@ main {
 }
 
 @media (max-width: 640px) {
+    /* vietą .mobile-tabs juostai palieka .site-footer */
     main {
-        padding: 1rem 16px 6rem;
+        padding: 1rem 16px 2rem;
     }
 
     .navbar {
@@ -1489,5 +1490,200 @@ a.lb-row:hover {
     /* istorijoje data būtina, Top10 ją slepia */
     .history-table .lb-date {
         display: inline;
+    }
+}
+
+/* ---------- Footer (_Footer) ---------- */
+.site-footer {
+    background: var(--bg-deep);
+    border-top: 2px solid var(--cream-a16);
+    color: var(--muted-on-dark);
+    padding: 2.5rem clamp(16px, 4vw, 3rem) 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.footer-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr);
+    margin: 0 auto;
+    max-width: 1200px;
+}
+
+.footer-logo {
+    align-items: center;
+    color: var(--text-on-dark);
+    display: inline-flex;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    gap: .5rem;
+    text-decoration: none;
+}
+
+.footer-brand p {
+    margin: .75rem 0 1rem;
+    max-width: 38ch;
+}
+
+.footer-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.footer-stack li {
+    border: 2px solid var(--cream-a16);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    padding: .15rem .6rem;
+}
+
+.footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.footer-col h2 {
+    color: var(--banana);
+    font-size: 1rem;
+    margin: 0 0 .25rem;
+}
+
+.footer-col a,
+.footer-soon,
+.footer-bottom a {
+    align-items: center;
+    color: var(--text-on-dark);
+    display: inline-flex;
+    gap: .45rem;
+    text-decoration: none;
+    width: fit-content;
+}
+
+.footer-col a:hover,
+.footer-bottom a:hover {
+    color: var(--banana);
+    text-decoration: underline;
+}
+
+.footer-author {
+    color: var(--text-on-dark);
+    font-weight: 800;
+    margin: 0;
+}
+
+.footer-soon {
+    opacity: .6;
+}
+
+.footer-soon .pill {
+    font-size: .7rem;
+    padding: 0 .5rem;
+}
+
+.footer-bottom {
+    border-top: 2px dashed var(--cream-a16);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: .85rem;
+    gap: .5rem 1.5rem;
+    justify-content: space-between;
+    margin: 2rem auto 0;
+    max-width: 1200px;
+    padding-top: 1rem;
+}
+
+.footer-bottom span a {
+    display: inline;
+}
+
+/* ---------- Privatumo puslapis ---------- */
+.legal-page {
+    margin: 0 auto;
+    max-width: 760px;
+    padding: 2rem clamp(1.25rem, 4vw, 2.5rem);
+}
+
+.legal-page h1 {
+    font-size: 2rem;
+    margin: .5rem 0 1rem;
+}
+
+.legal-page h2 {
+    font-size: 1.2rem;
+    margin: 1.5rem 0 .4rem;
+}
+
+.legal-page p,
+.legal-page ul {
+    margin: 0 0 .6rem;
+}
+
+.legal-page ul {
+    display: grid;
+    gap: .25rem;
+    padding-left: 1.25rem;
+}
+
+.legal-page .eyebrow {
+    background: var(--ink-a18);
+    border-color: transparent;
+    color: var(--ink);
+}
+
+.legal-page a {
+    color: var(--leaf);
+    font-weight: 700;
+}
+
+.legal-cookies {
+    display: grid;
+    gap: .5rem;
+    margin: .75rem 0;
+}
+
+.legal-cookies div {
+    border-bottom: 2px dashed var(--ink-a18);
+    display: grid;
+    gap: .25rem 1rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    padding-bottom: .5rem;
+}
+
+.legal-cookies dt {
+    font-family: var(--font-mono);
+    font-size: .85rem;
+    overflow-wrap: anywhere;
+}
+
+.legal-cookies dd {
+    margin: 0;
+}
+
+@media (max-width: 900px) {
+    .footer-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .footer-brand {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 640px) {
+    .site-footer {
+        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    }
+
+    .footer-grid,
+    .legal-cookies div {
+        grid-template-columns: minmax(0, 1fr);
     }
 }

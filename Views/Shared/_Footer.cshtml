@@ -1,0 +1,62 @@
+@{
+    // shortcut: GitHub repozitorija dar neviešinta – kol null, rodoma „netrukus“; įrašyk nuorodą, kai bus vieša
+    string githubUrl = null;
+}
+
+<footer class="site-footer">
+    <div class="footer-grid">
+        <section class="footer-brand" aria-label="Apie projektą">
+            <a class="footer-logo" href="/" aria-label="MonkeyRace pradžia">
+                <span class="logo-mark" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F" })</span>
+                <span>Monkey <span class="logo-race">Race</span></span>
+            </a>
+            <p>Spausdinimo lenktynės lietuvių kalba: varžybos realiu laiku, klaidų analizė ir asmeninis treniruoklis.</p>
+            <ul class="footer-stack" aria-label="Technologijos">
+                <li>ASP.NET Core</li>
+                <li>SignalR</li>
+                <li>EF Core</li>
+                <li>SQLite</li>
+            </ul>
+        </section>
+
+        <nav class="footer-col" aria-label="Žaidimas">
+            <h2>Žaidimas</h2>
+            <a href="/race/quick">Žaisti internetu</a>
+            <a href="/race/bots?levels=adaptive,adaptive,adaptive">Su botais</a>
+            <a href="/Race/Play">Solo treniruotė</a>
+            <a href="/#top10-body">Lyderiai</a>
+        </nav>
+
+        <section class="footer-col" aria-labelledby="footer-contact">
+            <h2 id="footer-contact">Kūrėjas</h2>
+            <p class="footer-author">Dovydas Bielinskas</p>
+            <a href="https://www.linkedin.com/in/dovydas-bielinskas-844b16337/" target="_blank" rel="noopener noreferrer">
+                <svg class="icon" aria-hidden="true"><use href="#icon-linkedin"></use></svg>LinkedIn
+            </a>
+            <a href="mailto:dovydas.bielinskas@gmail.com">
+                <svg class="icon" aria-hidden="true"><use href="#icon-mail"></use></svg>dovydas.bielinskas@gmail.com
+            </a>
+            @if (githubUrl != null)
+            {
+                <a href="@githubUrl" target="_blank" rel="noopener noreferrer">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-github"></use></svg>GitHub
+                </a>
+            }
+            else
+            {
+                <span class="footer-soon">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-github"></use></svg>GitHub <span class="pill">netrukus</span>
+                </span>
+            }
+        </section>
+    </div>
+
+    <div class="footer-bottom">
+        <span>&copy; @DateTime.Now.Year Dovydas Bielinskas</span>
+        <span>
+            Tekstai: <a href="https://lt.wikipedia.org" target="_blank" rel="noopener noreferrer">Vikipedija</a> (CC BY-SA 4.0)
+            ir <a href="https://lt.wikisource.org" target="_blank" rel="noopener noreferrer">Vikišaltiniai</a> (viešasis domenas)
+        </span>
+        <a href="/privatumas">Privatumas ir slapukai</a>
+    </div>
+</footer>

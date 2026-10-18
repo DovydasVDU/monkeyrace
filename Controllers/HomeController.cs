@@ -12,6 +12,9 @@ namespace monkeyrace.Controllers
             return View();
         }
 
+        [HttpGet("/privatumas")]
+        public IActionResult Privacy() => View();
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error() // jeigu nutinka netikėta klaida, ji nusiunčia vartotoją į /home/erorr langą, kuriame parodoma klaida
         {
