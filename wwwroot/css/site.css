@@ -591,12 +591,9 @@ main {
 }
 
 @media (max-width: 640px) {
-    /* vietą .mobile-tabs juostai palieka .site-footer */
-    /* trumpuose puslapiuose (lenktynės, solo) footer neturi lįsti į žaidimo ekraną – jis tik paslinkus žemyn */
+    /* footer telefone nerodomas (jo turinys – /apie), todėl vietą .mobile-tabs juostai palieka main */
     main {
-        min-height: 100vh;
-        min-height: 100svh;
-        padding: 1rem 16px 2rem;
+        padding: 1rem 16px calc(5.5rem + env(safe-area-inset-bottom));
     }
 
     .navbar {
@@ -1721,6 +1718,18 @@ a.lb-row:hover {
 }
 
 /* ---------- Privatumo puslapis ---------- */
+/* /apie (telefone vietoj footer) */
+.about-page {
+    display: grid;
+    gap: 1rem;
+    margin: 0 auto;
+    max-width: 760px;
+}
+
+.about-page h1 {
+    font-size: clamp(1.8rem, 6vw, 2.4rem);
+}
+
 .legal-page {
     margin: 0 auto;
     max-width: 760px;
@@ -1795,7 +1804,15 @@ a.lb-row:hover {
 
 @media (max-width: 640px) {
     .site-footer {
-        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+        display: none;
+    }
+
+    /* /apie: tas pats footer turinys kaip kortelė puslapyje */
+    .about-page .site-footer {
+        border: 2px solid var(--cream-a16);
+        border-radius: var(--radius-card);
+        display: block;
+        padding: 1.5rem 1.25rem;
     }
 
     .footer-grid,

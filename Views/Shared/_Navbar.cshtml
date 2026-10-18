@@ -10,6 +10,7 @@
     var path = Context.Request.Path.Value ?? "/";
     var playActive = path.StartsWith("/race", StringComparison.OrdinalIgnoreCase);
     var profileActive = path.StartsWith("/User/Stats", StringComparison.OrdinalIgnoreCase);
+    var aboutActive = path.StartsWith("/apie", StringComparison.OrdinalIgnoreCase);
 }
 
 <header class="navbar monkey-navbar">
@@ -94,6 +95,9 @@
     </a>
     <a href="@(isAuthenticated ? "/User/Stats#shop" : "#")" class="@(isAuthenticated ? "" : "nav-disabled")">
         <svg class="ui-icon" aria-hidden="true"><use href="#icon-shop"></use></svg>Parduotuvė
+    </a>
+    <a href="/apie" class="@(aboutActive ? "is-active" : "")">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-info"></use></svg>Apie
     </a>
 </nav>
 

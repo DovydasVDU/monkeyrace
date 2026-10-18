@@ -610,6 +610,50 @@
     .word-input {
         font-size: 16px;
     }
+
+    /* rašant: viena prilipusi juosta viršuje – Išeiti (ikona) ir WPM / tikslumas / laikas visada matomi */
+    .race-screen:has(#text-display:not(:empty)) .race-topbar {
+        align-items: center;
+        background: var(--bg);
+        grid-template-columns: auto minmax(0, 1fr);
+        margin: 0 -16px;
+        padding: .5rem 16px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .race-title-wrap {
+        display: none;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .race-leave {
+        grid-column: auto;
+        padding: .4rem .7rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .race-leave span {
+        clip: rect(0 0 0 0);
+        height: 1px;
+        overflow: hidden;
+        position: absolute;
+        white-space: nowrap;
+        width: 1px;
+    }
+
+    /* scrollIntoView starte palieka vietos prilipusiai juostai */
+    .text-card {
+        scroll-margin-top: 5rem;
+    }
+
+    /* online rašant: tekstas ir laukas iškart po juosta (virš klaviatūros), varžovų takeliai – po jais */
+    .race-screen:has(#text-display:not(:empty)) .race-topbar {
+        order: -2;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) :is(.text-card, .race-hint) {
+        order: -1;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1223,6 +1267,13 @@
     color: var(--ink-a60);
     font-weight: 800;
     min-width: 6rem;
+}
+
+/* ilga šaltinio nuoroda neturi plėsti lango (telefone rezultatų langas slysdavo į šoną) */
+.text-about dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .text-leaderboard-total {
