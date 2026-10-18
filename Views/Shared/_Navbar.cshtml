@@ -107,16 +107,20 @@
         <h3 id="login-title">Prisijungimas</h3>
 
         <label>Slapyvardis
-            <input id="login-user" autocomplete="username">
+            <input id="login-user" autocomplete="username" oninput="showLoginMessage(null)">
         </label>
         <label>Slaptažodis
-            <input id="login-pass" type="password" autocomplete="current-password">
+            <input id="login-pass" type="password" autocomplete="current-password" oninput="showLoginMessage(null)">
         </label>
 
         <div class="modal-actions">
             <button class="btn btn-p" type="button" onclick="login()">Prisijungti</button>
             <button class="btn btn-s" type="button" onclick="register()">Registruotis</button>
         </div>
+        <p class="modal-message" id="login-message" role="alert" hidden>
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+            <span id="login-message-text"></span>
+        </p>
     </div>
 </div>
 

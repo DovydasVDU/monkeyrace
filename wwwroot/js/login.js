@@ -14,85 +14,54 @@ function openLogin() {
 function closeLogin() {
     document.getElementById("loginModal").classList.remove("visible");
 }
-async function login() {
-
-    const username = document.getElementById("login-user").value
-    const password = document.getElementById("login-pass").value
-    // kreipiamės į AuthController Login metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
-    const res = await fetch("/Auth/Login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-
-    })
-    // AuthController grąžiną 200 OK jei login sėkmingas, kitu atveju 400 Bad Request su klaidos pranešimu
-
-    if (res.ok)
-        location.reload()
-    else {
-
-        let message = "login failed"
-
-        try {
-            const tempText = await res.text();
-            try {
-                const data = JSON.parse(tempText);
-                message = data.message || message;
-            } catch {
-                message = tempText || message;
-            }
-        } catch (e) {
-            console.error("Error reading response:", e);
-        }
-
-        alert(message)
-    }
-
+// klaida rodoma modalo apačioje, ne alert(); null – paslepia
+function showLoginMessage(text) {
+    const box = document.getElementById("login-message");
+    document.getElementById("login-message-text").textContent = text || "";
+    box.hidden = !text;
 }
-async function register() {
 
-    const username = document.getElementById("login-user").value
+// bendras Login/Register: AuthController grąžina 200 OK arba klaidą su { message }
+async function sendAuth(url, fallbackMessage) {
+    const username = document.getElementById("login-user").value.trim()
     const password = document.getElementById("login-pass").value
 
     if (!username || !password) {
-        alert("enter username and password")
+        showLoginMessage("Įvesk slapyvardį ir slaptažodį.")
         return
     }
-    // kreipiamės į AuthController Register metodą POST užklausa, siunčiame username ir password formatu application/x-www-form-urlencoded
-    const res = await fetch("/Auth/Register", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+    showLoginMessage(null)
 
-    })
-    // AuthController grąžiną 200 OK jei registracija sėkminga, kitu atveju 400 Bad Request su klaidos pranešimu
+    let res
+    try {
+        res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+        })
+    } catch {
+        showLoginMessage("Nepavyko susisiekti su serveriu. Patikrink ryšį.")
+        return
+    }
+
     if (res.ok) {
-        alert("account created")
         location.reload()
+        return
     }
-    else {
 
+    let message = fallbackMessage
+    try {
+        message = (await res.json()).message || message
+    } catch { /* tuščias atsakymas – lieka fallbackMessage */ }
+    showLoginMessage(message)
+}
 
-        let message = "register failed"
+function login() {
+    return sendAuth("/Auth/Login", "Nepavyko prisijungti.")
+}
 
-        try {
-            const tempText = await res.text();
-            try {
-                const data = JSON.parse(tempText);
-                message = data.message || message;
-            } catch {
-                message = tempText || message;
-            }
-        } catch (e) {
-            console.error("Error reading response:", e);
-        }
-
-        alert(message)
-    }
+function register() {
+    return sendAuth("/Auth/Register", "Nepavyko užsiregistruoti.")
 }
 
 // NAVBAR modalas

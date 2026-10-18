@@ -79,6 +79,26 @@
     margin-top: .5rem;
 }
 
+/* Login/Register klaida modalo apačioje (login.js showLoginMessage) */
+.modal-message {
+    align-items: center;
+    background: var(--error-soft);
+    border: 2px solid var(--error);
+    border-radius: var(--radius-ctl);
+    color: var(--error);
+    display: flex;
+    font-size: .9rem;
+    font-weight: 700;
+    gap: .55rem;
+    padding: .7rem .9rem;
+}
+
+.modal-message .ui-icon {
+    flex: none;
+    height: 20px;
+    width: 20px;
+}
+
 /* Vartotojo meniu: profilio kortelė + išskleidžiama greita statistika */
 .user-menu {
     position: relative;
