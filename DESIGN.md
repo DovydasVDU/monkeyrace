@@ -23,6 +23,7 @@ Charakteris: šilta, žaisminga džiunglių tema. Tamsiai žalias fonas, kremin�
 | `--brown` | `#8B5E3C` | beždžionė |
 | `--error` | `#C93A3A` | klaida |
 | `--error-soft` | `#FBE9E9` | klaidos fonas |
+| `--player-0`…`--player-3` | banana / `#E53935` / leaf / `#7E57C2` | perklausos žaidėjų spalvos (kepurės) |
 | `--radius-card` | `24px` | |
 | `--radius-ctl` | `16px` | |
 | `--radius-pill` | `999px` | |

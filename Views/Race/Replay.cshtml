@@ -33,7 +33,7 @@ const RESULT_USER_ID = @ViewBag.UserId;
 const replayBadge = player => player.isBot
     ? `<span class="bot-badge" title="Botas: kompiuterio valdomas žaidėjas">Botas</span>` : "";
 
-renderReplay(REPLAY, REPLAY.textLength, replayBadge);
+renderReplay(REPLAY, REPLAY.textLength, replayBadge, @Html.Raw(ViewBag.TextJson));
 document.getElementById("replay-results").innerHTML = [...REPLAY.players]
     .sort((a, b) => (a.place || Infinity) - (b.place || Infinity))
     .map(player => `

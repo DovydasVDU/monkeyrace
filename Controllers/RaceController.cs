@@ -222,7 +222,7 @@ public class RaceController : Controller
     {
         var result = await _db.RaceResults
             .Where(r => r.Id == resultId && r.Race.ReplayJson != null)
-            .Select(r => new { r.UserId, r.User.Username, r.WPM, r.CompletedAt, r.Race.ReplayJson })
+            .Select(r => new { r.UserId, r.User.Username, r.WPM, r.CompletedAt, r.Race.ReplayJson, Text = r.Race.TextSnippet.Content })
             .FirstOrDefaultAsync();
         if (result == null)
         {
@@ -241,6 +241,8 @@ public class RaceController : Controller
         ViewBag.Date = result.CompletedAt.ToString("yyyy-MM-dd");
         // JSON eina į <script>: "<" galimas tik eilutėse, ten < reiškia tą patį, o </script> nebeužsidaro
         ViewBag.ReplayJson = result.ReplayJson.Replace("<", "\\u003c");
+        // klasikinėse lenktynėse room.Text = snippet.Content; Serialize pakeičia < į <
+        ViewBag.TextJson = JsonSerializer.Serialize(result.Text);
         return View();
     }
 

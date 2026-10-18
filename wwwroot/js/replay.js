@@ -3,6 +3,7 @@
 
 let replayTimeline = null;
 let replayTextLength = 0;
+let replayText = null;
 let replayTimer = null;
 let replaySpeed = 1;
 let replayIndex = 0;
@@ -28,15 +29,22 @@ function monkeyTemplate(colorIndex, level, look) {
     return svg.outerHTML;
 }
 
+// spalva sutampa su beždžionės kepure iš #replay-monkey-templates (race.css .replay-color-*)
+const replayColor = (player, index) => Math.abs(player.colorIndex ?? index) % 4;
+
 // timeline = { tickMs, players: [{ id, name, colorIndex, series }] }; badge(player) – HTML po vardu
-function renderReplay(timeline, textLength, badge) {
+// text (nebūtinas) – lenktynių tekstas; rodomas tik jei ilgis sutampa su series reikšmėmis
+function renderReplay(timeline, textLength, badge, text) {
     replayTimeline = timeline;
     replayTextLength = textLength;
+    replayText = text && text.length === textLength ? text : null;
+    document.getElementById("replay-text").hidden = !replayText;
     document.getElementById("replay-race").hidden = false;
     const track = document.getElementById("replay-track");
     track.innerHTML = timeline.players.map((player, index) => `
         <div class="replay-lane" data-replay-player="${progressEscape(player.id)}">
             <span class="replay-player-name">
+                <span class="replay-dot replay-color-${replayColor(player, index)}" aria-hidden="true"></span>
                 ${progressEscape(player.name)} ${badge(player)}
             </span>
             <div class="replay-lane-track" data-replay-track="${progressEscape(player.id)}">
@@ -52,12 +60,32 @@ function renderReplay(timeline, textLength, badge) {
     updateReplayFrame();
 }
 
+function replayValue(player) {
+    const series = player.series;
+    return Math.min(replayTextLength, series[Math.min(replayIndex, series.length - 1)] || 0);
+}
+
+function renderReplayText() {
+    const players = replayTimeline.players.map((player, index) => ({
+        player, color: replayColor(player, index), value: replayValue(player) }));
+    const leader = players.reduce((best, item) => item.value > best.value ? item : best);
+    const caretsAt = new Map();
+    players.forEach(item => caretsAt.set(item.value, [...(caretsAt.get(item.value) || []), item]));
+    let html = `<mark class="replay-typed replay-color-${leader.color}">`;
+    for (let i = 0; i <= replayText.length; i++) {
+        if (i === leader.value) html += "</mark>";
+        (caretsAt.get(i) || []).forEach(item => html +=
+            `<span class="replay-caret replay-color-${item.color}" title="${progressEscape(item.player.name)}" aria-hidden="true"></span>`);
+        if (i < replayText.length) html += progressEscape(replayText[i]);
+    }
+    document.getElementById("replay-text").innerHTML = html;
+}
+
 function updateReplayFrame() {
     if (!replayTimeline || !replayTimeline.players.length) return;
+    if (replayText) renderReplayText();
     replayTimeline.players.forEach(player => {
-        const series = player.series;
-        const value = series[Math.min(replayIndex, series.length - 1)] || 0;
-        const percent = replayTextLength ? Math.min(1, value / replayTextLength) : 0;
+        const percent = replayTextLength ? replayValue(player) / replayTextLength : 0;
         const monkey = document.querySelector(
             `[data-replay-monkey="${CSS.escape(player.id)}"]`);
         const track = document.querySelector(

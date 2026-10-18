@@ -22,6 +22,11 @@
     --soon: #CBD9C4;
     --silver: #D7D9D2;
     --bronze: #E0A36A;
+    /* perklausos žaidėjų spalvos = kepurės #replay-monkey-templates (_Replay.cshtml) */
+    --player-0: var(--banana);
+    --player-1: #E53935;
+    --player-2: var(--leaf);
+    --player-3: #7E57C2;
 
     /* permatomos versijos (rgba negali imti var() hex'o) */
     --cream-a05: rgba(255, 246, 220, .05);
