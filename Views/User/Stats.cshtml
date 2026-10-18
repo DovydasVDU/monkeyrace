@@ -146,6 +146,10 @@
 
                 <div class="mistakes-col">
                     <h3>Dažniausiai sumaišai</h3>
+                    @if (mistakes.Confusions.Count == 0)
+                    {
+                        <p class="mistakes-note">Klaidų nėra.</p>
+                    }
                     <ul class="mistakes-list">
                         @foreach (var confusion in mistakes.Confusions)
                         {

@@ -171,18 +171,6 @@ public class RaceService
         var attempts = keys.Sum(k => k.Count);
         var misses = keys.Where(k => k.Typed != k.Expected).Sum(k => k.Count);
 
-        // „Š“ ir „š“ – ta pati raidė; klaida skaičiuojama ir tada, kai tik pamiršta Shift
-        var weakLetters = keys.GroupBy(k => k.Expected.ToLowerInvariant())
-            .Select(g => new LetterStat
-            {
-                Letter = g.Key,
-                Attempts = g.Sum(k => k.Count),
-                Misses = g.Where(k => k.Typed != k.Expected).Sum(k => k.Count)
-            })
-            .Where(l => l.Attempts >= MinLetterAttempts && l.Misses > 0)
-            .OrderByDescending(l => l.MissPercent).ThenByDescending(l => l.Misses)
-            .Take(8)
-            .ToList();
         var confusions = keys.Where(k => k.Typed != k.Expected)
             .OrderByDescending(k => k.Count)
             .Take(8)
@@ -194,7 +182,7 @@ public class RaceService
         {
             Attempts = attempts,
             Accuracy = attempts == 0 ? 100 : (attempts - misses) * 100d / attempts,
-            WeakLetters = weakLetters,
+            WeakLetters = WeakLetters(keys).Take(8).ToList(),
             Confusions = confusions,
             Words = await words.Where(w => w.CorrectStreak < MasteredStreak)
                 .OrderByDescending(w => w.Misses).ThenByDescending(w => w.LastSeenAt)
@@ -202,6 +190,18 @@ public class RaceService
             MasteredWords = await words.CountAsync(w => w.CorrectStreak >= MasteredStreak)
         };
     }
+
+    // „Š“ ir „š“ – ta pati raidė; klaida skaičiuojama ir tada, kai tik pamiršta Shift
+    private static IEnumerable<LetterStat> WeakLetters(IEnumerable<UserKeyStat> keys) =>
+        keys.GroupBy(k => k.Expected.ToLowerInvariant())
+            .Select(g => new LetterStat
+            {
+                Letter = g.Key,
+                Attempts = g.Sum(k => k.Count),
+                Misses = g.Where(k => k.Typed != k.Expected).Sum(k => k.Count)
+            })
+            .Where(l => l.Attempts >= MinLetterAttempts && l.Misses > 0)
+            .OrderByDescending(l => l.MissPercent).ThenByDescending(l => l.Misses);
 
     // Treniruoklis (/race/train): kiekvienas neišmoktas žodis du kartus + žodžiai su silpniausiomis raidėmis.
     // null – dar nėra ką treniruoti.
@@ -213,8 +213,8 @@ public class RaceService
             .Take(15)
             .Select(w => w.Word)
             .ToListAsync();
-        var letters = (await GetMistakeStatsAsync(userId)).WeakLetters
-            .Select(l => l.Letter).Where(l => char.IsLetter(l[0])).Take(3).ToList();
+        var keys = await _db.UserKeyStats.Where(k => k.UserId == userId).ToListAsync();
+        var letters = WeakLetters(keys).Select(l => l.Letter).Where(l => char.IsLetter(l[0])).Take(3).ToList();
 
         var practice = WordService.WithLetters(letters, Math.Max(10, 30 - words.Count * 2));
         var text = words.Concat(words).Concat(practice).ToArray();

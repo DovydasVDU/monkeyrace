@@ -596,8 +596,9 @@ input.addEventListener("input", event => {
                 (range && targetIndex >= range.end + 8))
                 continue;
             totalKeystrokes++;
-            // už žodžio ribų (extra) laukiamos raidės nėra – į raidžių statistiką neskaičiuojam
-            if (!range || targetIndex <= range.end)
+            // tik rašomas žodis ir tarpas po jo; už žodžio ribų (extra) laukiamos raidės nėra.
+            // range čia netinka: find grąžina ankstesnį žodį, nes jo ribos siekia +8 simbolius
+            if (activeRange && targetIndex >= activeRange.start && targetIndex <= activeRange.end)
                 mistakes.key(targetText[targetIndex], event.data[index]);
             if (event.data[index] !== targetText[targetIndex])
                 wrongKeystrokes++;

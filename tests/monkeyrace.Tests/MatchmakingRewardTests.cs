@@ -191,6 +191,8 @@ public sealed class MatchmakingRewardTests : IDisposable
         // paskutinis SendProgress grįžta tik po botų finišo, todėl atsijungiame vos gavę PlayerFinished
         var typing = Type(raceId, key, 18);
         await _hub.WaitFor("PlayerFinished", TimeSpan.FromSeconds(30));
+        // „Žaisti dar kartą“, kol botai dar važiuoja: naujos lenktynės, ne grąžinimas į senas
+        Assert.NotEqual(raceId, _matchmaking.JoinOrCreate(key, "iseinantis", userId, null));
         await _matchmaking.DisconnectAsync("conn-" + key);
         await typing;
         var finished = await _hub.WaitFor("RaceFinished", TimeSpan.FromSeconds(60));
@@ -317,17 +319,21 @@ public sealed class MatchmakingRewardTests : IDisposable
         Assert.Equal((null, "Started"), _matchmaking.JoinFriendRoom(code, "guest:late", "Vėluoja", null, null));
 
         await _hub.WaitFor("RaceStarted", TimeSpan.FromSeconds(6));
-        await Task.WhenAll(Type(raceId, "guest:host", 18), Type(raceId, "guest:friend", 12));
+        var typing = Task.WhenAll(Type(raceId, "guest:host", 18), Type(raceId, "guest:friend", 12));
+        // šeimininkas finišavo, draugas dar rašo: revanšo lobby tuo pačiu kodu kuriamas iškart
+        await _hub.WaitFor("PlayerFinished", TimeSpan.FromSeconds(30));
+        var (rematchId, rematchError) = _matchmaking.JoinFriendRoom(code, "guest:host", "Šeimininkas", null, null);
+        Assert.Null(rematchError);
+        Assert.NotEqual(raceId, rematchId);
+        await typing;
         var finished = await _hub.WaitFor("RaceFinished", TimeSpan.FromSeconds(30));
         var players = finished.GetProperty("players").EnumerateArray().ToList();
         Assert.Equal(2, players.Count);
         Assert.DoesNotContain(players, player => player.GetProperty("isBot").GetBoolean());
         Assert.Equal(1, PlayerResult(finished, "guest:host").GetProperty("place").GetInt32());
 
-        // revanšas: tas pats kodas – naujas lobby, į kurį grįžta abu
-        var (rematchId, rematchError) = _matchmaking.JoinFriendRoom(code, "guest:friend", "Draugas", null, null);
-        Assert.Null(rematchError);
-        Assert.NotEqual(raceId, rematchId);
+        // draugas grįžta į tą patį revanšo lobby
+        Assert.Equal((rematchId, null), _matchmaking.JoinFriendRoom(code, "guest:friend", "Draugas", null, null));
         Assert.Equal((rematchId, null), _matchmaking.JoinFriendRoom(code, "guest:host", "Šeimininkas", null, null));
         foreach (var key in new[] { "guest:a", "guest:b" })
             _matchmaking.JoinFriendRoom(code, key, key, null, null);

@@ -59,9 +59,11 @@ public sealed class MatchmakingService
     private RaceRoom FindActiveRoom(string playerKey)
     {
         RemoveExpiredReservations();
+        // finišavęs (ar DNF) žaidėjas laukti kitų neprivalo: „Žaisti dar kartą“ veda į naujas lenktynes
         var existing = _rooms.Values.FirstOrDefault(room =>
             room.Status != RaceRoomStatus.Finished &&
-            room.Players.Any(player => player.PlayerKey == playerKey));
+            room.Players.Any(player => player.PlayerKey == playerKey &&
+                !player.IsFinished && !player.IsDnf));
         if (existing != null)
             _logger.LogInformation(
                 "Matchmaking room={RoomId} player={PlayerKey} decision=restore-active",
@@ -143,8 +145,11 @@ public sealed class MatchmakingService
             var sameCode = _rooms.Values.Where(room => room.Code == code).ToList();
             if (sameCode.Count == 0)
                 return (null, "NotFound");
-            var room = sameCode.FirstOrDefault(item => item.Status != RaceRoomStatus.Finished);
-            if (room != null && (room.Status != RaceRoomStatus.Lobby || room.CountdownScheduled))
+            var room = sameCode.FirstOrDefault(item => item.Status == RaceRoomStatus.Lobby);
+            // vykstančiose lenktynėse nedalyvavęs laukia jų pabaigos; dalyvavęs (jau finišavęs) kuria revanšo lobby
+            if (room?.CountdownScheduled == true || (room == null && sameCode.Any(item =>
+                    item.Status != RaceRoomStatus.Finished &&
+                    item.Players.All(player => player.PlayerKey != playerKey))))
                 return (null, "Started");
             if (room?.Players.Count >= 4)
                 return (null, "Full");
