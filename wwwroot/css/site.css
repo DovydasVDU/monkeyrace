@@ -1615,7 +1615,8 @@ a.lb-row:hover {
     color: var(--muted-on-dark);
     padding: 2.5rem clamp(16px, 4vw, 3rem) 1.5rem;
     position: relative;
-    z-index: 1;
+    /* po main (z-index 1): kitaip footer uždengia main viduje esančius fixed langus (solo rezultatai) */
+    z-index: 0;
 }
 
 .footer-grid {
