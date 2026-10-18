@@ -32,6 +32,31 @@ public sealed class TextImporterTests : IDisposable
             Assert.NotNull(new RaceService(db).GetRandomSnippetAsync(new List<int>()).Result.SourceId);
     }
 
+    [Theory]
+    [InlineData("- Palauk! - sustabdė jį dėdė . - Kaipgi", "- Palauk! - sustabdė jį dėdė. - Kaipgi")]
+    [InlineData("intakų ( Kaukysa , Murle ), o", "intakų (Kaukysa, Murle), o")]
+    [InlineData("kaip gumbas;pasidaro, stovi jau :šalia", "kaip gumbas; pasidaro, stovi jau: šalia")]
+    [InlineData("tai ... ne, 3,5 km.", "tai ... ne, 3,5 km.")]
+    public void Clean_FixesScraperSpacing(string raw, string expected) =>
+        Assert.Equal(expected, TextImporter.Clean(raw));
+
+    [Fact]
+    public void Import_UpdatesChangedBodyOfExistingText()
+    {
+        using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite($"Data Source={_db}").Options);
+        db.Database.Migrate();
+        File.WriteAllText(_file, """{"id": "c3", "body": "Vilnius yra sostinė .", "author": "Vikipedija", "work": "Vilnius", "sourceUrl": "https://lt.wikipedia.org/wiki/Vilnius", "license": "CC BY-SA 4.0", "flags": []}""");
+        Assert.Equal(1, TextImporter.Import(db, _file));
+        Assert.Equal("Vilnius yra sostinė.", db.TextSnippets.Single(t => t.SourceId == "c3").Content);
+
+        File.WriteAllText(_file, """{"id": "c3", "body": "Vilnius yra Lietuvos sostinė.", "author": "Vikipedija", "work": "Vilnius", "sourceUrl": "https://lt.wikipedia.org/wiki/Vilnius", "license": "CC BY-SA 4.0", "flags": []}""");
+        Assert.Equal(0, TextImporter.Import(db, _file));
+        var text = db.TextSnippets.AsNoTracking().Single(t => t.SourceId == "c3");
+        Assert.Equal("Vilnius yra Lietuvos sostinė.", text.Content);
+        Assert.Equal(4, text.WordCount);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
