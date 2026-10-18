@@ -1,221 +1,281 @@
+<div align="center">
 
+# MonkeyRace
 
+**Spausdinimo lenktynės lietuvių kalba – realiu laiku, su perklausomis, klaidų analize ir progresu.**
 
-MonkeyRacer
-Techninė projekto ataskaita
-ASP.NET Core MVC | SignalR | Entity Framework Core | SQL Server
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
+![ASP.NET Core MVC](https://img.shields.io/badge/ASP.NET_Core-MVC-512BD4)
+![SignalR](https://img.shields.io/badge/SignalR-realaus_laiko-0A7BBB)
+![EF Core + SQLite](https://img.shields.io/badge/EF_Core-SQLite-003B57)
+![Tests](https://img.shields.io/badge/testai-xUnit-2E8B4F)
 
+</div>
 
- Santrauka
-MonkeyRacer projektas demonstruoja pilnavertę ASP.NET Core MVC web aplikaciją su realaus laiko multiplayer funkcionalumu. Pagrindiniai techniniai sprendimai:
+MonkeyRace – žaidimas, kuriame 2–4 žaidėjai lenktyniauja rašydami tikrus lietuviškus tekstus. Kiekvieno beždžionėlė bėga trasa
+pagal tai, kiek teksto jau parašyta teisingai. Po lenktynių matai savo greičio grafiką, klaidas, kas ir kada pirmavo, gali
+peržiūrėti visas lenktynes iš naujo, o už rezultatus gauni XP, lygius ir bananų, kuriuos išleidi parduotuvėje.
 
-•	MVC architektūra aiškiai atskiria atsakomybes tarp modelių, rodinių ir controller'ių
-•	SignalR suteikia efektyvų dvipusį ryšį multiplayer lenktynėms be polling
-•	Entity Framework Core abstrakuoja SQL ir leidžia dirbti su DB kaip C# objektais
-•	Cookie autentikacija su BCrypt slaptažodžių hash'avimu užtikrina saugumą
-•	Servisų sluoksnis (RaceService) perkelia verslo logiką iš controller'ių, sumažindamas kodo kartojimąsi
-•	In-memory state su thread-safe lock'ais leidžia greitus realaus laiko atnaujinimus
+---
 
-Projektas sėkmingai veikia su SQL Server duomenų baze ir palaiko kelių žaidėjų vienu metu lenktyniavimą realiu laiku.
+## Turinys
 
-2026 m.
- 
-1. Projekto apžvalga
-MonkeyRacer – tai žiniatinklinė klaviatūros rinkimo greičio (spausdinimo) programa, sukurta ASP.NET Core MVC platformoje su .NET 3.1. Projekto tikslas – realaus laiko daugiau žaidėjų lenktyniavimas, statistikos kaupimas ir rezultatų saugojimas SQL Server duomenų bazėje.
+- [Funkcionalumas](#funkcionalumas)
+- [Technologijos](#technologijos)
+- [Paleidimas](#paleidimas)
+- [Projekto struktūra](#projekto-struktūra)
+- [Architektūra](#architektūra)
+- [Priimti sprendimai ir kodėl](#priimti-sprendimai-ir-kodėl)
+- [Saugumas ir privatumas](#saugumas-ir-privatumas)
+- [Progreso taisyklės](#progreso-taisyklės)
+- [API ir maršrutai](#api-ir-maršrutai)
+- [Testai](#testai)
+- [Žinomi apribojimai ir tolesni darbai](#žinomi-apribojimai-ir-tolesni-darbai)
+- [Tekstų šaltiniai ir licencijos](#tekstų-šaltiniai-ir-licencijos)
 
-Pagrindinės projekto galimybės:
-•	Solo žaidimas – atsitiktiniai lietuviški tekstų fragmentai, WPM ir tikslumo skaičiavimas
-•	Multiplayer žaidimas – realaus laiko lenktynės per SignalR WebSocket
-•	Vartotojų autentikacija – registracija, prisijungimas, cookie sesija
-•	Lyderių lenta – Top 10 rezultatų per REST API
-•	Statistikos peržiūra – WPM, tikslumas, žaidimų istorija
+---
 
-2. MVC architektūros struktūra
-Projektas remiasi klasikinės MVC (Model-View-Controller) architektūra, kur atsakomybės yra aiškiai atskirtos:
+## Funkcionalumas
 
-Sluoksnis	Failai	Atsakomybė
-Model	User.cs, Race.cs, RaceResult.cs, TextSnippet.cs	Duomenų struktūros, atspindinčios DB lenteles
-View	Play.cshtml, MultiPlay.cshtml	Vartotojo sąsaja, HTML + JavaScript
-Controller	RaceController.cs, AuthController.cs, ApiController.cs	Verslo logika, HTTP užklausų apdorojimas
-Service	RaceService.cs	Pakartotinai naudojama logika (tekstų parinkimas, rezultatų saugojimas)
-Hub	RaceHub.cs	SignalR WebSocket realaus laiko komunikacija
-DbContext	AppDbContext.cs	EF Core ORM – ryšys su SQL Server DB
+### Žaidimo režimai
 
-2.1 Kaip veikia Controller'iai
-Kiekvienas controller'is paveldi iš Controller bazinės klasės ir priima HTTP užklausas pagal maršruto šabloną, apibrėžtą Startup.cs faile:
+| Režimas | Kaip veikia |
+|---|---|
+| **Online lenktynės** (`/race/quick`) | Matchmaking į kambarį iki 4 žaidėjų. Lobby laukia 10 s, tuščias vietas užpildo botai, kurių greitis prisitaiko prie dalyvių. |
+| **Su botais** (`/race/bots`) | Žaidėjas pats pasirenka botų lygius (lengvas / vidutinis / sunkus / prisitaikantis). |
+| **Kambarys su draugais** (`/race/room/create`) | Privatus kambarys su kodu, lenktynes pradeda kūrėjas. |
+| **Solo** (`/Race/Play`) | Rašai savo tempu, laikas pradeda bėgti nuo pirmo klavišo. |
+| **Žodžių režimas** (`/race/words`, online – `/race/quick?seconds=`) | 15 s – 2 min. lenktynės su ~1000 dažniausių lietuviškų žodžių. |
+| **Treniruoklis** (`/race/train`) | Tekstas iš žodžių, kuriuose dažniausiai klysti. Žodis dingsta iš sąrašo, kai jį 3 kartus iš eilės parašai be klaidų. |
 
-endpoints.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+### Rašymas
 
-Tai reiškia, kad URL /Race/Play nukreipiamas į RaceController klasės Play() metodą. Dependency Injection mechanizmas automatiškai paduoda reikalingus servisus (AppDbContext, RaceService) per konstruktorių – taip controller'iams nereikia patiems kurti objektų.
+- Gyvai skaičiuojami **WPM, tikslumas ir laikas**.
+- **Klaida matoma iš karto**: neteisinga raidė raudona su laukiama raide po apačia, o visas žodis ir rašymo laukas parausta, kol klaida ištaisoma.
+- Žodis su klaida **neleidžia pereiti toliau** (tarpas atmetamas) – kaip TypeRacer.
+- Rašymo lauke matosi **tik rašomas žodis**; jau parašytas tekstas matosi aukščiau.
+- **Telefone** ilgas tekstas rodomas 4 eilučių lange, kuris pats slenka (rašoma eilutė visada antra), o starte teksto kortelė pakeliama virš klaviatūros.
+- Online: Ctrl/Alt + Backspace ištrina visą žodį; įklijuoti tekstą draudžiama.
 
-2.2 Servisų sluoksnis (RaceService)
-RaceService atsakingas už dvi pagrindines operacijas, kurios naudojamos tiek solo, tiek multiplayer žaidime:
+### Po lenktynių
 
-GetRandomSnippetAsync – atsitiktinio teksto parinkimas
-Metodas parenka tekstą iš DB, vengdamas paskutinių 3 žaidime naudotų fragmentų (pagal ID). Tai pasiekiama filtracija per LINQ:
-query = query.Where(t => !lastIds.Contains(t.Id));
-Tada apskaičiuojamas likusių tekstų skaičius, sugeneruojamas atsitiktinis indeksas ir parenkamas konkretus įrašas su .Skip(index).FirstAsync(). Paskutiniai ID saugomi Session (solo žaidime) arba kambario objekte (multiplayer).
+- **Podiumas ir asmeninis rezultatas** su gautais XP ir bananais.
+- **Lenktynių istorija** – lyderio juosta laike ir aplenkimų sąrašas.
+- **Perklausa** – visas lenktynes galima peržiūrėti iš naujo (0,5×–2×), o ant teksto spalvomis matyti, kur kiekvienas žaidėjas buvo ir kuris pirmavo.
+- **Mano greitis** – WPM grafikas per lenktynes.
+- **Klaidos** – tekstas su pataisytomis ir likusiomis klaidomis.
+- **Šio teksto lyderiai** – 10 geriausių online rezultatų būtent šiam tekstui, su perklausa ir data.
+- **Apie tekstą** – autorius, kūrinys, šaltinis, licencija ir ypatybės (kabutės, skaičiai, daugtaškis…).
 
-SaveRaceResultAsync – rezultatų išsaugojimas
-Metodas sukuria naują RaceResult objektą su visais statistikos duomenimis (WPM, tikslumas, laikas, klaidų skaičius) ir jį išsaugo DB. Tuo pačiu metu pakeičia lenktynių Race.Status į "finished". Metodas naudojamas tiek iš RaceController (solo), tiek iš RaceHub (multiplayer).
+### Progresas ir bendruomenė
 
-3. Duomenų bazė ir EF Core
-Projektas naudoja Microsoft SQL Server duomenų bazę, pasiekiamą per Entity Framework Core ORM. Visi DB modeliai aprašyti User.cs faile, o AppDbContext.cs apibrėžia lenteles ir pradinius duomenis.
+- **XP ir 10 lygių**, **bananai** ir **parduotuvė** – kepurės, kailio spalvos ir trasų stiliai beždžionėlei.
+- **Profilis**: statistika, klaidų analizė (kurias raides painioji su kuriomis, kuriuose žodžiuose klysti) ir paskutinės 20 lenktynių su perklausa.
+- **Top 10** – geriausi visų laikų online rezultatai; užvedus ant vardo – žaidėjo kortelė (lygis, PB, vidutinis WPM, tikslumas).
+- **Paskyros ištrynimas** pačiam, patvirtinant slaptažodžiu.
 
-3.1 Duomenų modeliai
-Lentelė	Pagrindiniai laukai	Paskirtis
-Users	Id, Username, Email, PasswordHash, CreatedAt	Vartotojų paskyros
-TextSnippets	Id, Content, Language, WordCount	Spausdinimo tekstai
-Races	Id, TextSnippetId, StartedAt, IsMultiplayer, Status	Kiekvienas žaidimo seansas
-RaceResults	Id, UserId, RaceId, WPM, Accuracy, TimeSeconds, ErrorCount, CompletedAt	Žaidėjų rezultatai
+---
 
-3.2 Duomenų gavimas iš DB
-EF Core leidžia rašyti LINQ užklausas C# kalba, kurias automatiškai paverčia į SQL. Pavyzdžiui, Top 10 lyderių lenta ApiController.cs:
-var topResults = await _db.RaceResults
-    .Include(r => r.User)
-    .OrderByDescending(r => r.WPM)
-    .ThenByDescending(r => r.Accuracy)
-    .Take(10)
-    .ToListAsync();
+## Technologijos
 
-.Include(r => r.User) nurodo EF Core atlikti JOIN su Users lentele (eager loading), kad galėtume pasiekti vartotojo vardą. .ToListAsync() vykdo asinchroninę SQL užklausą ir grąžina rezultatų sąrašą.
+| Sritis | Kas naudojama |
+|---|---|
+| Backend | ASP.NET Core MVC (.NET 10), Razor views |
+| Realus laikas | SignalR (`/racehub`, WebSocket) |
+| Duomenys | Entity Framework Core 10 + SQLite (WAL), EF migracijos |
+| Autentikacija | Cookie auth, BCrypt slaptažodžių maišos, ASP.NET rate limiter |
+| Frontend | Vanilla JS (be framework'ų), CSS kintamieji, inline SVG |
+| Testai | xUnit, `WebApplicationFactory` integraciniai testai |
+| Tekstų paruošimas | Python scraperiai (Vikipedija, Vikišaltiniai) |
 
-3.3 DB konfigūracija ir atsparumo nustatymai
-Startup.cs registruojamas AppDbContext su SQL Server prisijungimu ir automatinio kartojimo (retry) politika:
-sqlOptions.EnableRetryOnFailure(
-    maxRetryCount: 5,
-    maxRetryDelay: TimeSpan.FromSeconds(30),
-    errorNumbersToAdd: null);
+---
 
-Tai reiškia, kad laikinos DB klaidos (pvz., ryšio pertraukimas) bus automatiškai bandytos iki 5 kartų su 30 sekundžių pertrauka – svarbu realaus laiko multiplayer scenarijui.
-4. Vartotojų autentifikacija ir sesijos
-4.1 Cookie autentikacija
-Projektas naudoja ASP.NET Core integruotą Cookie autentikacijos mechanizmą vietoj JWT tokenų. Tai pasirinkta dėl paprastumo – cookie automatiškai tvarkomi naršyklėje ir siunčiami su kiekviena užklausa.
+## Paleidimas
 
-Registracijos arba prisijungimo metu SignInUser() metodas sukuria Claims sąrašą (vartotojo ID ir vardo), sujungia juos į ClaimsPrincipal ir išduoda HTTP-Only cookie:
-var claims = new List<Claim> {
-    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-    new Claim(ClaimTypes.Name, user.Username)
-};
+Reikia: [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
-Cookie konfigūruotas su saugos parametrais:
-•	HttpOnly = true – JavaScript negali pasiekti cookie (XSS apsauga)
-•	SecurePolicy = Always – cookie siunčiamas tik per HTTPS
-•	SameSite = Strict – apsauga nuo CSRF atakų
-•	ExpireTimeSpan = 7 dienos – ilgalaikė sesija ("prisimink mane")
+```bash
+git clone https://github.com/DovydasVDU/monkeyrace.git
+cd monkeyrace
+dotnet run
+```
 
-4.2 Slaptažodžių šifravimas
-Slaptažodžiai niekada nesaugomi atvirai. Naudojama BCrypt biblioteka, kuri automatiškai generuoja salt ir sukuria saugų hash:
-user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
-// Tikrinant prisijungimą:
-BCrypt.Net.BCrypt.Verify(password, user.PasswordHash)
+Atsidaryk https://localhost:5001. Daugiau nieko daryti nereikia:
 
-4.3 Sesija (Session)
-Be cookie, kai kurie duomenys saugomi server-side sesijoje:
-•	UserId – prisijungusio vartotojo ID (naudojamas navigacijai)
-•	Username – rodomas multiplayer kambaryje ("Svečias" jei neprisijungęs)
-•	LastSnippetIds – paskutiniai 3 teksto fragmentų ID (solo žaidime, kad nesikartotų)
+- pirmo paleidimo metu `Database.Migrate()` sukuria SQLite duomenų bazę (`monkeyrace-dev.sqlite` vystymui, `monkeyrace.sqlite` produkcijai);
+- `TextImporter` įkelia ~4 700 tekstų iš `Data/texts-lt.jsonl`. Kartoti saugu – esami tekstai neįkeliami iš naujo, tik atnaujinami, jei faile pasikeitė.
 
-Multiplayer kambaryje vartotojo vardas paimamas iš sesijos: HttpContext.Session.GetString("Username") ?? "Svečias" – taip leidžiama žaisti ir neprisijungusiems.
+Botų nustatymai (`appsettings.json` → `Bots`): iki kiek žaidėjų pildyti, numatytasis greitis, WPM ribos ir tikslumo intervalas.
 
-4.4 Autorizacija
-Resultatų išsaugojimas solo žaidime apsaugotas [Authorize] atributu – tik prisijungę vartotojai gali siųsti rezultatus:
-[HttpPost]
-[Authorize]
-public async Task<IActionResult> SaveResult([FromBody] RaceResultDto dto)
+> Repozitorijoje yra du sprendimo failai, todėl komandoms, kurios dirba su sprendimu, nurodyk `monkeyrace.sln` (pvz. `dotnet test monkeyrace.sln`).
 
-Neautorizuotų vartotojų užklausos automatiškai peradresuojamos į /Auth/Login, kaip nurodyta Startup.cs konfigūracijoje.
+---
 
-5. SignalR – realaus laiko multiplayer
-5.1 Kas yra SignalR
-SignalR yra ASP.NET Core biblioteka, leidžianti palaikyti dvipusį realaus laiko ryšį tarp serverio ir klientų per WebSocket protokolą. Vietoj tradicinių HTTP užklausų (kur klientas klausia – serveris atsako), SignalR leidžia serveriui pačiam siųsti žinutes klientams.
+## Projekto struktūra
 
-Hub registruojamas Startup.cs:
-endpoints.MapHub<RaceHub>("/racehub");
+```
+Controllers/        HTTP: Home, Auth, Race, User (profilis, parduotuvė, ištrynimas), StatsApi (/api/stats)
+Hubs/RaceHub.cs     SignalR: JoinRace, SendProgress, StartFriendRace, LeaveRace
+Services/
+  MatchmakingService  kambariai, lobby, botai, progresas, finišas, rezultatų įrašymas (singleton)
+  RaceService         tekstų parinkimas, rezultatai ir apdovanojimai, žaidėjo kortelė, parduotuvė
+  RaceAnalyzer        laiko juosta, lyderiai, aplenkimai, perklausos JSON
+  Progression         XP, lygių ir bananų taisyklės (grynos funkcijos)
+  BotModels           botų greitis pagal žaidėjų lygį
+  WordService         žodžių režimo tekstas, ShopCatalog – parduotuvės prekės
+Data/               AppDbContext, TextImporter, texts-lt.jsonl, words-lt.txt
+Models/             EF modeliai ir view modeliai
+Views/              Razor: Home, Race (Play, MultiPlay, Replay), User, Shared (_Layout, _Navbar, _Footer, _Icons, _Monkey…)
+wwwroot/            css, js (typing, replay, progress, login, signalr), fonts, favicon
+Migrations/         EF Core migracijos
+tests/              xUnit testai
+*.py                tekstų scraperiai ir konvertavimas į Data/texts-lt.jsonl
+DESIGN.md           dizaino sistema: spalvos, šriftai, komponentai, JS priklausomybės
+```
 
-5.2 Kambarių sistema
-RaceHub palaiko statinius in-memory žodynus kambariams ir žaidėjams:
-private static readonly Dictionary<string, RaceRoom> _rooms = new Dictionary<string, RaceRoom>();
-private static readonly object _lock = new object();
+---
 
-lock(_lock) naudojamas apsaugoti nuo race condition – kai keli žaidėjai vienu metu bando keisti tą patį kambario būseną (pvz., prisijungti tuo pačiu metu). Tai kritiškai svarbu, nes SignalR apdoroja kelias jungtis lygiagrečiai.
+## Architektūra
 
-5.3 Žaidimo eiga (SignalR žinučių srautas)
-Veiksmas	Client → Server	Server → Client
-Prisijungimas	JoinRoom(roomId, username)	PlayerJoined, RoomState
-Pasiruošimas	ToggleReady(roomId)	PlayerReadyStatus (visiems)
-Startas	StartRace(roomId)	RaceStarting + tekstas (visiems)
-Progreso atnaujinimas	UpdateProgress(roomId, %, wpm, word)	ProgressUpdate (visiems)
-Finišas	FinishRace(roomId, wpm, accuracy, time, errors)	PlayerFinished + vieta (visiems)
-Reset	ResetRoom(roomId)	RoomReset (visiems)
-Atsijungimas	(automatinis OnDisconnectedAsync)	PlayerLeft + naujas host ID
+### Online lenktynių eiga
 
-5.4 Host sistema
-Pirmasis į kambarį prisijungęs žaidėjas automatiškai tampa hostu (HostConnectionId). Tik hostas gali pradėti lenktynes ir atstatyti kambarį. Jei hostas atsijungia, host teisės automatiškai perduodamos kitam žaidėjui:
-room.HostConnectionId = room.Players.First().ConnectionId;
+```
+Naršyklė                         Serveris
+────────                         ────────
+GET /race/quick  ───────────────► MatchmakingService: randa arba sukuria kambarį
+                 ◄─── redirect ── /race/multiplay/{raceId}
+SignalR JoinRace ───────────────► tikrina playerKey pagal sesiją
+                 ◄─ RaceState ─── lobby 10 s, botai užpildo vietas
+                 ◄─ Countdown ─── tekstas + serverio laikas (laikrodžių sinchronizacija)
+                 ◄─ RaceStarted
+SendProgress (kiekvienas klavišas) ─► progresas apkerpamas pagal serverio laikrodį
+                 ◄─ Progress ──── visiems kambario žaidėjams (botai – kas 250 ms)
+                 ◄─ PlayerFinished  vieta, WPM, laiko juosta – iškart po finišo
+                                   visiems baigus: rezultatai, XP ir perklausa į DB
+                 ◄─ RaceFinished ── rezultatai, analizė, apdovanojimai, teksto info
+GET /api/stats/text/{id} ───────► šio teksto lyderiai
+```
 
-5.5 Vietų skaičiavimas
-Finišo metu žaidėjo vieta apskaičiuojama pagal tai, kiek žaidėjų jau baigė prieš jį:
-place = room.Players.Count(p => p.IsFinished) + 1;
-Apsauga nuo pakartotino finišo: jei player.IsFinished jau true, naujas FinishRace iškvietimas ignoruojamas – taip išvengiama dvigubo rezultato įrašymo.
+### Duomenų modelis
 
-6. REST API (StatsApiController)
-ApiController.cs eksponuoja du endpoint'us statistikos gavimui:
+| Lentelė | Paskirtis |
+|---|---|
+| `Users` | Paskyra: vardas, BCrypt maiša, XP, bananai, užsidėtos prekės |
+| `TextSnippets` | Tekstai su autoriumi, kūriniu, šaltiniu, licencija ir ypatybėmis |
+| `Races` | Lenktynės: tekstas arba žodžių režimo trukmė, ar online, perklausos JSON |
+| `RaceResults` | Žaidėjo rezultatas: WPM, tikslumas, klaidos, vieta, gauti XP ir bananai |
+| `UserKeyStats` | Kiek kartų laukiant raidės X paspausta Y – klaidų analizei |
+| `UserWordMistakes` | Žodžiai su klaidomis – treniruokliui |
+| `UserItems` | Nupirktos parduotuvės prekės |
 
-Endpoint	Metodas	Aprašymas
-GET /api/stats/{username}	GetUserStats	Vartotojo statistika: iš viso žaidimų, geriausias WPM, vidutinis tikslumas
-GET /api/stats/top10	GetTop10Races	Top 10 geriausių rezultatų iš visų žaidėjų
+---
 
-Top10 endpoint'as naudoja dinaminę vietų priskyrimo logiką – rezultatai rūšiuojami duomenų bazėje, o .Select((race, index) => ...) suteikia vietą (1–10) jau C# kode, o ne DB lygmenyje.
+## Priimti sprendimai ir kodėl
 
-7. Duomenų srautai: Solo vs Multiplayer
-7.1 Solo žaidimo srautas
-•	Vartotojas atidaro /Race/Play
-•	RaceController.Play() iš sesijos paima LastSnippetIds
-•	RaceService.GetRandomSnippetAsync() parenka tekstą iš DB
-•	Sukuriamas Race objektas DB, jo Id perduodamas per ViewBag.RaceId
-•	JavaScript vartotojo sąsajoje fiksuoja WPM ir tikslumą
-•	Baigus – AJAX POST į /Race/SaveResult su rezultatų DTO
-•	RaceController.SaveResult() iš Claims paima UserId ir kviečia RaceService.SaveRaceResultAsync()
+**Serveris – vienintelis tiesos šaltinis.** Naršykle aklai netikima: online progresas negali augti greičiau nei 250 WPM pagal *serverio* laikrodį nuo starto, o solo rezultatas priimamas tik vieną kartą vienam puslapio atidarymui, ir jo WPM tikrinamas pagal serverio išmatuotą laiką ir teksto ilgį. Apdovanojimų formulė apkerpa WPM iki 200.
 
-7.2 Multiplayer žaidimo srautas
-•	Vartotojas sukuria/prisijungia prie kambario per /Race/MultiPlay?roomId=...
-•	JavaScript prisijungia prie SignalR Hub per connection.start()
-•	Kviečia JoinRoom(roomId, username) – serveris sukuria RaceRoom atmintyje
-•	Visi žaidėjai pažymi IsReady = true per ToggleReady()
-•	Hostas kviečia StartRace() – serveris parenka tekstą ir transliuoja visiems per RaceStarting
-•	Spausdinant – UpdateProgress() siunčiamas kas tam tikrą laiko tarpą, visiems matomas progresas
-•	Baigus – FinishRace() praneša visiems apie žaidėjo baigimą, bet duomenų nesaugo.
+**Matchmaking atmintyje, ne DB.** Kambariai, lobby ir progresas laikomi `MatchmakingService` (singleton) atmintyje su `lock`, o į DB rašomas tik galutinis rezultatas ir perklausa. Taip kiekvienas klavišas nekainuoja DB užklausos. Kaina – programa veikia vienoje instancijoje (žr. apribojimus).
 
-8. Startup.cs – programos konfigūracija
-Startup.cs yra centrinis konfigūracijos failas, susidedantis iš dviejų metodų:
+**Botai, kad nereikėtų laukti.** Jei per 10 s neatsiranda varžovų, vietas užpildo botai. „Prisitaikančių“ botų greitis skaičiuojamas iš paskutinių 10 žmonių rezultatų su skirtingais koeficientais, todėl lenktynės būna įtemptos. Lenktynės, kur botus pasirinkai pats, į Top 10 neįskaitomos.
 
-ConfigureServices – servisų registracija
-Registruoja visus priklausomuosius servisus į DI konteinerį. Svarbiausi:
-•	AddControllersWithViews() – MVC palaikymas
-•	AddSignalR() – WebSocket hub'ai
-•	AddSession() – server-side sesija
-•	AddDbContext<AppDbContext>() – EF Core su SQL Server
-•	AddAuthentication(Cookie) – cookie autentikacija
-•	AddScoped<RaceService>() – servisas, sukuriamas vienai HTTP užklausai
+**Top 10 tik klasikinės online lenktynės.** Solo ir trumpo žodžių režimo WPM nepalyginami su ilgo teksto lenktynėmis (trumpas spurtas duoda daugiau), todėl lyderių lentelėse jų nėra.
 
-Configure – middleware konvejeris
-Apibrėžia, kokia tvarka apdorojamos HTTP užklausos. Tvarka kritiškai svarbi:
-UseHttpsRedirection → UseStaticFiles → UseSession
-→ UseRouting → UseAuthentication → UseAuthorization → UseEndpoints
+**Perklausa – vienas JSON lenktynėms.** Kiekvieno žaidėjo progresas kas 250 ms įrašomas į `Races.ReplayJson`, o ne į atskirą lentelę: perklausa visada skaitoma kaip visuma, todėl taip paprasčiau ir greičiau. Top 10 ir profilio užklausos JSON nekrauna (projekcija). Ištrynus paskyrą, kitų žaidėjų perklausose vardas pakeičiamas į „Ištrintas žaidėjas“.
 
-UseAuthentication privalo eiti prieš UseAuthorization – pirma nustatoma tapatybė (kas esi?), tada tikrinamos teisės (ką gali?).
+**Žodis su klaida užrakina tarpą.** Kaip TypeRacer: kol žodis neištaisytas, toliau nepereisi. Todėl progresas visada yra teisingai parašyto teksto ilgis, o rašymo lauke užtenka rodyti tik rašomą žodį.
 
-9. Santrauka
-MonkeyRacer projektas demonstruoja pilnavertę ASP.NET Core MVC web aplikaciją su realaus laiko multiplayer funkcionalumu. Pagrindiniai techniniai sprendimai:
+**SQLite vietoj SQL Server.** Viena programa, vienas serveris – atskiras DB serveris nereikalingas. SQLite failas su WAL leidžia skaityti lygiagrečiai, o rašymų (rezultatai lenktynių pabaigoje) nedaug. DB nepasiekiama per tinklą – nėra atviro prievado.
 
-•	MVC architektūra aiškiai atskiria atsakomybes tarp modelių, rodinių ir controller'ių
-•	SignalR suteikia efektyvų dvipusį ryšį multiplayer lenktynėms be polling
-•	Entity Framework Core abstrakuoja SQL ir leidžia dirbti su DB kaip C# objektais
-•	Cookie autentikacija su BCrypt slaptažodžių hash'avimu užtikrina saugumą
-•	Servisų sluoksnis (RaceService) perkelia verslo logiką iš controller'ių, sumažindamas kodo kartojimąsi
-•	In-memory state su thread-safe lock'ais leidžia greitus realaus laiko atnaujinimus
+**Tekstai kaip duomenų failas.** Python scraperiai paruošia `Data/texts-lt.jsonl`, o programa jį importuoja paleidimo metu. `TextImporter.Clean` sutvarko scraperio tarpus („žodis .“, „( a , b )“), o pataisytas tekstas atnaujinamas ir jau veikiančioje DB – užtenka pataisyti failą ir perkrauti.
 
-Projektas sėkmingai veikia su SQL Server duomenų baze ir palaiko kelių žaidėjų vienu metu lenktyniavimą realiu laiku.
+**Jokių trečiųjų šalių.** Šriftai (Fredoka, Plus Jakarta Sans, JetBrains Mono) ir SignalR klientas laikomi `wwwroot`, ne Google Fonts ar CDN. Analitikos nėra, slapukai tik būtinieji – todėl slapukų sutikimo lango nereikia, o lankytojo IP nemato jokia kita įmonė.
+
+**Dizaino sistema vienoje vietoje.** Visos spalvos – CSS kintamieji (`var(--…)`), ikonos ir iliustracijos – inline SVG (`_Icons`, `_Monkey`, `_Banana`), jokių emoji. Taisyklės ir JS naudojami ID/klasės aprašyti [`DESIGN.md`](DESIGN.md).
+
+**Be frontend framework'o.** Puslapiai serverio generuojami (Razor), o interaktyvumą duoda nedideli JS failai. Bendra rašymo logika (`typing.js`), perklausa (`replay.js`) ir progresas (`progress.js`) dalinami tarp solo ir online.
+
+---
+
+## Saugumas ir privatumas
+
+- **SQL injection** – visos užklausos per EF Core su parametrais, neapdoroto SQL nėra.
+- **XSS** – vartotojo tekstas išvalomas prieš įterpiant į HTML, JSON į puslapį įdedamas su `<` → `<`, slapyvardis ribojamas `^[\p{L}\p{N}_]{3,20}$`.
+- **Slaptažodžiai** – BCrypt maišos, bent 6 simboliai; prisijungimas ir registracija ribojami iki 10 bandymų per minutę iš IP.
+- **Slapukas** – `HttpOnly`, `Secure`, `SameSite=Strict`, 7 dienos; paskyros ištrynimo forma su antiforgery žetonu.
+- **HTTPS** ir HSTS, produkcijoje – klaidos puslapis vietoj stack trace.
+- **Sukčiavimas** – serverio laikrodžiu paremtos ribos (žr. sprendimus), SignalR tikrina, kad `playerKey` priklauso sesijai.
+- **BDAR** – [privatumo puslapis](Views/Home/Privacy.cshtml) (`/privatumas`): kokie duomenys saugomi, kokie slapukai, kaip ištrinti paskyrą.
+
+---
+
+## Progreso taisyklės
+
+Visos taisyklės – `Services/Progression.cs` (grynos funkcijos, padengtos testais).
+
+| | Solo | Online |
+|---|---|---|
+| XP | (10 + WPM/4) × tikslumas | (20 + WPM/2 + vietos bonusas 30/20/10) × tikslumas |
+| Bananai | 1 | 2 + vietos bonusas 8/4/2 |
+
+- Žodžių režime XP dauginamas iš `min(1, trukmė / 60 s)`.
+- Tikslumas ≥ 95 % – +1 bananas; pirmos lenktynės – +50 XP ir +10 bananų.
+- 10 lygių (0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200 XP); už kiekvieną naują lygį – 20 × lygis bananų.
+- Svečiai gali žaisti, bet rezultatai nesaugomi – rodoma, kiek būtų gavę.
+
+---
+
+## API ir maršrutai
+
+| Maršrutas | Paskirtis |
+|---|---|
+| `GET /api/stats/top10` | Top 10 online rezultatų |
+| `GET /api/stats/{username}` | Žaidėjo kortelė: lygis, XP, PB, vidutinis WPM, tikslumas |
+| `GET /api/stats/text/{id}` | Šio teksto lyderiai ir kiek kartų rašytas |
+| `GET /race/replay/{resultId}` | Lenktynių perklausa |
+| `POST /Race/SaveResult` | Solo rezultatas (vienkartinis, tikrinamas) |
+| `POST /race/mistakes` | Raidžių ir žodžių klaidos profilio analizei |
+| `POST /shop/equip/{itemId}` | Nupirkti / užsidėti prekę (kaina tik serveryje) |
+| SignalR `/racehub` | `JoinRace`, `SendProgress`, `StartFriendRace`, `LeaveRace` |
+
+---
+
+## Testai
+
+```bash
+dotnet test monkeyrace.sln
+```
+
+41 testas, tarp jų:
+
+- **Progresas** – XP, lygių ir bananų formulės.
+- **Solo anti-cheat** (`WebApplicationFactory`) – per greitas rezultatas atmetamas, lygiagretūs išsaugojimai apdovanoja tik kartą.
+- **Matchmaking** – vietos ir apdovanojimai, DNF, finišavęs ir uždaręs puslapį išlaiko rezultatą, lobby startuoja laiku, žodžių režimas, botų lenktynės neįskaitomos į Top 10, draugų kambarys.
+- **Lenktynių analizė** – lyderiai, aplenkimai, perklausa.
+- **Tekstų importas** – metaduomenys, tarpų valymas, pataisyto teksto atnaujinimas.
+- **Šio teksto lyderiai** – tik to teksto online rezultatai, geriausi pirmi.
+- **Paskyros ištrynimas** – neteisingas slaptažodis paskyrą palieka, teisingas ištrina viską ir anonimizuoja perklausas.
+
+---
+
+## Žinomi apribojimai ir tolesni darbai
+
+- **Viena instancija.** Kambariai laikomi atmintyje, todėl programos negalima paleisti keliuose serveriuose, o perkrovimas nutraukia vykstančias lenktynes.
+- **Progresas siunčiamas po kiekvieno klavišo.** Esant šimtams žaidėjų vienu metu verta siųsti paketais kas ~150–250 ms ir naudoti atskirą `lock` kiekvienam kambariui. Apkrovos testas dar neatliktas.
+- **SignalR hub'as be dažnio ribojimo** ir saugumo antraštės (CSP, `X-Content-Type-Options`) – kitas saugumo žingsnis.
+- **Vikišaltinių tekstų licencija** pažymėta `PD-PATIKRINTI` – reikia patvirtinti, kad visi kūriniai viešajame domene.
+
+---
+
+## Tekstų šaltiniai ir licencijos
+
+- **Vikipedija** (~1 080 tekstų) – [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); autorius ir nuoroda rodomi „Apie tekstą“.
+- **Vikišaltiniai** (~3 660 tekstų) – lietuvių klasika (J. Biliūnas, Šatrijos Ragana, Lazdynų Pelėda, Vaižgantas), viešasis domenas.
+- **Šriftai** – Fredoka, Plus Jakarta Sans, JetBrains Mono, [SIL Open Font License](wwwroot/fonts); **SignalR klientas** – MIT.
+
+---
+
+<div align="center">
+
+Sukūrė **Dovydas Bielinskas** · [LinkedIn](https://www.linkedin.com/in/dovydas-bielinskas-844b16337/) · [dovydas.bielinskas@gmail.com](mailto:dovydas.bielinskas@gmail.com)
+
+</div>
