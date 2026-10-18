@@ -260,6 +260,26 @@
             </div>
         }
     </section>
+
+    <section class="card profile-account" id="account" aria-labelledby="account-title">
+        <h2 id="account-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-user"></use></svg>Paskyra</h2>
+        @* <details> – patvirtinimo žingsnis be JS *@
+        <details class="account-delete" open="@(TempData["DeleteError"] != null)">
+            <summary class="btn btn-s">Ištrinti paskyrą</summary>
+            <form method="post" action="/User/DeleteAccount" asp-antiforgery="true">
+                <p>Bus ištrinti visi tavo rezultatai, klaidų statistika, bananai ir nupirktos prekės. To atšaukti negalima.
+                    Kitų žaidėjų perklausose liks tik „Ištrintas žaidėjas“.</p>
+                @if (TempData["DeleteError"] is string deleteError)
+                {
+                    <p class="shop-note is-error" role="alert">@deleteError</p>
+                }
+                <label class="friends-field">Patvirtink slaptažodžiu
+                    <input name="password" type="password" autocomplete="current-password" required>
+                </label>
+                <button class="btn btn-danger" type="submit">Taip, ištrinti visam laikui</button>
+            </form>
+        </details>
+    </section>
 </div>
 
 <script>

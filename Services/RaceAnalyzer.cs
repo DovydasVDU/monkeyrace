@@ -42,6 +42,20 @@ public static class RaceAnalyzer
         };
     }
 
+    // Ištrintos paskyros vardas perklausose (UserController.DeleteAccount)
+    public static string AnonymizeReplay(string replayJson, int userId)
+    {
+        var replay = System.Text.Json.Nodes.JsonNode.Parse(replayJson)!;
+        foreach (var player in replay["players"]!.AsArray())
+        {
+            if (player!["userId"]?.GetValue<int?>() != userId)
+                continue;
+            player["name"] = "Ištrintas žaidėjas";
+            player["userId"] = null;
+        }
+        return replay.ToJsonString();
+    }
+
     private static List<int> SeriesOf(RaceRoom room, RacePlayer player) =>
         room.Timeline
             .TakeWhile(tick => tick.Values.ContainsKey(player.PlayerKey))

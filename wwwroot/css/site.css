@@ -1214,7 +1214,8 @@ a.lb-row:hover {
 }
 
 .shop-head h2,
-.profile-history h2 {
+.profile-history h2,
+.profile-account h2 {
     align-items: center;
     display: inline-flex;
     font-size: 1.5rem;
@@ -1317,6 +1318,51 @@ a.lb-row:hover {
 
 .history-table .lb-row {
     grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+}
+
+/* Paskyros ištrynimas (UserController.DeleteAccount) */
+.profile-account {
+    display: grid;
+    gap: 1rem;
+    padding: 1.75rem;
+}
+
+.account-delete summary {
+    list-style: none;
+    width: fit-content;
+}
+
+.account-delete summary::-webkit-details-marker {
+    display: none;
+}
+
+.account-delete form {
+    display: grid;
+    gap: .9rem;
+    margin-top: 1rem;
+    max-width: 32rem;
+}
+
+.account-delete input {
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    font-size: 1rem;
+    min-height: 48px;
+    padding: .6rem .9rem;
+    width: 100%;
+}
+
+.btn-danger {
+    background: var(--error);
+    color: var(--white);
+    width: fit-content;
+}
+
+.btn-danger:hover {
+    background: var(--error-soft);
+    color: var(--error);
 }
 
 .profile-history .lb-empty a {
@@ -1470,7 +1516,8 @@ a.lb-row:hover {
     .profile-hero,
     .shop,
     .mistakes,
-    .profile-history {
+    .profile-history,
+    .profile-account {
         padding: 1.1rem;
     }
 

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -88,5 +90,43 @@ public class UserController : Controller
         TempData["ShopMessage"] = error ?? $"Užsidėta: {item.Name}.";
         TempData["ShopError"] = error != null;
         return Redirect($"/User/Stats?tab={item?.Category}#shop");
+    }
+
+    // Paskyros ištrynimas (privatumo puslapis /privatumas): reikia dar kartą įvesti slaptažodį
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAccount(string password)
+    {
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        var user = userId == null ? null : await _db.Users.FindAsync(userId.Value);
+        if (user == null)
+            return Redirect("/");
+        if (string.IsNullOrEmpty(password) || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        {
+            TempData["DeleteError"] = "Neteisingas slaptažodis.";
+            return Redirect("/User/Stats#account");
+        }
+
+        await using (var transaction = await _db.Database.BeginTransactionAsync())
+        {
+            // kitų žaidėjų perklausose lieka tik „Ištrintas žaidėjas“ be userId
+            var marker = $"\"userId\":{user.Id},";
+            var races = await _db.Races.Where(r => r.ReplayJson != null && r.ReplayJson.Contains(marker)).ToListAsync();
+            foreach (var race in races)
+                race.ReplayJson = RaceAnalyzer.AnonymizeReplay(race.ReplayJson, user.Id);
+            await _db.SaveChangesAsync();
+
+            await _db.RaceResults.Where(r => r.UserId == user.Id).ExecuteDeleteAsync();
+            await _db.UserKeyStats.Where(k => k.UserId == user.Id).ExecuteDeleteAsync();
+            await _db.UserWordMistakes.Where(w => w.UserId == user.Id).ExecuteDeleteAsync();
+            await _db.UserItems.Where(i => i.UserId == user.Id).ExecuteDeleteAsync();
+            await _db.Users.Where(u => u.Id == user.Id).ExecuteDeleteAsync();
+            await transaction.CommitAsync();
+        }
+
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        HttpContext.Session.Clear();
+        return Redirect("/");
     }
 }
