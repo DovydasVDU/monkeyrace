@@ -268,11 +268,10 @@
                     element.classList.add('current');
             });
 
-            if (typed.length > targetWord.length || isError) {
-                inputField.classList.add('error');
-            } else {
-                inputField.classList.remove('error');
-            }
+            // klaida rašomame žodyje: visas žodis ir input švelniai raudoni, kol ištaisoma
+            const hasError = typed.length > targetWord.length || isError;
+            inputField.classList.toggle('error', hasError);
+            wordElem.classList.toggle('word-error', hasError);
         }
 
         function flashWordError() {

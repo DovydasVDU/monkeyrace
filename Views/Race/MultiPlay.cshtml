@@ -215,6 +215,8 @@ let totalKeystrokes = 0;
 let wrongKeystrokes = 0;
 let wordErrorStates = [];
 let wordHadError = [];
+// input rodo tik rašomą žodį (kaip TypeRacer); jau teisingai parašyti žodžiai su tarpais – čia
+let committedText = "";
 let mistakes = createMistakeTracker();
 let raceTimeline = null;
 let raceAnalysis = null;
@@ -362,6 +364,8 @@ function prepareRace(startAt, serverNowUtc, text) {
     renderText();
     wordErrorStates = [];
     wordHadError = [];
+    committedText = "";
+    input.value = "";
     mistakes = createMistakeTracker();
     totalKeystrokes = 0;
     wrongKeystrokes = 0;
@@ -387,16 +391,19 @@ function focusRaceInput() {
     });
 }
 
+function typedText() {
+    return committedText + input.value;
+}
+
 function deleteCurrentWord() {
-    const lastSpace = input.value.lastIndexOf(" ");
-    input.value = lastSpace < 0 ? "" : input.value.slice(0, lastSpace + 1);
+    input.value = "";
     input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function showPersonalResult(data) {
     if (durationSeconds) {
         // žodžių režime klaidos ir teksto statistika skaičiuojamos tik iki žodžio, kurį rašei baigiantis laikui
-        const range = getTargetWordRanges()[getActiveWordIndex(input.value)];
+        const range = getTargetWordRanges()[getActiveWordIndex(typedText())];
         if (range) targetText = targetText.slice(0, range.end);
     }
     finished = true;
@@ -590,7 +597,7 @@ connection.onreconnected(() =>
 
 input.addEventListener("input", event => {
     if (!raceStarted || finished) return;
-    let typed = input.value;
+    let typed = typedText();
     const ranges = getTargetWordRanges();
     // ką tik įvestas tarpas priklauso dar ankstesniam žodžiui
     const activeIndex = getActiveWordIndex(typed.endsWith(" ") ? typed.slice(0, -1) : typed);
@@ -600,21 +607,21 @@ input.addEventListener("input", event => {
         const maxLength = activeRange.word.length + 8;
         const activeTyped = typed.slice(wordStart);
         if (activeTyped.length > maxLength) {
-            input.value = typed.slice(0, wordStart + maxLength);
-            typed = input.value;
+            typed = typed.slice(0, wordStart + maxLength);
+            input.value = typed.slice(committedText.length);
         }
     }
     if (typed.endsWith(" ") && activeRange) {
         const typedWord = typed.slice(activeRange.start, -1);
         if (typedWord !== activeRange.word) {
-            input.value = typed.slice(0, -1);
-            updateCharacters(input.value);
+            input.value = input.value.slice(0, -1);
+            updateCharacters(typedText());
             flashWordError(activeIndex);
             return;
         }
         if (activeIndex === ranges.length - 1) {
-            input.value = typed.slice(0, -1);
-            typed = input.value;
+            typed = typed.slice(0, -1);
+            input.value = typed.slice(committedText.length);
         }
     }
     if (event.inputType === "insertText" && event.data) {
@@ -638,6 +645,12 @@ input.addEventListener("input", event => {
     }
     const correctChars = getCorrectChars(typed);
     recordWordErrors(typed);
+    // žodis baigtas teisingai (tarpas praleidžiamas tik tada) – iš input į committedText
+    const lastSpace = typed.lastIndexOf(" ");
+    if (lastSpace >= committedText.length) {
+        committedText = typed.slice(0, lastSpace + 1);
+        input.value = typed.slice(lastSpace + 1);
+    }
     updateCharacters(typed);
     connection.invoke("SendProgress", RACE_ID, PLAYER_KEY, correctChars,
         totalKeystrokes, wrongKeystrokes, typed.slice(typed.lastIndexOf(" ") + 1))
@@ -702,7 +715,7 @@ function sendMistakes() {
 
 function finalizeWordErrors() {
     getTargetWordRanges().forEach((range, index) => {
-        const typedWord = input.value.slice(range.start, range.end);
+        const typedWord = typedText().slice(range.start, range.end);
         wordErrorStates[index] = typedWord === range.word
             ? (wordHadError[index] ? 1 : 0)
             : 2;
@@ -739,7 +752,7 @@ function updateTimer() {
         document.getElementById("timer-display").textContent = Math.floor(elapsedMs / 1000);
     }
     document.getElementById("wpm-display").textContent = elapsedMs < 1000 ? 0 :
-        typingWpm(getCorrectChars(input.value), elapsedMs);
+        typingWpm(getCorrectChars(typedText()), elapsedMs);
 }
 
 function updateCharacters(typed) {
@@ -756,6 +769,10 @@ function updateCharacters(typed) {
         document.getElementById("text-display").scrollTop =
             Math.max(0, wordElement.offsetTop - wordElement.offsetHeight);
     const rendered = renderWord(range.word, typedWord);
+    // klaida rašomame žodyje: visas žodis ir input švelniai raudoni, kol ištaisoma
+    const hasError = rendered.some(item => item.state === "wrong" || item.state === "extra");
+    wordElement.classList.toggle("word-error", hasError);
+    input.classList.toggle("error", hasError);
     wordElement.querySelectorAll(".char").forEach((element, index) => {
         const state = rendered[index];
         element.className = `char ${state.state === "wrong" ? "char-wrong" :

@@ -505,6 +505,13 @@
     text-decoration: underline dotted var(--error) 2px;
 }
 
+/* rašomas žodis su klaida (JS .word-error) – visas žodis švelniai raudonas, kaip ir input */
+.text-display .word.word-error {
+    background: var(--error-soft);
+    border-radius: 6px;
+    box-shadow: 0 0 0 3px var(--error-soft);
+}
+
 /* žodis su klaida – aiškus raudonas pabraukimas */
 .word-input-error {
     animation: word-input-shake 150ms ease-in-out;
@@ -540,6 +547,7 @@
 }
 
 .word-input.error {
+    background: var(--error-soft);
     border-color: var(--error);
     box-shadow: 0 0 0 3px var(--error-soft);
 }
