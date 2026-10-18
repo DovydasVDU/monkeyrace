@@ -16,6 +16,9 @@ public class UserProfileViewModel
 // lygiai taspats, tik surenkama buvusių naudotojo žaidimų istorija
 public class PastRaceViewModel
 {
+    public int ResultId { get; set; }
+    // /race/replay/{ResultId}; tik online lenktynėms po perklausos atsiradimo
+    public bool HasReplay { get; set; }
     public DateTime CompletedAt { get; set; }
     public int Wpm { get; set; }
     public double Accuracy { get; set; }

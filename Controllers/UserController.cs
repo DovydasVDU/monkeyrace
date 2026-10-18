@@ -46,16 +46,21 @@ public class UserController : Controller
             Username = user.Username,
             AverageWpm = results.Any() ? (int)results.Average(r => r.WPM) : 0, // su klaustukai tikriname, ar yra informacija, jei ne - grąžiname "unknown" arba "0"
             AverageAccuracy = results.Any() ? results.Average(r => r.Accuracy) : 0,
-            PastRaces = results
+            // atskira projekcija, kad nebūtų kraunamas ReplayJson
+            PastRaces = await _db.RaceResults
+                .Where(r => r.UserId == userId)
+                .OrderByDescending(r => r.CompletedAt)
                 .Take(20)
                 .Select(r => new PastRaceViewModel
                 {
+                    ResultId = r.Id,
                     CompletedAt = r.CompletedAt,
                     Wpm = r.WPM,
                     Accuracy = r.Accuracy,
-                    ErrorCount = r.ErrorCount
+                    ErrorCount = r.ErrorCount,
+                    HasReplay = r.Race.ReplayJson != null
                 })
-                .ToList(),
+                .ToListAsync(),
             Mistakes = await _raceService.GetMistakeStatsAsync(userId),
             OwnedItems = (await _db.UserItems.Where(i => i.UserId == userId).Select(i => i.ItemId).ToListAsync()).ToHashSet(),
             EquippedItems = new[]
