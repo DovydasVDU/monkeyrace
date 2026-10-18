@@ -9,9 +9,8 @@
 
     <title>@(ViewData["Title"] ?? "MonkeyRace")</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+    @* šriftai iš wwwroot/fonts (@font-face – site.css), be Google Fonts *@
+    <link rel="preload" href="~/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 
     <script src="~/js/login.js" asp-append-version="true"></script>
     <script src="~/js/progress.js" asp-append-version="true"></script>

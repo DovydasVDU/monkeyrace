@@ -33,7 +33,7 @@ Charakteris: šilta, žaisminga džiunglių tema. Tamsiai žalias fonas, kremin�
 
 Taisyklė: komponentuose ir view'uose tik `var(--…)`, jokių hardcoded hex. Išimtis – SVG iliustracijų spalvos partial'uose (`_Monkey`, `_Banana`).
 
-## Šriftai (Google Fonts, `_Layout` head, preconnect + `display=swap`)
+## Šriftai (lokalūs `wwwroot/fonts`, `@font-face` – `site.css` viršuje, `display: swap`; jokių Google Fonts / CDN)
 - **Fredoka** 500/600/700 – antraštės, skaičiai, mygtukų pavadinimai.
 - **Plus Jakarta Sans** 500–800 – visa kita.
 - **JetBrains Mono** 500/600 – TIK lenktynių tekstas.
