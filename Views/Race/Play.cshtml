@@ -6,6 +6,9 @@
     // null = klasikinė solo treniruotė, kitaip žodžių režimo trukmė sekundėmis
     int? duration = ViewBag.Duration;
     var durationLabel = duration < 60 ? $"{duration} s" : $"{duration / 60} min";
+    // /race/train: tekstas iš žaidėjo klaidų, rezultatas nesaugomas
+    bool training = ViewBag.Training == true;
+    var modeLabel = training ? "Treniruoklis" : duration == null ? "Solo treniruotė" : "Dažniausi žodžiai";
 }
 
 
@@ -17,8 +20,8 @@
                 <span>Išeiti</span>
             </a>
             <div class="race-title-wrap">
-                <p class="eyebrow">@(duration == null ? "Solo treniruotė" : "Dažniausi žodžiai")</p>
-                <h1>@(duration == null ? "Rašyk savo tempu" : $"Rašyk {durationLabel}")</h1>
+                <p class="eyebrow">@modeLabel</p>
+                <h1>@(training ? "Rašyk savo klaidų žodžius" : duration == null ? "Rašyk savo tempu" : $"Rašyk {durationLabel}")</h1>
             </div>
             <div class="race-stats" id="stats-bar" aria-label="Statistika">
                 <span class="stat-pill"><small>WPM</small><strong id="wpm-display">0</strong></span>
@@ -41,7 +44,7 @@
         <div class="result-head">
             <span class="place-badge" aria-hidden="true"><svg class="ui-icon" aria-hidden="true"><use href="#icon-flag"></use></svg></span>
             <div>
-                <p class="eyebrow">@(duration == null ? "Solo treniruotė" : $"Dažniausi žodžiai · {durationLabel}")</p>
+                <p class="eyebrow">@(duration == null ? modeLabel : $"{modeLabel} · {durationLabel}")</p>
                 <h2 id="solo-result-title">@(duration == null ? "Tekstas baigtas!" : "Laikas baigėsi!")</h2>
             </div>
         </div>
@@ -94,6 +97,7 @@
         let TARGET_TEXT = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Content));
         // 0 = klasikinis režimas (iki teksto pabaigos), kitaip rašoma tiek sekundžių
         const DURATION_SECONDS = @(duration ?? 0);
+        const TRAINING = @training.ToString().ToLowerInvariant();
 
         const klaidosSet = new Set();
         let targetWords = [];
@@ -101,6 +105,8 @@
         let totalTypedChars = 0;
         let totalKeystrokes = 0;
         let wrongKeystrokes = 0;
+        let mistakes = createMistakeTracker();
+        let currentWordHadError = false;
 
         let startTime   = null;
         let timerHandle = null;
@@ -174,8 +180,13 @@
                         if (previousLength + index >= targetWord.length + 8)
                             continue;
                         totalKeystrokes++;
-                        if (e.data[index] !== TARGET_TEXT[targetIndex])
+                        // už žodžio ribų (extra) laukiamos raidės nėra – į raidžių statistiką neskaičiuojam
+                        if (previousLength + index <= targetWord.length)
+                            mistakes.key(TARGET_TEXT[targetIndex], e.data[index]);
+                        if (e.data[index] !== TARGET_TEXT[targetIndex]) {
                             wrongKeystrokes++;
+                            currentWordHadError = true;
+                        }
                     }
                 }
                 if (typed.endsWith(' ') && !isLastWord) {
@@ -186,6 +197,8 @@
                         document.getElementById('word-elem-' + currentWordIndex).classList.remove('active');
 
                         totalTypedChars += targetWord.length + 1;
+                        mistakes.word(targetWord, currentWordHadError);
+                        currentWordHadError = false;
                         currentWordIndex++;
 
                         document.getElementById('word-elem-' + currentWordIndex).classList.add('active');
@@ -205,6 +218,8 @@
                     chars.forEach(c => c.classList.add('correct'));
                     totalTypedChars += targetWord.length;
                     wpmDisplay.textContent = calcWPM(totalTypedChars);
+                    mistakes.word(targetWord, currentWordHadError);
+                    currentWordHadError = false;
                     finishRace();
                     return;
                 }
@@ -321,6 +336,19 @@
             document.getElementById('result-klaidos').textContent  = klaidos;
             document.getElementById('results-overlay').classList.add('visible');
 
+            // žodžių režime laikas baigiasi žodžio viduryje: jį skaičiuojam tik jei jame jau suklysta
+            if (currentWordHadError)
+                mistakes.word(targetWords[currentWordIndex], true);
+            mistakes.send();
+
+            if (TRAINING) {
+                const reward = document.getElementById('solo-reward');
+                reward.hidden = false;
+                reward.classList.add('reward-panel');
+                reward.innerHTML = '<p class="reward-muted">Treniruotė XP neduoda. Žodis dingsta iš sąrašo, kai jį parašai be klaidų 3 kartus iš eilės.</p>';
+                return;
+            }
+
             fetch('/Race/SaveResult', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -346,6 +374,8 @@
             totalTypedChars = 0;
             totalKeystrokes = 0;
             wrongKeystrokes = 0;
+            mistakes = createMistakeTracker();
+            currentWordHadError = false;
             startTime = null;
             timerHandle = null;
             isFinished = false;
@@ -363,7 +393,8 @@
         }
 
         function restartRace() {
-            window.location.href = DURATION_SECONDS ? `/race/words?seconds=${DURATION_SECONDS}` : `/Race/Play`;
+            window.location.href = TRAINING ? '/race/train'
+                : DURATION_SECONDS ? `/race/words?seconds=${DURATION_SECONDS}` : `/Race/Play`;
         }
 
         init();

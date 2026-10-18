@@ -61,6 +61,29 @@ public class RaceController : Controller
         return View("Play", new TextSnippet { Content = WordService.Generate(seconds) });
     }
 
+    // Treniruoklis iš žaidėjo klaidų. XP neskiriama (SaveResult nekviečiamas), kad nebūtų lengvo būdo jį rinkti;
+    // klaidos vis tiek siunčiamos, todėl teisingai parašyti žodžiai pamažu tampa išmoktais.
+    [HttpGet("/race/train")]
+    public async Task<IActionResult> Train()
+    {
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        if (userId == null)
+            return Redirect("/");
+
+        var text = await _raceService.BuildTrainingTextAsync(userId.Value);
+        if (text == null)
+        {
+            ViewBag.Heading = "Dar nėra ką treniruoti";
+            ViewBag.Message = "Sužaisk kelias lenktynes – treniruoklis surinks žodžius ir raides, kuriose klysti.";
+            ViewBag.RetryUrl = "/race/quick";
+            ViewBag.RetryLabel = "Žaisti lenktynes";
+            return View("MatchmakingError");
+        }
+
+        ViewBag.Training = true;
+        return View("Play", new TextSnippet { Content = text });
+    }
+
     // Sesijoje prisimenam, kokį tekstą ir kada davėme - pagal tai SaveResult patikrina rezultatą.
     // Prisijungusiam Race įrašas kuriamas iškart: du lygiagretūs SaveResult gauna tą patį Id,
     // todėl SaveRaceResultAsync apdovanoja tik kartą (sesija neužrakinama).
@@ -293,7 +316,49 @@ public class RaceController : Controller
         var reward = await _raceService.SaveRaceResultAsync(userId.Value, raceId.Value, RaceMode.Solo, null,
             dto.Wpm, dto.Accuracy, dto.TimeSeconds, dto.ErrorCount);
 
-        return Json(new { success = true, reward }); 
+        return Json(new { success = true, reward });
+    }
+
+    // Raidžių ir žodžių klaidos po bet kurių lenktynių (solo, žodžių, online). Svečiams nesaugoma.
+    [HttpPost("/race/mistakes")]
+    public async Task<IActionResult> SaveMistakes([FromBody] MistakesDto dto)
+    {
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        if (userId == null)
+            return Unauthorized();
+        if (dto?.Keys == null || dto.Words == null ||
+            dto.Keys.Count > MistakesDto.MaxKeys || dto.Words.Count > MistakesDto.MaxWords ||
+            dto.Keys.Any(key => key == null || key.Count > MistakesDto.MaxKeyCount) ||
+            dto.Words.Any(word => word == null))
+            return BadRequest("Invalid payload.");
+
+        await _raceService.SaveMistakesAsync(userId.Value, dto);
+        return Ok();
+    }
+}
+
+public class MistakesDto
+{
+    public const int MaxKeys = 300;
+    // 120 s žodžių režimas su RaceService.MaxWpm – iki 500 žodžių
+    public const int MaxWords = 600;
+    public const int MaxKeyCount = 5000;
+    public const int MaxWordLength = 40;
+
+    public List<KeyCount> Keys { get; set; }
+    public List<WordTry> Words { get; set; }
+
+    public class KeyCount
+    {
+        public string Expected { get; set; }
+        public string Typed { get; set; }
+        public int Count { get; set; }
+    }
+
+    public class WordTry
+    {
+        public string Word { get; set; }
+        public bool HadError { get; set; }
     }
 }
 // DTO (Data Transfer Object) klasė, skirta priimti rezultatus iš frontend'o ir saugoti juos duomenų bazėje

@@ -11,6 +11,9 @@
     var hats = new[] { ("Žalia kepurė", "#2E8B4F", 0), ("Bananų kepurė", "#FFC93C", 150), ("Raudona kepurė", "#C93A3A", 300) };
     var furs = new[] { ("Ruda", "#8B5E3C", 0), ("Auksinė", "#B98300", 400), ("Tamsi", "#5E3B22", 600) };
     var tracks = new[] { ("Klasikinis", "track-classic", 0), ("Lapų", "track-leaf", 250), ("Bananų", "track-banana", 500) };
+    var mistakes = Model.Mistakes;
+    string KeyLabel(string key) => key == " " ? "tarpas" : key;
+    bool IsLithuanian(string key) => "ąčęėįšųūž".Contains(key.ToLowerInvariant());
 }
 
 <div class="profile-page">
@@ -103,6 +106,93 @@
             </p>
         </section>
     </div>
+
+    <section class="card mistakes" aria-labelledby="mistakes-title">
+        <div class="shop-head">
+            <h2 id="mistakes-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg>Klaidų analizė</h2>
+            @if (mistakes.Attempts > 0)
+            {
+                <span class="pill">Raidžių tikslumas @mistakes.Accuracy.ToString("0.0")%</span>
+            }
+        </div>
+
+        @if (mistakes.Attempts == 0)
+        {
+            <p class="lb-empty">Sužaisk kelias lenktynes – čia pamatysi silpniausias raides ir žodžius, kuriuose dažniausiai klysti.</p>
+        }
+        else
+        {
+            <div class="mistakes-grid">
+                <div class="mistakes-col">
+                    <h3>Silpniausios raidės</h3>
+                    @if (mistakes.WeakLetters.Count == 0)
+                    {
+                        <p class="mistakes-note">Dar per mažai duomenų: raidė rodoma po @RaceService.MinLetterAttempts bandymų.</p>
+                    }
+                    <ul class="mistakes-list">
+                        @foreach (var letter in mistakes.WeakLetters)
+                        {
+                            var percent = letter.MissPercent;
+                            <li class="mistake-letter">
+                                <span class="key @(IsLithuanian(letter.Letter) ? "key-lt" : "")">@KeyLabel(letter.Letter)</span>
+                                <span class="mistake-bar" role="img" aria-label="@KeyLabel(letter.Letter): @percent.ToString("0")% klaidų">
+                                    <span style="width:@Math.Max(4, Math.Min(100, percent)).ToString("0", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                </span>
+                                <span class="mistake-num"><strong>@percent.ToString("0")%</strong> @letter.Misses/@letter.Attempts</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="mistakes-col">
+                    <h3>Dažniausiai sumaišai</h3>
+                    <ul class="mistakes-list">
+                        @foreach (var confusion in mistakes.Confusions)
+                        {
+                            <li class="mistake-pair">
+                                <span class="key @(IsLithuanian(confusion.Expected) ? "key-lt" : "")" aria-hidden="true" title="Reikėjo">@KeyLabel(confusion.Expected)</span>
+                                <svg class="icon mistake-arrow" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+                                <span class="key key-typed" aria-hidden="true" title="Parašei">@KeyLabel(confusion.Typed)</span>
+                                <span class="visually-hidden">Vietoj @KeyLabel(confusion.Expected) parašei @KeyLabel(confusion.Typed)</span>
+                                <span class="mistake-num"><strong>@confusion.Count</strong> k.</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="mistakes-col">
+                    <h3>Probleminiai žodžiai</h3>
+                    @if (mistakes.Words.Count == 0)
+                    {
+                        <p class="mistakes-note">Neišmoktų žodžių nėra.</p>
+                    }
+                    <ul class="mistakes-list">
+                        @foreach (var word in mistakes.Words)
+                        {
+                            <li class="mistake-word">
+                                <span class="mistake-word-text">@word.Word</span>
+                                <span class="mistake-num"><strong>@word.Misses</strong> @(word.Misses == 1 ? "klaida" : "klaidos")</span>
+                            </li>
+                        }
+                    </ul>
+                    @if (mistakes.MasteredWords > 0)
+                    {
+                        <p class="mistakes-note">Išmokta žodžių: @mistakes.MasteredWords (@RaceService.MasteredStreak kartus iš eilės be klaidų).</p>
+                    }
+                </div>
+            </div>
+
+            @if (mistakes.Words.Count > 0 || mistakes.WeakLetters.Count > 0)
+            {
+                <div class="mistakes-foot">
+                    <a class="btn btn-p" href="/race/train">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg>Treniruotis
+                    </a>
+                    <span class="mistakes-note">Tekstas iš tavo neišmoktų žodžių ir silpniausių raidžių. XP neskiriama.</span>
+                </div>
+            }
+        }
+    </section>
 
     <section class="card profile-history" aria-labelledby="history-title">
         <h2 id="history-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-chart"></use></svg>Paskutinės lenktynės</h2>

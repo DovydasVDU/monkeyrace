@@ -80,6 +80,105 @@ public sealed class RaceServiceRewardTests : IDisposable
         Assert.Equal(6, state.Results);
     }
 
+    [Fact]
+    public async Task Mistakes_AddUp_StreakResetsOnError_BadEntriesSkipped()
+    {
+        var (userId, _) = Seed(0);
+        static MistakesDto Dto(params (string Word, bool HadError)[] words) => new MistakesDto
+        {
+            Keys = new List<MistakesDto.KeyCount>
+            {
+                new() { Expected = "ž", Typed = "z", Count = 2 },
+                new() { Expected = "ž", Typed = "ž", Count = 3 },
+                new() { Expected = "ab", Typed = "a", Count = 9 } // ne vienas simbolis – praleidžiama
+            },
+            Words = words.Select(w => new MistakesDto.WordTry { Word = w.Word, HadError = w.HadError }).ToList()
+        };
+
+        async Task Send(MistakesDto dto)
+        {
+            using var db = NewContext();
+            await new RaceService(db).SaveMistakesAsync(userId, dto);
+        }
+
+        await Send(Dto(("Žąsis,", true), ("namas", false)));
+        await Send(Dto(("žąsis", false), ("žąsis.", false)));
+        using (var db = NewContext())
+        {
+            var keys = db.UserKeyStats.Where(k => k.UserId == userId).ToList();
+            Assert.Equal(4, keys.Single(k => k.Expected == "ž" && k.Typed == "z").Count);
+            Assert.Equal(6, keys.Single(k => k.Expected == "ž" && k.Typed == "ž").Count);
+            Assert.Equal(2, keys.Count);
+            // be klaidų parašytas žodis eilutės nesukuria; skyryba ir didžiosios raidės nesvarbios
+            var word = db.UserWordMistakes.Single(w => w.UserId == userId);
+            Assert.Equal(("žąsis", 1, 2), (word.Word, word.Misses, word.CorrectStreak));
+        }
+
+        await Send(Dto(("ŽĄSIS", true)));
+        using (var db = NewContext())
+        {
+            var word = db.UserWordMistakes.Single(w => w.UserId == userId);
+            Assert.Equal((2, 0), (word.Misses, word.CorrectStreak));
+        }
+    }
+
+    [Fact]
+    public async Task MistakeStats_MergesCase_HidesRareLetters_SkipsMasteredWords()
+    {
+        var (userId, _) = Seed(0);
+        using (var db = NewContext())
+        {
+            db.UserKeyStats.AddRange(
+                new UserKeyStat { UserId = userId, Expected = "š", Typed = "š", Count = 15 },
+                new UserKeyStat { UserId = userId, Expected = "Š", Typed = "š", Count = 3 }, // pamirštas Shift
+                new UserKeyStat { UserId = userId, Expected = "š", Typed = "s", Count = 2 },
+                new UserKeyStat { UserId = userId, Expected = "q", Typed = "w", Count = 5 }); // tik 5 bandymai
+            db.UserWordMistakes.AddRange(
+                new UserWordMistake { UserId = userId, Word = "šuo", Misses = 2, CorrectStreak = 0 },
+                new UserWordMistake { UserId = userId, Word = "kelias", Misses = 9, CorrectStreak = RaceService.MasteredStreak });
+            db.SaveChanges();
+        }
+
+        using var ctx = NewContext();
+        var stats = await new RaceService(ctx).GetMistakeStatsAsync(userId);
+
+        Assert.Equal(25, stats.Attempts);
+        Assert.Equal(60, stats.Accuracy, 3);
+        var letter = Assert.Single(stats.WeakLetters);
+        Assert.Equal(("š", 20, 5), (letter.Letter, letter.Attempts, letter.Misses));
+        Assert.Equal(("q", "w"), (stats.Confusions[0].Expected, stats.Confusions[0].Typed));
+        Assert.Equal("šuo", Assert.Single(stats.Words).Word);
+        Assert.Equal(1, stats.MasteredWords);
+    }
+
+    [Fact]
+    public async Task TrainingText_UnlearnedWordsTwice_PlusWeakLetterWords_NullWithoutData()
+    {
+        var (userId, _) = Seed(0);
+        using (var db = NewContext())
+            Assert.Null(await new RaceService(db).BuildTrainingTextAsync(userId));
+
+        using (var db = NewContext())
+        {
+            db.UserWordMistakes.AddRange(
+                new UserWordMistake { UserId = userId, Word = "šuo", Misses = 2 },
+                new UserWordMistake { UserId = userId, Word = "kelias", Misses = 9, CorrectStreak = RaceService.MasteredStreak });
+            db.UserKeyStats.AddRange(
+                new UserKeyStat { UserId = userId, Expected = "ž", Typed = "ž", Count = 15 },
+                new UserKeyStat { UserId = userId, Expected = "ž", Typed = "z", Count = 5 });
+            db.SaveChanges();
+        }
+
+        using var ctx = NewContext();
+        var words = (await new RaceService(ctx).BuildTrainingTextAsync(userId)).Split(' ');
+
+        Assert.Equal(2, words.Count(word => word == "šuo"));
+        Assert.DoesNotContain("kelias", words);
+        // 30 žodžių: 2 neišmokti + 28 su silpniausia raide
+        Assert.Equal(30, words.Length);
+        Assert.All(words.Where(word => word != "šuo"), word => Assert.Contains("ž", word));
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

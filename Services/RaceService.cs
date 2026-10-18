@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq; // where ir any
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore; //countAsync, skip, firstAsync
@@ -100,6 +101,132 @@ public class RaceService
             userLock.Release();
         }
     }
+
+    // Po lenktynių naršyklės atsiųstos klaidos (POST /race/mistakes). Apdovanojimų neduoda, todėl
+    // netikri duomenys sugadintų tik paties žaidėjo statistiką.
+    // shortcut: eilučių skaičius vienam žaidėjui neribojamas (kiekvienas naujas žodis – eilutė); jei kas pradėtų
+    // tuo piktnaudžiauti, trinti seniausius pagal LastSeenAt.
+    public async Task SaveMistakesAsync(int userId, MistakesDto dto)
+    {
+        var keys = dto.Keys
+            .Where(key => key.Expected?.Length == 1 && key.Typed?.Length == 1 && key.Count > 0)
+            .GroupBy(key => (key.Expected, key.Typed))
+            .ToDictionary(group => group.Key, group => group.Sum(key => key.Count));
+        var words = dto.Words
+            .Select(word => (Word: NormalizeWord(word.Word), word.HadError))
+            .Where(word => word.Word.Length is > 0 and <= MistakesDto.MaxWordLength)
+            .ToList();
+        var distinctWords = words.Select(word => word.Word).Distinct().ToList();
+
+        var userLock = _userLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        await userLock.WaitAsync();
+        try
+        {
+            var keyRows = await _db.UserKeyStats.Where(k => k.UserId == userId)
+                .ToDictionaryAsync(k => (k.Expected, k.Typed));
+            foreach (var ((expected, typed), count) in keys)
+            {
+                if (!keyRows.TryGetValue((expected, typed), out var row))
+                    _db.UserKeyStats.Add(row = new UserKeyStat { UserId = userId, Expected = expected, Typed = typed });
+                row.Count += count;
+            }
+
+            var wordRows = await _db.UserWordMistakes
+                .Where(w => w.UserId == userId && distinctWords.Contains(w.Word))
+                .ToDictionaryAsync(w => w.Word);
+            // eilės tvarka svarbi: tas pats žodis tekste gali būti kelis kartus
+            foreach (var (word, hadError) in words)
+            {
+                wordRows.TryGetValue(word, out var row);
+                if (!hadError)
+                {
+                    if (row != null)
+                        row.CorrectStreak++;
+                    continue;
+                }
+                if (row == null)
+                    _db.UserWordMistakes.Add(wordRows[word] = row = new UserWordMistake { UserId = userId, Word = word });
+                row.Misses++;
+                row.CorrectStreak = 0;
+                row.LastSeenAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync();
+        }
+        finally
+        {
+            userLock.Release();
+        }
+    }
+
+    // Raidė rodoma tik po tiek bandymų, kitaip procentas atsitiktinis
+    public const int MinLetterAttempts = 20;
+    // Žodis laikomas išmoktu, kai tiek kartų iš eilės parašytas be klaidų (treniruoklis jo nebesiūlys)
+    public const int MasteredStreak = 3;
+
+    // Profilio „Klaidų analizė“
+    public async Task<MistakeStats> GetMistakeStatsAsync(int userId)
+    {
+        var keys = await _db.UserKeyStats.Where(k => k.UserId == userId).ToListAsync();
+        var attempts = keys.Sum(k => k.Count);
+        var misses = keys.Where(k => k.Typed != k.Expected).Sum(k => k.Count);
+
+        // „Š“ ir „š“ – ta pati raidė; klaida skaičiuojama ir tada, kai tik pamiršta Shift
+        var weakLetters = keys.GroupBy(k => k.Expected.ToLowerInvariant())
+            .Select(g => new LetterStat
+            {
+                Letter = g.Key,
+                Attempts = g.Sum(k => k.Count),
+                Misses = g.Where(k => k.Typed != k.Expected).Sum(k => k.Count)
+            })
+            .Where(l => l.Attempts >= MinLetterAttempts && l.Misses > 0)
+            .OrderByDescending(l => l.MissPercent).ThenByDescending(l => l.Misses)
+            .Take(8)
+            .ToList();
+        var confusions = keys.Where(k => k.Typed != k.Expected)
+            .OrderByDescending(k => k.Count)
+            .Take(8)
+            .Select(k => new LetterConfusion { Expected = k.Expected, Typed = k.Typed, Count = k.Count })
+            .ToList();
+
+        var words = _db.UserWordMistakes.Where(w => w.UserId == userId);
+        return new MistakeStats
+        {
+            Attempts = attempts,
+            Accuracy = attempts == 0 ? 100 : (attempts - misses) * 100d / attempts,
+            WeakLetters = weakLetters,
+            Confusions = confusions,
+            Words = await words.Where(w => w.CorrectStreak < MasteredStreak)
+                .OrderByDescending(w => w.Misses).ThenByDescending(w => w.LastSeenAt)
+                .Take(10).ToListAsync(),
+            MasteredWords = await words.CountAsync(w => w.CorrectStreak >= MasteredStreak)
+        };
+    }
+
+    // Treniruoklis (/race/train): kiekvienas neišmoktas žodis du kartus + žodžiai su silpniausiomis raidėmis.
+    // null – dar nėra ką treniruoti.
+    public async Task<string> BuildTrainingTextAsync(int userId)
+    {
+        var words = await _db.UserWordMistakes
+            .Where(w => w.UserId == userId && w.CorrectStreak < MasteredStreak)
+            .OrderByDescending(w => w.Misses).ThenByDescending(w => w.LastSeenAt)
+            .Take(15)
+            .Select(w => w.Word)
+            .ToListAsync();
+        var letters = (await GetMistakeStatsAsync(userId)).WeakLetters
+            .Select(l => l.Letter).Where(l => char.IsLetter(l[0])).Take(3).ToList();
+
+        var practice = WordService.WithLetters(letters, Math.Max(10, 30 - words.Count * 2));
+        var text = words.Concat(words).Concat(practice).ToArray();
+        if (text.Length == 0)
+            return null;
+        Random.Shared.Shuffle(text);
+        return string.Join(" ", text);
+    }
+
+    // „Vakarykštę.“ ir „vakarykštę“ – tas pats žodis
+    private static string NormalizeWord(string word) =>
+        Regex.Replace((word ?? "").ToLowerInvariant(), @"[^\p{L}\p{N}-]", "").Trim('-');
 
     // Viena vieta žaidėjo statistikai: /api/stats/{username}, navbar, pagrindinis puslapis ir lenktynės
     public async Task<PlayerCard> GetPlayerCardAsync(int userId)

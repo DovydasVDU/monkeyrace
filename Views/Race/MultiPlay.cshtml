@@ -212,6 +212,7 @@ let totalKeystrokes = 0;
 let wrongKeystrokes = 0;
 let wordErrorStates = [];
 let wordHadError = [];
+let mistakes = createMistakeTracker();
 let raceTimeline = null;
 let raceAnalysis = null;
 // 0 = klasikinės lenktynės, kitaip žodžių režimo trukmė (ateina su RaceState)
@@ -358,6 +359,7 @@ function prepareRace(startAt, serverNowUtc, text) {
     renderText();
     wordErrorStates = [];
     wordHadError = [];
+    mistakes = createMistakeTracker();
     totalKeystrokes = 0;
     wrongKeystrokes = 0;
     raceStarted = true;
@@ -414,6 +416,7 @@ function showPersonalResult(data) {
         ? "Skaičiuojami XP ir bananai..."
         : "Laukiama kitų žaidėjų...";
     finalizeWordErrors();
+    if (IS_AUTHENTICATED) sendMistakes();
     renderWordErrors();
     renderTextAbout();
     // PlayerFinished atneša teksto kilmę ir laiko juostą iki finišo, todėl nereikia laukti kitų
@@ -593,6 +596,9 @@ input.addEventListener("input", event => {
                 (range && targetIndex >= range.end + 8))
                 continue;
             totalKeystrokes++;
+            // už žodžio ribų (extra) laukiamos raidės nėra – į raidžių statistiką neskaičiuojam
+            if (!range || targetIndex <= range.end)
+                mistakes.key(targetText[targetIndex], event.data[index]);
             if (event.data[index] !== targetText[targetIndex])
                 wrongKeystrokes++;
         }
@@ -649,6 +655,16 @@ function recordWordErrors(typed) {
                 typedWord === range.word ? 1 : 2;
         }
     });
+}
+
+// žodžių režime paskutinis žodis nutrūksta pusiaukelėje: skaičiuojam tik jei jame jau suklysta
+function sendMistakes() {
+    const ranges = getTargetWordRanges();
+    ranges.forEach((range, index) => {
+        if (wordHadError[index] || !durationSeconds || index < ranges.length - 1)
+            mistakes.word(range.word, wordHadError[index]);
+    });
+    mistakes.send();
 }
 
 function finalizeWordErrors() {

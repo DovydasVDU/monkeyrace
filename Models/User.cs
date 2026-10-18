@@ -100,3 +100,26 @@ public class RaceResult
     //public int Place { get; set; }
 
 }
+// Models/UserKeyStat.cs
+// Kiek kartų laukiant simbolio Expected buvo paspausta Typed (Expected == Typed – pataikyta).
+// Bandymai = visų Expected eilučių suma, klaidos = eilutės, kur Typed != Expected.
+public class UserKeyStat
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    public string Expected { get; set; } = string.Empty;
+    public string Typed { get; set; } = string.Empty;
+    public int Count { get; set; }
+}
+
+// Models/UserWordMistake.cs
+// Žodis atsiranda tik pirmą kartą suklydus; CorrectStreak – kiek kartų iš eilės vėliau parašytas be klaidų
+public class UserWordMistake
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    public string Word { get; set; } = string.Empty;
+    public int Misses { get; set; }
+    public int CorrectStreak { get; set; }
+    public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
+}

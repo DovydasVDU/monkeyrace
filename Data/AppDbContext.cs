@@ -10,6 +10,8 @@ public class AppDbContext : DbContext
     public DbSet<Race> Races { get; set; }
     public DbSet<RaceResult> RaceResults { get; set; }
     public DbSet<TextSnippet> TextSnippets { get; set; }
+    public DbSet<UserKeyStat> UserKeyStats { get; set; }
+    public DbSet<UserWordMistake> UserWordMistakes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +21,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<RaceResult>().HasIndex(r => new { r.RaceId, r.UserId }).IsUnique();
         // Importuotas tekstas DB tik vieną kartą
         modelBuilder.Entity<TextSnippet>().HasIndex(t => t.SourceId).IsUnique();
+        // Klaidų statistika: viena eilutė vienai porai / vienam žodžiui (RaceService.SaveMistakesAsync)
+        modelBuilder.Entity<UserKeyStat>().HasKey(k => new { k.UserId, k.Expected, k.Typed });
+        modelBuilder.Entity<UserWordMistake>().HasKey(w => new { w.UserId, w.Word });
 
         // Seed data – pradiniai duomenys. Tekstus padarome iškart, kad nereiktų jų suvedinėti ranka
         modelBuilder.Entity<TextSnippet>().HasData(

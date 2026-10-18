@@ -12,10 +12,12 @@ using System.Security.Claims;
 public class UserController : Controller
 {
     private readonly AppDbContext _db;
+    private readonly RaceService _raceService;
 
-    public UserController(AppDbContext db) // per Dependency Injection gaunamas prisijungiame prie duomenų bazės
+    public UserController(AppDbContext db, RaceService raceService) // per Dependency Injection gaunamas prisijungiame prie duomenų bazės
     {
         _db = db;
+        _raceService = raceService;
     }
 
     [HttpGet]
@@ -53,7 +55,8 @@ public class UserController : Controller
                     Accuracy = r.Accuracy,
                     ErrorCount = r.ErrorCount
                 })
-                .ToList()
+                .ToList(),
+            Mistakes = await _raceService.GetMistakeStatsAsync(userId)
         };
 
         return View("Stats", model); // perudodame į /Stats puslapį

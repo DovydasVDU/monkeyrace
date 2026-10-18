@@ -469,6 +469,47 @@ namespace monkeyrace.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("UserKeyStat", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Expected")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Typed")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserId", "Expected", "Typed");
+
+                    b.ToTable("UserKeyStats");
+                });
+
+            modelBuilder.Entity("UserWordMistake", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Word")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CorrectStreak")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Misses")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserId", "Word");
+
+                    b.ToTable("UserWordMistakes");
+                });
+
             modelBuilder.Entity("Race", b =>
                 {
                     b.HasOne("TextSnippet", "TextSnippet")
@@ -493,6 +534,28 @@ namespace monkeyrace.Migrations
                         .IsRequired();
 
                     b.Navigation("Race");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UserKeyStat", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UserWordMistake", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

@@ -1,5 +1,6 @@
 // Services/WordService.cs
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -15,6 +16,16 @@ public static class WordService
         .ToArray();
 
     public static readonly int[] AllowedSeconds = { 15, 30, 60, 120 };
+
+    // Treniruokliui: atsitiktiniai žodžiai, kuriuose yra bent viena iš nurodytų raidžių
+    public static string[] WithLetters(IReadOnlyCollection<string> letters, int count)
+    {
+        var pool = Words.Where(word => letters.Any(letter =>
+            word.Contains(letter, StringComparison.OrdinalIgnoreCase))).ToArray();
+        return pool.Length == 0
+            ? Array.Empty<string>()
+            : Enumerable.Range(0, count).Select(_ => pool[Random.Shared.Next(pool.Length)]).ToArray();
+    }
 
     // Žodžių daugiau, nei leistų parašyti RaceService.MaxWpm per visą laiką, todėl tekstas žaidėjui "nesibaigia"
     public static string Generate(int seconds)

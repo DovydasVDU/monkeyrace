@@ -1298,8 +1298,144 @@ a.lb-row:hover {
     font-weight: 800;
 }
 
+/* Klaidų analizė (User/Stats, RaceService.GetMistakeStatsAsync) */
+.mistakes {
+    display: grid;
+    gap: 1.25rem;
+    padding: 1.75rem;
+}
+
+.mistakes h2 {
+    align-items: center;
+    display: inline-flex;
+    font-size: 1.5rem;
+    gap: .5rem;
+}
+
+.mistakes-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mistakes-col {
+    align-content: start;
+    display: grid;
+    gap: .75rem;
+}
+
+.mistakes-col h3 {
+    font-size: 1.1rem;
+}
+
+.mistakes-list {
+    display: grid;
+    gap: .5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.mistakes-list li {
+    align-items: center;
+    border-bottom: 2px dashed var(--ink-a18);
+    display: flex;
+    font-variant-numeric: tabular-nums;
+    gap: .6rem;
+    min-height: 48px;
+    padding-bottom: .5rem;
+}
+
+.mistakes-list li:last-child {
+    border-bottom: 0;
+}
+
+/* klavišas kaip _Backdrop raidės, tik ant kreminės kortelės */
+.key {
+    align-items: center;
+    background: var(--white);
+    border: var(--border);
+    border-radius: 10px;
+    box-shadow: 0 3px 0 var(--ink-a18);
+    display: inline-flex;
+    flex: none;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    height: 2.4rem;
+    justify-content: center;
+    min-width: 2.4rem;
+    padding: 0 .4rem;
+}
+
+.key-lt {
+    background: var(--banana-soft);
+}
+
+.key-typed {
+    background: var(--error-soft);
+    color: var(--error);
+}
+
+.mistake-bar {
+    background: var(--cream-2);
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    flex: 1;
+    height: 14px;
+    overflow: hidden;
+}
+
+.mistake-bar span {
+    background: var(--error);
+    display: block;
+    height: 100%;
+}
+
+.mistake-arrow {
+    flex: none;
+    height: 18px;
+    transform: rotate(180deg);
+    width: 18px;
+}
+
+.mistake-num {
+    color: var(--ink-a60);
+    font-size: .85rem;
+    font-weight: 700;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.mistake-num strong {
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+}
+
+.mistake-word-text {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.mistakes-note {
+    color: var(--ink-a60);
+    font-size: .9rem;
+    font-weight: 700;
+}
+
+.mistakes-foot {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
 @media (max-width: 900px) {
-    .profile-grid {
+    .profile-grid,
+    .mistakes-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -1307,6 +1443,7 @@ a.lb-row:hover {
 @media (max-width: 640px) {
     .profile-hero,
     .shop,
+    .mistakes,
     .profile-history {
         padding: 1.1rem;
     }
