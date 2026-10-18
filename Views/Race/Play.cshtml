@@ -151,6 +151,9 @@
                 if (startTime === null) {
                     startTime = Date.now();
                     timerHandle = setInterval(updateTimer, 200);
+                    // telefone vieną kartą starte (pirmas klavišas): teksto kortelė ekrano viršuje, virš klaviatūros
+                    if (window.matchMedia('(max-width: 640px)').matches)
+                        document.querySelector('.text-card').scrollIntoView({ block: 'start' });
                 }
 
                 let typed = this.value;
@@ -283,11 +286,12 @@
         }
 
         // Žodžių režime matomos 3 eilutės: aktyvi eilutė laikoma antra, kad matytųsi ir kita
+        // žodžių režimas (3 eilutės) ir telefonas (4): kai tekstas netelpa, rašoma eilutė laikoma antra
         function scrollToActiveWord() {
-            if (!DURATION_SECONDS) return;
+            const textDisplay = document.getElementById('text-display');
+            if (textDisplay.scrollHeight <= textDisplay.clientHeight) return;
             const active = document.getElementById('word-elem-' + currentWordIndex);
-            document.getElementById('text-display').scrollTop =
-                Math.max(0, active.offsetTop - active.offsetHeight);
+            textDisplay.scrollTop = Math.max(0, active.offsetTop - active.offsetHeight);
         }
 
         function calcWPM(charsTyped) {

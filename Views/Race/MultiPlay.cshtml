@@ -377,8 +377,15 @@ function prepareRace(startAt, serverNowUtc, text) {
     document.getElementById("race-title").textContent = "Lenktynės vyksta!";
     setStatus("Rašyk kuo greičiau!", `${Object.keys(players).length} žaidėjai trasoje`);
     focusRaceInput();
+    scrollTextCardIntoView();
     clearInterval(raceTimer);
     raceTimer = setInterval(updateTimer, 100);
+}
+
+// telefone vieną kartą starte: teksto kortelė ekrano viršuje, kad su rašymo lauku tilptų virš klaviatūros
+function scrollTextCardIntoView() {
+    if (window.matchMedia("(max-width: 640px)").matches)
+        document.getElementById("text-display").closest(".text-card").scrollIntoView({ block: "start" });
 }
 
 function focusRaceInput() {
@@ -764,10 +771,10 @@ function updateCharacters(typed) {
     const wordElement = document.querySelector(
         `#text-display .word[data-word-index="${activeIndex}"]`);
     if (!wordElement) return;
-    // žodžių režime matomos 3 eilutės: aktyvi eilutė laikoma antra
-    if (durationSeconds)
-        document.getElementById("text-display").scrollTop =
-            Math.max(0, wordElement.offsetTop - wordElement.offsetHeight);
+    // žodžių režimas (3 eilutės) ir telefonas (4): kai tekstas netelpa, rašoma eilutė laikoma antra
+    const textDisplay = document.getElementById("text-display");
+    if (textDisplay.scrollHeight > textDisplay.clientHeight)
+        textDisplay.scrollTop = Math.max(0, wordElement.offsetTop - wordElement.offsetHeight);
     const rendered = renderWord(range.word, typedWord);
     // klaida rašomame žodyje: visas žodis ir input švelniai raudoni, kol ištaisoma
     const hasError = rendered.some(item => item.state === "wrong" || item.state === "extra");

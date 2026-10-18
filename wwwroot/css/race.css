@@ -598,8 +598,13 @@
         margin-right: 4.1rem;
     }
 
+    /* ilgas tekstas virš klaviatūros: 4 eilučių langas, JS laiko rašomą eilutę antrą (kaip .is-words) */
     .text-display {
         font-size: 19px;
+        max-height: calc(4 * 1.85em);
+        overflow: hidden;
+        position: relative;
+        scroll-behavior: smooth;
     }
 
     .word-input {
@@ -608,6 +613,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .text-display {
+        scroll-behavior: auto;
+    }
+
     .word-input-error {
         animation: none;
     }
