@@ -452,7 +452,16 @@ namespace monkeyrace.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("FurId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HatId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PasswordHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TrackId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Username")
@@ -467,6 +476,22 @@ namespace monkeyrace.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("UserItem", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("BoughtAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "ItemId");
+
+                    b.ToTable("UserItems");
                 });
 
             modelBuilder.Entity("UserKeyStat", b =>
@@ -534,6 +559,17 @@ namespace monkeyrace.Migrations
                         .IsRequired();
 
                     b.Navigation("Race");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UserItem", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

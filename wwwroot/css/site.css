@@ -1283,6 +1283,26 @@ a.lb-row:hover {
     gap: .4rem;
 }
 
+.shop-note.is-error {
+    color: var(--error);
+}
+
+.shop-item form {
+    width: 100%;
+}
+
+.shop-item.is-equipped {
+    background: var(--banana-soft);
+    border-color: var(--ink);
+    border-style: solid;
+}
+
+.shop-equipped {
+    justify-content: center;
+    min-height: 44px;
+    width: 100%;
+}
+
 .profile-history {
     display: grid;
     gap: 1rem;

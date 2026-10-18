@@ -232,7 +232,7 @@ public class RaceService
     public async Task<PlayerCard> GetPlayerCardAsync(int userId)
     {
         var user = await _db.Users.Where(u => u.Id == userId)
-            .Select(u => new { u.Username, u.Xp, u.Bananas })
+            .Select(u => new { u.Username, u.Xp, u.Bananas, u.HatId, u.FurId, u.TrackId })
             .FirstOrDefaultAsync();
         if (user == null)
             return null;
@@ -249,8 +249,50 @@ public class RaceService
             Bananas = user.Bananas,
             TotalRaces = await results.CountAsync(),
             BestWpm = await results.MaxAsync(r => (int?)r.WPM) ?? 0,
-            AverageAccuracy = Math.Round(await results.AverageAsync(r => (double?)r.Accuracy) ?? 0, 2)
+            AverageAccuracy = Math.Round(await results.AverageAsync(r => (double?)r.Accuracy) ?? 0, 2),
+            HatColor = ShopCatalog.Equipped(user.HatId, ShopCatalog.Hats).Value,
+            FurColor = ShopCatalog.Equipped(user.FurId, ShopCatalog.Furs).Value,
+            Track = ShopCatalog.Equipped(user.TrackId, ShopCatalog.Tracks).Value
         };
+    }
+
+    // Parduotuvė: neturimą prekę nuperka (jei užtenka bananų) ir užsideda; turimą – tik užsideda.
+    // null – pavyko, kitaip klaidos tekstas žaidėjui. Tas pats užraktas kaip SaveRaceResultAsync,
+    // kad pirkimas ir lenktynių bananai vienu metu neperrašytų vienas kito.
+    public async Task<string> EquipItemAsync(int userId, string itemId)
+    {
+        var item = ShopCatalog.Find(itemId);
+        if (item == null)
+            return "Tokios prekės nėra.";
+
+        var userLock = _userLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        await userLock.WaitAsync();
+        try
+        {
+            var user = await _db.Users.FirstAsync(u => u.Id == userId);
+            var owned = item.Price == 0 ||
+                await _db.UserItems.AnyAsync(i => i.UserId == userId && i.ItemId == item.Id);
+            if (!owned)
+            {
+                if (user.Bananas < item.Price)
+                    return $"Trūksta {item.Price - user.Bananas} bananų.";
+                user.Bananas -= item.Price;
+                _db.UserItems.Add(new UserItem { UserId = userId, ItemId = item.Id });
+            }
+
+            switch (item.Category)
+            {
+                case ShopCatalog.Hats: user.HatId = item.Id; break;
+                case ShopCatalog.Furs: user.FurId = item.Id; break;
+                default: user.TrackId = item.Id; break;
+            }
+            await _db.SaveChangesAsync();
+            return null;
+        }
+        finally
+        {
+            userLock.Release();
+        }
     }
 
     // Svečiui: kiek būtų gavęs, jei būtų prisijungęs. Niekur nesaugoma.
@@ -276,6 +318,10 @@ public sealed class PlayerCard
     public int TotalRaces { get; init; }
     public int BestWpm { get; init; }
     public double AverageAccuracy { get; init; }
+    // Parduotuvės kosmetika (ShopCatalog Value): beždžionė navbar, profilyje ir lenktynių trasoje
+    public string HatColor { get; init; }
+    public string FurColor { get; init; }
+    public string Track { get; init; }
 }
 
 // Apdovanojimas, siunčiamas į naršyklę (solo SaveResult JSON ir multiplayer RaceFinished)

@@ -8,16 +8,23 @@ let replaySpeed = 1;
 let replayIndex = 0;
 
 // level (nebūtinas) rodomas kaip ženkliukas, toks pat kaip _Monkey.cshtml
-function monkeyTemplate(colorIndex, level) {
+// look – žaidėjo PlayerCard (hatColor, furColor iš parduotuvės); null svečiams ir botams
+function monkeyTemplate(colorIndex, level, look) {
     const templates = document.querySelectorAll(
         "#replay-monkey-templates .monkey-svg");
     const template = templates[Math.abs(colorIndex || 0) % templates.length];
     if (!template) return "";
-    if (level == null) return template.outerHTML;
+    if (level == null && !look) return template.outerHTML;
     const svg = template.cloneNode(true);
-    svg.insertAdjacentHTML("beforeend",
-        `<g class="monkey-level"><circle cx="134" cy="134" r="24"/>` +
-        `<text x="134" y="144" text-anchor="middle">${Number(level)}</text></g>`);
+    if (look) {
+        svg.querySelectorAll(".monkey-fur").forEach(part => part.setAttribute(
+            part.getAttribute("fill") === "none" ? "stroke" : "fill", look.furColor));
+        svg.querySelectorAll(".monkey-hat").forEach(part => part.setAttribute("fill", look.hatColor));
+    }
+    if (level != null)
+        svg.insertAdjacentHTML("beforeend",
+            `<g class="monkey-level"><circle cx="134" cy="134" r="24"/>` +
+            `<text x="134" y="144" text-anchor="middle">${Number(level)}</text></g>`);
     return svg.outerHTML;
 }
 

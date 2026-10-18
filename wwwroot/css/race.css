@@ -187,6 +187,19 @@
         var(--cream-2);
 }
 
+/* Parduotuvės takeliai (PlayerCard.track, MultiPlay renderPlayers); „classic“ – numatytosios spalvos aukščiau */
+.player-track.lane-leaf::before {
+    background:
+        linear-gradient(90deg, var(--leaf) var(--progress), transparent var(--progress)),
+        var(--cream-2);
+}
+
+.player-track.lane-banana::before {
+    background:
+        linear-gradient(90deg, var(--banana) var(--progress), transparent var(--progress)),
+        var(--cream-2);
+}
+
 .player-monkey {
     grid-column: 2;
     grid-row: 1;

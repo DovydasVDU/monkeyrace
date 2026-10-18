@@ -7,10 +7,11 @@
     var userId = PlayerIdentity.GetUserId(Context);
     var card = userId == null ? null : await RaceService.GetPlayerCardAsync(userId.Value);
     var xpPercent = card == null ? 0 : (int)Math.Round(card.LevelProgress * 100);
-    // shortcut: statinės prekės be backend'o, kol parduotuvė neveikia – pridėti modelį, kai bus pirkimai
-    var hats = new[] { ("Žalia kepurė", "#2E8B4F", 0), ("Bananų kepurė", "#FFC93C", 150), ("Raudona kepurė", "#C93A3A", 300) };
-    var furs = new[] { ("Ruda", "#8B5E3C", 0), ("Auksinė", "#B98300", 400), ("Tamsi", "#5E3B22", 600) };
-    var tracks = new[] { ("Klasikinis", "track-classic", 0), ("Lapų", "track-leaf", 250), ("Bananų", "track-banana", 500) };
+    var bananas = card?.Bananas ?? 0;
+    // po pirkimo grįžtam į tą pačią kategoriją (UserController.Equip)
+    var shopTab = ShopCatalog.Items.Any(item => item.Category == Context.Request.Query["tab"])
+        ? Context.Request.Query["tab"].ToString() : ShopCatalog.Hats;
+    var shopTabs = new[] { (ShopCatalog.Hats, "Kepurės"), (ShopCatalog.Furs, "Spalvos"), (ShopCatalog.Tracks, "Takeliai") };
     var mistakes = Model.Mistakes;
     string KeyLabel(string key) => key == " " ? "tarpas" : key;
     bool IsLithuanian(string key) => "ąčęėįšųūž".Contains(key.ToLowerInvariant());
@@ -21,7 +22,7 @@
         <section class="card profile-hero" aria-labelledby="profile-title">
             <div class="profile-hero-head">
                 <span class="profile-hero-monkey" aria-hidden="true">
-                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F", Level = card?.Level })
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = card?.HatColor, BodyColor = card?.FurColor, Level = card?.Level })
                 </span>
                 <div>
                     <p class="eyebrow">Žaidėjo profilis</p>
@@ -57,52 +58,72 @@
         <section class="card shop" id="shop" aria-labelledby="shop-title">
             <div class="shop-head">
                 <h2 id="shop-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-shop"></use></svg>Parduotuvė</h2>
-                <span class="pill">Netrukus</span>
+                <span class="pill"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg>@bananas</span>
             </div>
+
+            @if (TempData["ShopMessage"] is string shopMessage)
+            {
+                <p class="shop-note @(TempData["ShopError"] is true ? "is-error" : "")" role="status">@shopMessage</p>
+            }
 
             <div class="tm-group" role="group" aria-label="Prekių kategorija">
-                <button class="tm" type="button" aria-pressed="true" data-shop-tab="hats">Kepurės</button>
-                <button class="tm" type="button" aria-pressed="false" data-shop-tab="furs">Spalvos</button>
-                <button class="tm" type="button" aria-pressed="false" data-shop-tab="tracks">Takeliai</button>
+                @foreach (var (category, label) in shopTabs)
+                {
+                    <button class="tm" type="button" aria-pressed="@(category == shopTab ? "true" : "false")" data-shop-tab="@category">@label</button>
+                }
             </div>
 
-            <div class="shop-grid" data-shop-panel="hats">
-                @foreach (var (name, color, price) in hats)
-                {
-                    <article class="shop-item">
-                        <span class="shop-preview" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = color })</span>
-                        <h3>@name</h3>
-                        <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
-                        <button class="btn btn-s" type="button" disabled>Netrukus</button>
-                    </article>
-                }
-            </div>
-            <div class="shop-grid" data-shop-panel="furs" hidden>
-                @foreach (var (name, color, price) in furs)
-                {
-                    <article class="shop-item">
-                        <span class="shop-preview" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { BodyColor = color, HatColor = "none" })</span>
-                        <h3>@name</h3>
-                        <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
-                        <button class="btn btn-s" type="button" disabled>Netrukus</button>
-                    </article>
-                }
-            </div>
-            <div class="shop-grid" data-shop-panel="tracks" hidden>
-                @foreach (var (name, cssClass, price) in tracks)
-                {
-                    <article class="shop-item">
-                        <span class="shop-preview shop-track @cssClass" aria-hidden="true"><span></span></span>
-                        <h3>@name</h3>
-                        <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @price</p>
-                        <button class="btn btn-s" type="button" disabled>Netrukus</button>
-                    </article>
-                }
-            </div>
+            @foreach (var (category, _) in shopTabs)
+            {
+                <div class="shop-grid" data-shop-panel="@category" hidden="@(category != shopTab)">
+                    @foreach (var item in ShopCatalog.Items.Where(item => item.Category == category))
+                    {
+                        var owned = item.Price == 0 || Model.OwnedItems.Contains(item.Id);
+                        <article class="shop-item @(Model.EquippedItems.Contains(item.Id) ? "is-equipped" : "")">
+                            @if (category == ShopCatalog.Tracks)
+                            {
+                                <span class="shop-preview shop-track track-@item.Value" aria-hidden="true"><span></span></span>
+                            }
+                            else
+                            {
+                                @* pasimatuoji su tuo, ką jau dėvi *@
+                                <span class="shop-preview" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel
+                                    {
+                                        HatColor = category == ShopCatalog.Hats ? item.Value : card?.HatColor,
+                                        BodyColor = category == ShopCatalog.Furs ? item.Value : card?.FurColor
+                                    })</span>
+                            }
+                            <h3>@item.Name</h3>
+                            @if (owned)
+                            {
+                                <p class="shop-price">@(item.Price == 0 ? "Nemokama" : "Nupirkta")</p>
+                            }
+                            else
+                            {
+                                <p class="shop-price"><svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg> @item.Price</p>
+                            }
+                            @if (Model.EquippedItems.Contains(item.Id))
+                            {
+                                <span class="pill shop-equipped">Užsidėta</span>
+                            }
+                            else if (owned || bananas >= item.Price)
+                            {
+                                <form method="post" action="/shop/equip/@item.Id" asp-antiforgery="true">
+                                    <button class="btn @(owned ? "btn-s" : "btn-p")" type="submit">@(owned ? "Užsidėti" : "Pirkti")</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button class="btn btn-s" type="button" disabled>Trūksta @(item.Price - bananas)</button>
+                            }
+                        </article>
+                    }
+                </div>
+            }
 
             <p class="shop-note">
-                <svg class="icon" aria-hidden="true"><use href="#icon-lock"></use></svg>
-                Parduotuvė dar ruošiama. Rink bananus lenktynėse – jie išliks.
+                <svg class="icon" aria-hidden="true"><use href="#icon-banana"></use></svg>
+                Bananus renki lenktynėse. Nupirkta prekė lieka visam laikui.
             </p>
         </section>
     </div>
@@ -229,7 +250,7 @@
 </div>
 
 <script>
-    // Parduotuvės kategorijų perjungimas (tik rodymas, pirkimų dar nėra)
+    // Parduotuvės kategorijų perjungimas
     document.querySelectorAll('[data-shop-tab]').forEach(tab => tab.addEventListener('click', () => {
         document.querySelectorAll('[data-shop-tab]').forEach(t => t.setAttribute('aria-pressed', String(t === tab)));
         document.querySelectorAll('[data-shop-panel]').forEach(p => p.hidden = p.dataset.shopPanel !== tab.dataset.shopTab);

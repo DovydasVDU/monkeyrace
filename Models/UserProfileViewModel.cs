@@ -9,6 +9,9 @@ public class UserProfileViewModel
     public double AverageAccuracy { get; set; }
     public List<PastRaceViewModel> PastRaces { get; set; } = new List<PastRaceViewModel>();
     public MistakeStats Mistakes { get; set; } = new MistakeStats();
+    // Parduotuvė: nupirktų ir užsidėtų prekių Id (ShopCatalog)
+    public HashSet<string> OwnedItems { get; set; } = new HashSet<string>();
+    public HashSet<string> EquippedItems { get; set; } = new HashSet<string>();
 }
 // lygiai taspats, tik surenkama buvusių naudotojo žaidimų istorija
 public class PastRaceViewModel

@@ -56,9 +56,32 @@ public class UserController : Controller
                     ErrorCount = r.ErrorCount
                 })
                 .ToList(),
-            Mistakes = await _raceService.GetMistakeStatsAsync(userId)
+            Mistakes = await _raceService.GetMistakeStatsAsync(userId),
+            OwnedItems = (await _db.UserItems.Where(i => i.UserId == userId).Select(i => i.ItemId).ToListAsync()).ToHashSet(),
+            EquippedItems = new[]
+            {
+                ShopCatalog.Equipped(user.HatId, ShopCatalog.Hats).Id,
+                ShopCatalog.Equipped(user.FurId, ShopCatalog.Furs).Id,
+                ShopCatalog.Equipped(user.TrackId, ShopCatalog.Tracks).Id
+            }.ToHashSet()
         };
 
         return View("Stats", model); // perudodame į /Stats puslapį
+    }
+
+    // Parduotuvė: nupirkti (jei dar neturi) ir užsidėti. Forma iš Stats.cshtml, atsakymas – žinutė parduotuvėje.
+    [HttpPost("/shop/equip/{itemId}")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Equip(string itemId)
+    {
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        if (userId == null)
+            return Redirect("/");
+        var error = await _raceService.EquipItemAsync(userId.Value, itemId);
+        var item = ShopCatalog.Find(itemId);
+        TempData["ShopMessage"] = error ?? $"Užsidėta: {item.Name}.";
+        TempData["ShopError"] = error != null;
+        return Redirect($"/User/Stats?tab={item?.Category}#shop");
     }
 }

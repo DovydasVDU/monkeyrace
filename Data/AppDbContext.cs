@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<TextSnippet> TextSnippets { get; set; }
     public DbSet<UserKeyStat> UserKeyStats { get; set; }
     public DbSet<UserWordMistake> UserWordMistakes { get; set; }
+    public DbSet<UserItem> UserItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,6 +25,8 @@ public class AppDbContext : DbContext
         // Klaidų statistika: viena eilutė vienai porai / vienam žodžiui (RaceService.SaveMistakesAsync)
         modelBuilder.Entity<UserKeyStat>().HasKey(k => new { k.UserId, k.Expected, k.Typed });
         modelBuilder.Entity<UserWordMistake>().HasKey(w => new { w.UserId, w.Word });
+        // Ta pati prekė perkama tik kartą (RaceService.EquipItemAsync)
+        modelBuilder.Entity<UserItem>().HasKey(i => new { i.UserId, i.ItemId });
 
         // Seed data – pradiniai duomenys. Tekstus padarome iškart, kad nereiktų jų suvedinėti ranka
         modelBuilder.Entity<TextSnippet>().HasData(

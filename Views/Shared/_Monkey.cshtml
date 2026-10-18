@@ -6,20 +6,20 @@
     var hatColor = Model?.HatColor;
     var hasHat = !string.IsNullOrEmpty(hatColor) && hatColor != "none";
 }
-@* viewBox 160 ir lygio ženkliukas cx=134 turi sutapti su MultiPlay monkeyTemplate() *@
+@* viewBox 160 ir lygio ženkliukas cx=134 turi sutapti su monkeyTemplate() (replay.js); .monkey-fur ir .monkey-hat ten perdažomi pagal parduotuvę *@
 <svg class="monkey-svg monkey-mood-@mood" viewBox="0 0 160 160" role="img"
      aria-label="MonkeyRace beždžionėlė" xmlns="http://www.w3.org/2000/svg">
-    <path class="monkey-tail" d="M110 132 Q150 136 148 104 Q146 84 128 90" fill="none"
+    <path class="monkey-tail monkey-fur" d="M110 132 Q150 136 148 104 Q146 84 128 90" fill="none"
           stroke="@bodyColor" stroke-width="9" stroke-linecap="round" />
-    <path class="monkey-arm monkey-arm-left" d="M46 118 Q22 132 32 152" fill="none"
+    <path class="monkey-arm monkey-arm-left monkey-fur" d="M46 118 Q22 132 32 152" fill="none"
           stroke="@bodyColor" stroke-width="13" stroke-linecap="round" />
-    <path class="monkey-arm monkey-arm-right" d="M114 118 Q138 132 128 152" fill="none"
+    <path class="monkey-arm monkey-arm-right monkey-fur" d="M114 118 Q138 132 128 152" fill="none"
           stroke="@bodyColor" stroke-width="13" stroke-linecap="round" />
-    <circle cx="32" cy="74" r="20" fill="@bodyColor" />
+    <circle class="monkey-fur" cx="32" cy="74" r="20" fill="@bodyColor" />
     <circle cx="32" cy="74" r="11" fill="#F7DDB0" />
-    <circle cx="128" cy="74" r="20" fill="@bodyColor" />
+    <circle class="monkey-fur" cx="128" cy="74" r="20" fill="@bodyColor" />
     <circle cx="128" cy="74" r="11" fill="#F7DDB0" />
-    <circle cx="80" cy="78" r="50" fill="@bodyColor" />
+    <circle class="monkey-fur" cx="80" cy="78" r="50" fill="@bodyColor" />
     <ellipse cx="65" cy="74" rx="17" ry="19" fill="#F7DDB0" />
     <ellipse cx="95" cy="74" rx="17" ry="19" fill="#F7DDB0" />
     <ellipse cx="80" cy="100" rx="32" ry="22" fill="#F7DDB0" />
@@ -33,7 +33,7 @@
     {
         <path class="monkey-hat" d="M36 50 Q80 0 124 50 Q80 36 36 50 Z" fill="@hatColor"
               stroke="#123524" stroke-width="3" stroke-linejoin="round" />
-        <circle cx="80" cy="16" r="8" fill="@hatColor" stroke="#123524" stroke-width="3" />
+        <circle class="monkey-hat" cx="80" cy="16" r="8" fill="@hatColor" stroke="#123524" stroke-width="3" />
     }
     @if (Model?.Level != null)
     {

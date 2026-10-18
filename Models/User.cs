@@ -17,6 +17,11 @@ public class User
     public int Xp { get; set; }
     public int Bananas { get; set; }
 
+    // Parduotuvė: užsidėtų prekių Id (ShopCatalog); null – numatytoji nemokama
+    public string HatId { get; set; }
+    public string FurId { get; set; }
+    public string TrackId { get; set; }
+
     // Foreign key į RaceResult, kad galėtume matyti žaidimus, kuriuose dalyvavo
     public ICollection<RaceResult> RaceResults { get; set; } = new List<RaceResult>();
 }
@@ -122,4 +127,14 @@ public class UserWordMistake
     public int Misses { get; set; }
     public int CorrectStreak { get; set; }
     public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
+}
+
+// Models/UserItem.cs
+// Nupirkta prekė (ShopCatalog Id). Nemokamų prekių čia nėra – jos priklauso visiems.
+public class UserItem
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    public string ItemId { get; set; } = string.Empty;
+    public DateTime BoughtAt { get; set; } = DateTime.UtcNow;
 }

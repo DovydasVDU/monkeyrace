@@ -179,6 +179,37 @@ public sealed class RaceServiceRewardTests : IDisposable
         Assert.All(words.Where(word => word != "šuo"), word => Assert.Contains("ž", word));
     }
 
+    [Fact]
+    public async Task Shop_BuysOnce_EvenInParallel_RejectsWithoutBananas_ReequipIsFree()
+    {
+        var (userId, _) = Seed(0);
+        using (var db = NewContext())
+        {
+            db.Users.Single(u => u.Id == userId).Bananas = 400;
+            db.SaveChanges();
+        }
+        async Task<string> Equip(string itemId)
+        {
+            using var db = NewContext();
+            return await new RaceService(db).EquipItemAsync(userId, itemId);
+        }
+
+        // du paspaudimai vienu metu – nuskaičiuojama tik kartą
+        var results = await Task.WhenAll(Task.Run(() => Equip("hat-banana")), Task.Run(() => Equip("hat-banana")));
+        Assert.All(results, Assert.Null);
+        Assert.Equal("Trūksta 50 bananų.", await Equip("hat-red"));
+        Assert.Null(await Equip("hat-green")); // nemokama
+        Assert.Null(await Equip("hat-banana")); // jau nupirkta – nemokamai
+        Assert.Equal("Tokios prekės nėra.", await Equip("hat-gold"));
+
+        using var ctx = NewContext();
+        var user = ctx.Users.Single(u => u.Id == userId);
+        Assert.Equal((250, "hat-banana"), (user.Bananas, user.HatId));
+        Assert.Equal("hat-banana", ctx.UserItems.Single(i => i.UserId == userId).ItemId);
+        var card = await new RaceService(ctx).GetPlayerCardAsync(userId);
+        Assert.Equal(("#FFC93C", "#8B5E3C", "classic"), (card.HatColor, card.FurColor, card.Track));
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

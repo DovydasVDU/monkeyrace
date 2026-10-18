@@ -885,10 +885,10 @@ function renderWordErrors() {
 function renderPlayers() {
     document.getElementById("players-track").innerHTML =
         Object.values(players).map((player, index) => `
-        <div class="player-track ${player.playerKey === PLAYER_KEY ? "is-me" : ""}" id="track-${cssId(player.playerKey)}" style="--progress: 0%"
+        <div class="player-track ${player.playerKey === PLAYER_KEY ? "is-me" : ""} ${player.card ? "lane-" + player.card.track : ""}" id="track-${cssId(player.playerKey)}" style="--progress: 0%"
              tabindex="0" aria-label="${escapeHtml(player.username)}: žaidėjo kortelė">
             <span class="player-monkey ${player.isBot ? "player-monkey-bot" : "player-monkey-human"}">
-                ${monkeyTemplate(player.playerKey === PLAYER_KEY ? 2 : player.isBot ? getBotColorIndex(player, index) : index, playerLevel(player))}
+                ${monkeyTemplate(player.playerKey === PLAYER_KEY ? 2 : player.isBot ? getBotColorIndex(player, index) : index, playerLevel(player), player.isBot ? null : player.card)}
             </span>
             <span class="player-name">${escapeHtml(player.username)}
                 ${player.playerKey === PLAYER_KEY ? `<span class="tag tag-me">Tu</span>` : botBadge(player) || `<span class="tag">Žaidėjas</span>`}</span>
