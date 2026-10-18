@@ -592,7 +592,10 @@ main {
 
 @media (max-width: 640px) {
     /* vietą .mobile-tabs juostai palieka .site-footer */
+    /* trumpuose puslapiuose (lenktynės, solo) footer neturi lįsti į žaidimo ekraną – jis tik paslinkus žemyn */
     main {
+        min-height: 100vh;
+        min-height: 100svh;
         padding: 1rem 16px 2rem;
     }
 
