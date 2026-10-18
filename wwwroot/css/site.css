@@ -1141,8 +1141,17 @@ a.lb-row:hover {
         display: none;
     }
 
+    .leaderboard {
+        padding: 1rem .75rem;
+    }
+
+    /* telefone vardui palieka vietos: be „Vieta“ (5-as stulpelis), id ir datos */
     .lb-top10 {
-        grid-template-columns: 2.5rem minmax(0, 1fr) 3.5rem 4.5rem 3rem;
+        grid-template-columns: 2.25rem minmax(0, 1fr) 3rem 4rem;
+    }
+
+    .lb-top10 > :nth-child(5) {
+        display: none;
     }
 
     .lb-id {
