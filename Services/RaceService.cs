@@ -249,6 +249,8 @@ public class RaceService
             Bananas = user.Bananas,
             TotalRaces = await results.CountAsync(),
             BestWpm = await results.MaxAsync(r => (int?)r.WPM) ?? 0,
+            // kaip profilyje (UserController.Stats): visų rezultatų vidurkis, nupjautas
+            AverageWpm = (int)(await results.AverageAsync(r => (double?)r.WPM) ?? 0),
             AverageAccuracy = Math.Round(await results.AverageAsync(r => (double?)r.Accuracy) ?? 0, 2),
             HatColor = ShopCatalog.Equipped(user.HatId, ShopCatalog.Hats).Value,
             FurColor = ShopCatalog.Equipped(user.FurId, ShopCatalog.Furs).Value,
@@ -317,6 +319,7 @@ public sealed class PlayerCard
     public int Bananas { get; init; }
     public int TotalRaces { get; init; }
     public int BestWpm { get; init; }
+    public int AverageWpm { get; init; }
     public double AverageAccuracy { get; init; }
     // Parduotuvės kosmetika (ShopCatalog Value): beždžionė navbar, profilyje ir lenktynių trasoje
     public string HatColor { get; init; }
