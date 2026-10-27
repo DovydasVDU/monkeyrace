@@ -12,7 +12,7 @@
         : LessonCatalog.IsFree(lesson);
     Microsoft.AspNetCore.Html.IHtmlContent NodeBody(Lesson lesson, int stars, bool open)
     {
-        var enc = System.Net.WebUtility.HtmlEncode;
+        Func<string, string> enc = System.Net.WebUtility.HtmlEncode;
         var sb = new System.Text.StringBuilder();
         sb.Append("<span class='lesson-node-id'>").Append(lesson.Id).Append("</span>");
         sb.Append("<span class='lesson-node-title'>").Append(enc(lesson.Title)).Append("</span>");
