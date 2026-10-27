@@ -229,6 +229,13 @@ public class RaceService
         Regex.Replace((word ?? "").ToLowerInvariant(), @"[^\p{L}\p{N}-]", "").Trim('-');
 
     // Viena vieta žaidėjo statistikai: /api/stats/{username}, navbar, pagrindinis puslapis ir lenktynės
+    public async Task<LessonSummary> GetLessonSummaryAsync(int userId)
+    {
+        var rows = await _db.UserLessonProgresses.Where(p => p.UserId == userId)
+            .Select(p => new { p.LessonId, p.Stars }).ToListAsync();
+        return LessonCatalog.Summarize(rows.Select(p => (p.LessonId, p.Stars)));
+    }
+
     public async Task<PlayerCard> GetPlayerCardAsync(int userId)
     {
         var user = await _db.Users.Where(u => u.Id == userId)

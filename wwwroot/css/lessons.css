@@ -513,6 +513,122 @@ kbd {
     }
 }
 
+/* ---------- reklama: pagrindinis puslapis ir profilis ---------- */
+.lesson-promo {
+    align-items: center;
+    background: var(--cream);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    color: var(--ink);
+    display: grid;
+    gap: 1rem 2rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 24px 28px;
+}
+
+.lesson-promo-copy {
+    display: grid;
+    gap: .6rem;
+    justify-items: start;
+}
+
+.lesson-promo h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.lesson-promo p {
+    font-weight: 600;
+    max-width: 560px;
+}
+
+.lesson-promo-progress {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+    max-width: 420px;
+    width: 100%;
+}
+
+.lesson-promo-progress .xp-track {
+    flex: 1;
+}
+
+.lesson-promo-side {
+    align-items: center;
+    display: grid;
+    gap: .9rem;
+    justify-items: center;
+}
+
+.lesson-promo-keys {
+    display: flex;
+    gap: .4rem;
+}
+
+.lesson-promo-keys kbd {
+    background: var(--finger-color);
+    border: var(--border);
+    border-radius: 10px;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, .28);
+    color: var(--finger-ink);
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    min-width: 46px;
+    padding: .5rem 0;
+    text-align: center;
+}
+
+.profile-lessons {
+    background: var(--banana-soft);
+    border: var(--border);
+    border-radius: var(--radius-ctl);
+    color: var(--ink);
+    display: grid;
+    gap: .5rem;
+    padding: .9rem 1rem;
+    text-decoration: none;
+}
+
+.profile-lessons:hover {
+    background: var(--banana);
+}
+
+.profile-lessons .profile-xp-label strong {
+    align-items: center;
+    display: inline-flex;
+    gap: .4rem;
+}
+
+.profile-lessons-next {
+    font-weight: 700;
+}
+
+@media (max-width: 700px) {
+    .lesson-promo {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 22px;
+    }
+
+    .lesson-promo-side {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .75rem;
+        justify-content: space-between;
+    }
+
+    .lesson-promo-side .btn {
+        flex: 1 1 auto;
+    }
+
+    .lesson-promo-keys kbd {
+        min-width: 40px;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .kb-key, .hand-finger, .lesson-chip i, .lesson-node {
         transition: none;

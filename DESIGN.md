@@ -56,6 +56,7 @@ Visi trys turi latin-ext (ą č ę ė į š ų ū ž).
 - `.xp-track` – aukštis 14px, fonas `--cream-2`, 2px kontūras, užpildas `--leaf` (XP) arba `--banana` (lenktynių „Tu").
 - Parduotuvės takeliai (`ShopCatalog.Tracks`, klasė `.lane-<Value>` lenktynėse, `.track-<Value>` parduotuvės peržiūroje): `classic` – vientisas užpildas; `leaf` (lapeliai), `banana` (bananai), `water` (bangos) – užpildas iš pasikartojančių formų: `::after` su `mask-image: var(--mask-…)`, 26px aukščio, `width: var(--progress)`; beždžionė (`z-index: 1`) važiuoja virš užpildo.
 - Pagrindinis puslapis: „Žaisti internetu“ (`.play-card`, kompaktiška) ir „Dažniausi žodžiai“ – vienoje eilutėje (`.home-play`); skyrius „Kiti žaidimai“: Žaisk su draugais, Žaisk su botais, Solo treniruotė, Turnyrai.
+- Pamokų reklama: `.lesson-promo` (cream kortelė, per visą plotį) tarp `.home-play` ir „Kiti žaidimai“; naujokui – kvietimas pradėti, turinčiam progresą – kita pamoka ir `.xp-track`. Pirštų spalvų `kbd` (F J K L) naudoja `[data-finger]`. Profilyje – `.profile-lessons` blokas virš statistikos. Abu duomenis gauna iš `RaceService.GetLessonSummaryAsync`.
 - Profilio „Paskutinės lenktynės“: 10 eilučių, `#history-more` („Užkrauti daugiau“) kviečia `/User/PastRaces?skip=N`.
 - Lenktynių takelis – 30px cream-2 pill, 2px kontūras, užpildas banana („Tu") / leaf-light (kiti), 32px beždžionė ant progreso galo; „Tu" beždžionė su žalia kepure.
 - Lentelės eilutės – grid, dashed 2px skyrikliai `rgba(ink,.18)`; vietos 1/2/3 apskritimai (banana / `#D7D9D2` / `#E0A36A`) su 2px kontūru; vartotojo eilutė `--banana-soft`.

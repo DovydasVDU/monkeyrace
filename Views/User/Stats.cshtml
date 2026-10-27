@@ -8,6 +8,7 @@
     var card = userId == null ? null : await RaceService.GetPlayerCardAsync(userId.Value);
     var xpPercent = card == null ? 0 : (int)Math.Round(card.LevelProgress * 100);
     var bananas = card?.Bananas ?? 0;
+    var lessons = userId == null ? null : await RaceService.GetLessonSummaryAsync(userId.Value);
     // po pirkimo grįžtam į tą pačią kategoriją (UserController.Equip)
     var shopTab = ShopCatalog.Items.Any(item => item.Category == Context.Request.Query["tab"])
         ? Context.Request.Query["tab"].ToString() : ShopCatalog.Hats;
@@ -42,6 +43,22 @@
                         <span style="width:@(xpPercent)%"></span>
                     </span>
                 </div>
+            }
+
+            @if (lessons != null)
+            {
+                var lessonPercent = lessons.Total == 0 ? 0 : lessons.Done * 100 / lessons.Total;
+                <a class="profile-lessons" href="/pamokos">
+                    <span class="profile-xp-label">
+                        <strong><svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg>Pamokos: @lessons.Done iš @lessons.Total</strong>
+                        <span><svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg> @lessons.Stars / @(lessons.Total * 3)</span>
+                    </span>
+                    <span class="xp-track" role="progressbar" aria-label="Įveiktos pamokos"
+                          aria-valuemin="0" aria-valuemax="100" aria-valuenow="@lessonPercent">
+                        <span style="width:@(lessonPercent)%"></span>
+                    </span>
+                    <span class="profile-lessons-next">@(lessons.Next == null ? "Visos pamokos įveiktos – kartok, kad gautum 3 žvaigždutes" : lessons.Done == 0 ? "Pradėk aklojo rašymo kursą" : $"Tęsk: {lessons.Next.Id} {lessons.Next.Title}")</span>
+                </a>
             }
 
             <div class="profile-stats">

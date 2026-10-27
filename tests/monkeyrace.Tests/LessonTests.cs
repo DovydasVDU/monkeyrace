@@ -316,6 +316,23 @@ public sealed class LessonCompleteTests : IDisposable
         Assert.Contains("\"items\"", await first.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public void Summarize_CountsPassedLessons_AndPicksFirstUnpassedAsNext()
+    {
+        var empty = LessonCatalog.Summarize(Array.Empty<(string, int)>());
+        Assert.Equal(0, empty.Done);
+        Assert.Equal(LessonCatalog.All[0], empty.Next);
+
+        var some = LessonCatalog.Summarize(new[] { ("1-1", 3), ("1-2", 1), ("1-3", 0) });
+        Assert.Equal(2, some.Done);
+        Assert.Equal(4, some.Stars);
+        Assert.Equal("1-3", some.Next!.Id);
+
+        var all = LessonCatalog.Summarize(LessonCatalog.All.Select(l => (l.Id, 1)));
+        Assert.Equal(all.Total, all.Done);
+        Assert.Null(all.Next);
+    }
+
     public void Dispose()
     {
         _factory.Dispose();

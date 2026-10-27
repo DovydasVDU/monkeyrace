@@ -74,6 +74,7 @@ Klaviatūros kursas: 6 modulių, 29 pamokų žemėlapis nuo namų eilutės iki s
 - **Prisitaikantis variklis** (`Services/LessonEngine.cs`, grynos funkcijos): kiekvienas raundas sudaromas iš žodžių su dar neįvaldytais klavišais, dažniau kartojami silpni klavišai, ilgis auga ar mažėja pagal tikslumą. Tempas (ramiai / įprastai / greitai) keičia reikalaujamą tikslumą ir raundo ilgį.
 - **Klaviatūra ir rankos** – rodomas kitas klavišas ir pirštas (spalvos pagal pirštą), užuominas galima išjungti. Lietuviškos raidės (ą č ę ė į š ų ū ž) rašomos kaip lietuviškoje klaviatūroje, o didžiosios – su Shift (pvz. Š = Shift + 6).
 - **Pažanga**: 1–3 žvaigždutės (tikslumas, pamokoms su tikslu – ir WPM), XP ir bananai tik už naujai gautas žvaigždutes. Pirmos 3 pamokos žaidžiamos be paskyros (progresas naršyklėje, prisijungus sinchronizuojamas), likusios atsirakina paeiliui.
+- **Matomumas**: pagrindiniame puslapyje – juosta „Klaviatūros kursas“ (naujokui kvietimas pradėti, turinčiam progresą – kita pamoka ir juosta), profilyje – „Pamokos: X iš 29“ su žvaigždučių suma ir nuoroda tęsti.
 - Serveris be būsenos: klientas siunčia raundo statistiką, serveris grąžina kitą raundą; baigus pamoką rezultatas perskaičiuojamas serveryje ir tikrinamas pagal pamokos pradžios laiką.
 
 ### Progresas ir bendruomenė

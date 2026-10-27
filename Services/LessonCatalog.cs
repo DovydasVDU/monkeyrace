@@ -3,6 +3,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+public sealed class LessonSummary
+{
+    public int Done { get; init; }
+    public int Total { get; init; }
+    public int Stars { get; init; }
+    // null, kai įveiktos visos pamokos
+    public Lesson Next { get; init; }
+}
+
 public enum LessonKind
 {
     // pačios pirmos pamokos: raidžių grupės, nes su 2–4 raidėmis tikrų žodžių nėra
@@ -209,6 +218,21 @@ public static class LessonCatalog
     public static Lesson Next(Lesson lesson) => lesson.Index + 1 < All.Count ? All[lesson.Index + 1] : null;
 
     public static bool IsFree(Lesson lesson) => lesson.Index < FreeLessons;
+
+    // Santrauka profiliui ir pagrindiniam puslapiui. Pamoka įveikta, kai turi bent 1 žvaigždutę;
+    // kita – pirma neįveikta (prisijungusiam ji visada atrakinta, nes pamokos atrakinamos paeiliui).
+    public static LessonSummary Summarize(IEnumerable<(string LessonId, int Stars)> progress)
+    {
+        var stars = progress.GroupBy(p => p.LessonId).ToDictionary(g => g.Key, g => g.Max(p => p.Stars));
+        var done = All.Count(lesson => stars.GetValueOrDefault(lesson.Id) > 0);
+        return new LessonSummary
+        {
+            Done = done,
+            Total = All.Count,
+            Stars = All.Sum(lesson => stars.GetValueOrDefault(lesson.Id)),
+            Next = All.FirstOrDefault(lesson => stars.GetValueOrDefault(lesson.Id) == 0)
+        };
+    }
 
     // Konstruktoriaus trumpinys katalogo sąrašui
     private sealed record LessonSpec(string Id, string Title, string NewKeys, LessonKind Kind, int Hints, int StartLevel,

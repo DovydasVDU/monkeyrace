@@ -1,8 +1,14 @@
 ﻿@using System.Security.Claims
 @using Microsoft.AspNetCore.Http
+@inject RaceService RaceService
 @{
     ViewData["Title"] = "MonkeyRace";
     var currentUser = User.FindFirstValue(ClaimTypes.Name);
+    var homeUserId = PlayerIdentity.GetUserId(Context);
+    var lessons = homeUserId == null ? null : await RaceService.GetLessonSummaryAsync(homeUserId.Value);
+    var lessonPercent = lessons == null || lessons.Total == 0 ? 0 : lessons.Done * 100 / lessons.Total;
+    // kur veda mygtukas: svečiui ir naujokui – pirma pamoka, kitiems – kita neįveikta
+    var lessonHref = lessons?.Next == null ? "/pamokos" : "/pamokos/" + lessons.Next.Id;
 }
 
 <div class="home">
@@ -54,6 +60,39 @@
             </div>
         </article>
     </div>
+
+    <section class="lesson-promo" aria-labelledby="promo-title">
+        <div class="lesson-promo-copy">
+            <span class="play-card-tag">Klaviatūros kursas</span>
+            @if (lessons != null && lessons.Done > 0)
+            {
+                <h2 id="promo-title">@(lessons.Next == null ? "Visos pamokos įveiktos" : "Tęsk aklojo rašymo kursą")</h2>
+                <p>@(lessons.Next == null
+                    ? "Grįžk prie pamokų ir surink visas 3 žvaigždutes."
+                    : $"Kita pamoka {lessons.Next.Id}: {lessons.Next.Title}.")</p>
+                <div class="lesson-promo-progress">
+                    <span class="xp-track" role="progressbar" aria-label="Įveiktos pamokos"
+                          aria-valuemin="0" aria-valuemax="100" aria-valuenow="@lessonPercent">
+                        <span style="width:@(lessonPercent)%"></span>
+                    </span>
+                    <strong>@lessons.Done / @lessons.Total</strong>
+                </div>
+            }
+            else
+            {
+                <h2 id="promo-title">Išmok rašyti nežiūrėdamas į klaviatūrą</h2>
+                <p>@LessonCatalog.All.Count trumpų pamokų: ekrane matai klaviatūrą ir rankas, o pamoka prisitaiko prie tavo tikslumo. Pirmos @LessonCatalog.FreeLessons – be paskyros.</p>
+            }
+        </div>
+        <div class="lesson-promo-side">
+            <span class="lesson-promo-keys" aria-hidden="true">
+                <kbd data-finger="li">F</kbd><kbd data-finger="ri">J</kbd><kbd data-finger="rm">K</kbd><kbd data-finger="rr">L</kbd>
+            </span>
+            <a class="btn btn-p" href="@lessonHref">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg>@(lessons != null && lessons.Done > 0 ? "Tęsti pamoką" : "Pradėti pamokas")
+            </a>
+        </div>
+    </section>
 
     <section class="home-section" aria-labelledby="modes-title">
         <h2 id="modes-title" class="section-title">Kiti žaidimai</h2>
