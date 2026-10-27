@@ -13,7 +13,6 @@ public sealed class KeyPerf
 {
     public int Attempts { get; set; }
     public int Misses { get; set; }
-    public double TotalMs { get; set; }
 }
 
 public sealed class RoundPlan
@@ -22,8 +21,6 @@ public sealed class RoundPlan
     public string Reason { get; init; } = "";
     public int Level { get; init; }
     public List<string> Items { get; init; } = new();
-    // klavišai, kuriuos dabar treniruojame (rodomi žaidėjui)
-    public string Focus { get; init; } = "";
 }
 
 // Adaptyvi pamokos logika be LLM: grynos funkcijos, todėl lengvai testuojamos.
@@ -125,9 +122,8 @@ public static class LessonEngine
             return new RoundPlan { Done = true, Reason = done.Reason, Level = level };
 
         level = Math.Clamp(AdaptLevel(level, lastAccuracy, roundsDone), 0, MaxLevel);
-        var focus = FocusKeys(lesson);
         var weak = WeakKeys(lesson, keys, pace);
-        var plan = new RoundPlan { Level = level, Focus = focus.Length > 0 ? focus : new string(weak.ToArray()) };
+        var plan = new RoundPlan { Level = level };
 
         if (lesson.Kind == LessonKind.Sentences)
         {

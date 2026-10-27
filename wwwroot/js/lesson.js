@@ -68,7 +68,6 @@
     let tokenError = false;
     let roundErrors = 0;
     let roundStart = 0;
-    let lastKeyAt = 0;
     let busy = false;
     // žodžiai į klaidų statistiką tik iš didelių žodžių telkinių (pačios pirmos pamokos naudoja raidžių grupes)
     const trackWords = lesson.kind !== "Drill" && lesson.index >= 6;
@@ -82,7 +81,7 @@
     }
 
     function perfOf(key) {
-        return run.keys[key] || (run.keys[key] = { attempts: 0, misses: 0, totalMs: 0 });
+        return run.keys[key] || (run.keys[key] = { attempts: 0, misses: 0 });
     }
 
     function isUpper(ch) {
@@ -242,10 +241,7 @@
         }
         event.preventDefault();
         const now = performance.now();
-        if (!roundStart) {
-            roundStart = now;
-            lastKeyAt = now;
-        }
+        if (!roundStart) roundStart = now;
         const expected = text[pos];
         if (event.key === expected) hit(expected, now);
         else miss(expected, event.key);
@@ -255,10 +251,8 @@
         if (expected !== " ") {
             const perf = perfOf(expected.toLowerCase());
             perf.attempts++;
-            perf.totalMs += Math.min(3000, Math.max(0, now - lastKeyAt));
             if (isUpper(expected)) perfOf(SHIFT).attempts++;
         }
-        lastKeyAt = now;
         cells[pos].classList.remove("is-miss");
         cells[pos].classList.add("is-ok");
         LessonKeyboard.flash(expected, "ok");

@@ -97,7 +97,7 @@ namespace monkeyrace.Controllers
 
             var plan = LessonEngine.NextRound(lesson, pace, roundsDone, level, dto.LastAccuracy, dto.LastWpm,
                 keys, recent, sentences, Random.Shared);
-            return Json(new { done = plan.Done, reason = plan.Reason, level = plan.Level, items = plan.Items, focus = plan.Focus });
+            return Json(new { done = plan.Done, reason = plan.Reason, level = plan.Level, items = plan.Items });
         }
 
         // Pamokos pabaiga: žvaigždutės skaičiuojamos serveryje iš raundų statistikos

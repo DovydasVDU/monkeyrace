@@ -189,7 +189,6 @@ public class LessonEngineTests
             Array.Empty<string>(), Array.Empty<string>(), new Random(6));
         Assert.False(plan.Done);
         Assert.Equal(pace.RoundItems, plan.Items.Count);
-        Assert.Equal("ou", plan.Focus);
 
         var done = LessonEngine.NextRound(lesson, pace, LessonEngine.MaxRounds, 2, 80, 10, NoKeys,
             Array.Empty<string>(), Array.Empty<string>(), new Random(6));
