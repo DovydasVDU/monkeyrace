@@ -54,14 +54,14 @@ peržiūrėti visas lenktynes iš naujo, o už rezultatus gauni XP, lygius ir ba
 - **Klaida matoma iš karto**: neteisinga raidė raudona su laukiama raide po apačia, o visas žodis ir rašymo laukas parausta, kol klaida ištaisoma.
 - Žodis su klaida **neleidžia pereiti toliau** (tarpas atmetamas) – kaip TypeRacer.
 - Rašymo lauke matosi **tik rašomas žodis**; jau parašytas tekstas matosi aukščiau.
-- **Telefone** ilgas tekstas rodomas 4 eilučių lange, kuris pats slenka (rašoma eilutė visada antra), o starte teksto kortelė pakeliama virš klaviatūros.
+- Ilgas tekstas visur rodomas 4 eilučių lange, kuris pats slenka (rašoma eilutė visada antra), o lenktynių ir pamokų viršus kompiuteryje sutankintas, kad rašymo laukas telptų į ekraną be slinkimo (1366×650 ir didesniuose). **Telefone** starte teksto kortelė dar pakeliama virš klaviatūros.
 - Online: Ctrl/Alt + Backspace ištrina visą žodį; įklijuoti tekstą draudžiama.
 
 ### Po lenktynių
 
 - **Podiumas ir asmeninis rezultatas** su gautais XP ir bananais.
 - **Lenktynių istorija** – lyderio juosta laike ir aplenkimų sąrašas.
-- **Perklausa** – visas lenktynes galima peržiūrėti iš naujo (0,5×–2×), o ant teksto spalvomis matyti, kur kiekvienas žaidėjas buvo ir kuris pirmavo.
+- **Perklausa** – visas lenktynes galima peržiūrėti iš naujo (0,5×–2×), o ant teksto spalvomis matyti, kur kiekvienas žaidėjas buvo ir kuris pirmavo. Žodžių režime (online) perklausa rodoma rezultatų ekrane: kelias iki to, kiek parašė greičiausias; ji neišsaugoma, todėl Top 10 jos nėra.
 - **Mano greitis** – WPM grafikas per lenktynes.
 - **Klaidos** – tekstas su pataisytomis ir likusiomis klaidomis.
 - **Šio teksto lyderiai** – 10 geriausių online rezultatų būtent šiam tekstui, su perklausa ir data.

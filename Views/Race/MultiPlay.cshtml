@@ -204,6 +204,8 @@ const connection = new signalR.HubConnectionBuilder()
     .build();
 
 let targetText = "";
+// žodžių režime targetText sutrumpinamas iki mano paskutinio žodžio; perklausai reikia viso (varžovas galėjo parašyti daugiau)
+let fullTargetText = "";
 let startAtUtc = null;
 let serverOffsetMs = 0;
 let raceStarted = false;
@@ -411,6 +413,7 @@ function showPersonalResult(data) {
     if (durationSeconds) {
         // žodžių režime klaidos ir teksto statistika skaičiuojamos tik iki žodžio, kurį rašei baigiantis laikui
         const range = getTargetWordRanges()[getActiveWordIndex(typedText())];
+        fullTargetText = targetText;
         if (range) targetText = targetText.slice(0, range.end);
     }
     finished = true;
@@ -588,9 +591,18 @@ connection.on("RaceFinished", data => {
     // rezultatai į DB įrašomi prieš RaceFinished, todėl šios lenktynės jau sąraše
     loadTextLeaderboard(data.textInfo?.id, IS_AUTHENTICATED ? me?.username : null);
     renderRaceHistory();
-    // perklausa rodo kelią iki finišo, o žodžių režime finišo nėra
-    if (durationSeconds) document.getElementById("replay-race").hidden = true;
-    else renderReplay(raceTimeline, data.textLength || targetText.length, botBadge, targetText);
+    // klasikinėse lenktynėse kelias eina iki finišo; žodžių režime finišo nėra, todėl kelias – iki to, kiek parašė greičiausias
+    if (durationSeconds) {
+        const typed = Math.max(0, ...raceTimeline.players.flatMap(player => player.series));
+        const wordsText = fullTargetText || targetText;
+        const shown = Math.min(typed, wordsText.length);
+        if (shown > 0)
+            renderReplay(raceTimeline, shown, botBadge, wordsText.slice(0, shown));
+        else
+            document.getElementById("replay-race").hidden = true;
+    } else {
+        renderReplay(raceTimeline, data.textLength || targetText.length, botBadge, targetText);
+    }
     renderWpmChart();
     renderWordErrors();
 });

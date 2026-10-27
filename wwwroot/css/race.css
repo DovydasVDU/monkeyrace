@@ -491,9 +491,14 @@
 .text-display {
     color: var(--ink);
     font-family: var(--font-mono);
-    font-size: 25px;
+    font-size: 24px;
     font-weight: 500;
     line-height: 1.85;
+    /* ilgas tekstas: matomos 4 eilutės, JS (scrollTop) laiko rašomą eilutę antra – kad laukas nenusibostų žemyn */
+    max-height: calc(4 * 1.85em);
+    overflow: hidden;
+    position: relative;
+    scroll-behavior: smooth;
     user-select: none;
     word-break: break-word;
 }
@@ -698,6 +703,76 @@
 
     .race-screen:has(#text-display:not(:empty)) :is(.text-card, .race-hint) {
         order: -1;
+    }
+}
+
+/* ---------- Kompaktas: rašymo laukas telpa į ekraną be slinkimo (kompiuteris) ---------- */
+@media (min-width: 641px) {
+    main:has(.race-screen) {
+        padding-top: .5rem;
+    }
+
+    body:has(.race-screen) .navbar {
+        padding-bottom: .5rem;
+        padding-top: .5rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) {
+        gap: .75rem;
+    }
+
+    /* viena eilutė: Išeiti | pavadinimas | WPM, tikslumas, laikas */
+    .race-screen:has(#text-display:not(:empty)) .race-topbar {
+        align-items: center;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .race-leave {
+        grid-column: auto;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .race-title-wrap {
+        gap: .25rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .race-title-wrap h1 {
+        font-size: 1.6rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .stat-pill {
+        min-width: 5.5rem;
+        padding: .2rem .8rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .stat-pill strong {
+        font-size: 1.3rem;
+    }
+
+    /* „Rašyk kuo greičiau!“ ir žaidėjų skaičius rašant nereikalingi; po finišo būsena vėl matoma */
+    .race-screen:has(#text-display:not(:empty)):not(:has(#race-result:not([hidden]))) :is(.queue-status, .queue-meta) {
+        display: none;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .tracks-card {
+        gap: .35rem;
+        padding: .75rem 1.25rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .players-track {
+        gap: .25rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .player-track {
+        min-height: 38px;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .text-card {
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .race-screen:has(#text-display:not(:empty)) .race-hint {
+        margin-top: -.25rem;
     }
 }
 

@@ -629,6 +629,98 @@ kbd {
     }
 }
 
+/* ---------- Kompaktas: tekstas ir klaviatūra telpa į ekraną be slinkimo (kompiuteris) ---------- */
+@media (min-width: 641px) {
+    main:has(.lesson-screen) {
+        padding-top: .5rem;
+    }
+
+    .lesson-screen {
+        gap: .75rem;
+    }
+
+    /* viena eilutė: Atgal | pavadinimas | WPM, tikslumas, raundas */
+    .lesson-screen .race-topbar {
+        align-items: center;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .lesson-screen .race-leave {
+        grid-column: auto;
+    }
+
+    .lesson-screen .race-title-wrap {
+        gap: .25rem;
+    }
+
+    .lesson-screen .race-title-wrap h1 {
+        font-size: 1.6rem;
+    }
+
+    .lesson-screen .stat-pill {
+        min-width: 5.5rem;
+        padding: .2rem .8rem;
+    }
+
+    .lesson-screen .stat-pill strong {
+        font-size: 1.3rem;
+    }
+
+    /* klavišų žetonai ir atsiliepimas vienoje eilutėje, tekstas – po jais */
+    .lesson-screen .lesson-text-card {
+        gap: .5rem 1rem;
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: 1rem 1.5rem;
+    }
+
+    .lesson-chips {
+        grid-column: 1;
+        grid-row: 1;
+        margin-bottom: 0;
+    }
+
+    .lesson-text {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .lesson-feedback {
+        align-self: center;
+        grid-column: 2;
+        grid-row: 1;
+        text-align: right;
+    }
+
+    .lesson-text {
+        font-size: 28px;
+        line-height: 1.8;
+    }
+
+    .lesson-feedback {
+        margin-top: 0;
+    }
+
+    .lesson-keys {
+        gap: .5rem;
+        padding: 1rem 1.5rem;
+    }
+
+    .kb-key {
+        height: 40px;
+    }
+
+    .lesson-hands {
+        max-width: 380px;
+    }
+}
+
+/* žemas langas: rankų paveikslėlis nebetelpa, lieka klaviatūra (Pagalba vis tiek rodo kitą klavišą) */
+@media (min-width: 641px) and (max-height: 780px) {
+    .lesson-hands {
+        display: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .kb-key, .hand-finger, .lesson-chip i, .lesson-node {
         transition: none;
