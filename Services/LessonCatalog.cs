@@ -142,7 +142,7 @@ public static class LessonCatalog
                 new("5-1", "Didžiosios raidės", Shift.ToString(), LessonKind.Words, 1, 1,
                     "Laikyk Shift priešingos rankos mažuoju pirštu: kairės rankos raidei dešinį Shift, dešinės rankos raidei kairįjį. Pirma nuspausk Shift, paskui raidę.", capitals: true),
                 new("5-2", "Didžiosios lietuviškos raidės", LtCapitals.ToString(), LessonKind.Words, 2, 1,
-                    "Lietuviškos didžiosios rašomos taip pat: laikyk Shift priešingos rankos mažuoju pirštu ir spausk raidę skaičių eilutėje. Pavyzdžiui, Š yra Shift ir 6 klavišas (dešinės rankos rodomasis). Jei vietoje raidės matai skaičių ar ženklą (! @ #), perjunk klaviatūrą į lietuvišką (Alt + Shift). Kai kuriuose išdėstymuose didžiąją raidę gausi su Caps Lock.", capitals: true),
+                    "Lietuviškos didžiosios rašomos taip pat: laikyk Shift priešingos rankos mažuoju pirštu ir spausk raidę skaičių eilutėje. Pavyzdžiui, Š yra Shift ir 6 klavišas (dešinės rankos rodomasis). Jei vietoje raidės matai skaičių ar ženklą (! @ #), perjunk klaviatūrą į lietuvišką (Alt + Shift).", capitals: true),
                 new("5-3", "Klaustukas ir brūkšnelis", "?-", LessonKind.Words, 1, 1,
                     "Klaustukas rašomas su Shift. Brūkšnelis yra šalia nulio, dešiniajame skaičių eilutės gale."),
                 new("5-4", "Pirmieji sakiniai", "", LessonKind.Sentences, 1, 2,

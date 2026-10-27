@@ -292,7 +292,7 @@
             setFeedback("Pirma nuspausk Shift, laikyk jį ir tada spausk raidę.");
         else if (LessonKeyboard.looksLikeWrongLayout(expected, typed))
             setFeedback(isUpper(expected)
-                ? "Vietoje raidės išėjo skaičius ar ženklas. Perjunk klaviatūrą į lietuvišką (Alt + Shift) arba bandyk didžiąją raidę su Caps Lock."
+                ? "Vietoje raidės išėjo skaičius ar ženklas. Perjunk klaviatūrą į lietuvišką (Alt + Shift) ir bandyk dar kartą."
                 : "Atrodo, įjungta ne lietuviška klaviatūra. Perjunk išdėstymą (Alt + Shift) ir bandyk dar kartą.");
         updateChips();
         updateStats();
