@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.IO;
+using System.Security.Claims;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -106,7 +107,9 @@ public class Startup
                 // shortcut: viena PK užklausa per kiekvieną prisijungusio vartotojo užklausą; jei apkrova išaugs, cache'inti kelioms minutėms
                 options.Events.OnValidatePrincipal = async context =>
                 {
-                    var userId = PlayerIdentity.GetUserId(context.HttpContext);
+                    // čia HttpContext.User dar tuščias: tikrinamas ką tik iš slapuko atkurtas context.Principal
+                    var userId = int.TryParse(context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var parsedId)
+                        ? parsedId : (int?)null;
                     var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
                     if (userId == null || !await db.Users.AnyAsync(u => u.Id == userId.Value))
                     {
