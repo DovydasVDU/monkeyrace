@@ -36,7 +36,7 @@
     }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
     // naujų klavišų pavadinimai pamokos įžangai
-    var newKeyLabels = Model.NewKeys.Select(key => key == LessonCatalog.Shift ? "Shift" : key.ToString().ToUpperInvariant()).ToList();
+    var newKeyLabels = LessonCatalog.KeyLabels(Model).ToList();
 }
 
 <div class="lesson-page">

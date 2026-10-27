@@ -19,8 +19,8 @@
         sb.Append("<span class='lesson-node-keys'>");
         if (lesson.IsReview)
             sb.Append("Kartojimas");
-        foreach (var key in lesson.NewKeys)
-            sb.Append("<kbd>").Append(key == LessonCatalog.Shift ? "Shift" : enc(key.ToString().ToUpperInvariant())).Append("</kbd>");
+        foreach (var label in LessonCatalog.KeyLabels(lesson))
+            sb.Append("<kbd>").Append(enc(label)).Append("</kbd>");
         sb.Append("</span>");
         sb.Append("<span class='lesson-stars' aria-label='").Append(stars).Append(" iš 3 žvaigždučių'>");
         if (!open)

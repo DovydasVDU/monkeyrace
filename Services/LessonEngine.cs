@@ -169,6 +169,7 @@ public static class LessonEngine
         var letters = new HashSet<char>(lesson.AllowedKeys.Where(char.IsLetter));
         var punct = lesson.AllowedKeys.Where(c => ",.?-".Contains(c)).ToArray();
         var capitals = lesson.AllowedKeys.Contains(LessonCatalog.Shift);
+        var ltCaps = lesson.AllowedKeys.Contains(LessonCatalog.LtCapitals);
         var focus = FocusKeys(lesson).Where(char.IsLetter).ToArray();
         var recentSet = new HashSet<string>((recent ?? Array.Empty<string>()).Select(Normalize), StringComparer.Ordinal);
         var (min, max) = LengthRange(level);
@@ -219,7 +220,15 @@ public static class LessonEngine
 
         var drillOnly = lesson.Kind == LessonKind.Drill;
         // Capitals pamokoje didžioji raidė – pagrindinis tikslas
-        var mixNames = capitals ? LessonWords.Names.Where(name => Typeable(name) && IsBasicLatin(name[0])).ToList() : new List<string>();
+        var mixNames = capitals
+            ? LessonWords.Names.Where(name => Typeable(name) && CanCapitalise(name[0], ltCaps)).ToList()
+            : new List<string>();
+        // lietuviškų didžiųjų pamoka: žodžiai, prasidedantys Ą, Č, Š, Ž ... (didžiąja)
+        var ltInitial = lesson.LtCapitals
+            ? LessonWords.Lower.Where(w => Typeable(w) && !IsBasicLatin(w[0]) && InRange(w, 2))
+                .Select(w => char.ToUpperInvariant(w[0]) + w.Substring(1))
+                .Concat(mixNames.Where(name => !IsBasicLatin(name[0]))).ToList()
+            : new List<string>();
         var guard = 0;
         while (items.Count < count && guard++ < count * 8)
         {
@@ -236,7 +245,14 @@ public static class LessonEngine
             if (word == null || (main.Count < 4 && rng.NextDouble() < 0.6) || drillOnly)
                 word = Drill(lesson, focus, level, rng);
 
-            word = Decorate(word, lesson, punct, capitals, mixNames, rng);
+            var ltPicked = false;
+            if (ltInitial.Count > 0 && rng.NextDouble() < 0.8)
+            {
+                word = ltInitial[rng.Next(ltInitial.Count)];
+                ltPicked = true;
+            }
+
+            word = Decorate(word, lesson, punct, capitals && !ltPicked, mixNames, ltCaps, rng);
             if (word.Length == 0 || (used.Contains(Normalize(word)) && main.Count >= count))
                 continue;
             used.Add(Normalize(word));
@@ -285,11 +301,13 @@ public static class LessonEngine
     }
 
     // Didžiąsias lietuviškas raides (Š, Ž ...) kai kuriuose išdėstymuose reikia rinkti kitaip (Caps Lock), todėl
-    // Shift pamokose didžiosios tik a-z
+    // jos naudojamos tik nuo pamokos, kurioje to išmokstama (LessonCatalog.LtCapitals); anksčiau – tik a-z
     private static bool IsBasicLatin(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 
+    private static bool CanCapitalise(char c, bool ltCaps) => IsBasicLatin(c) || (ltCaps && char.IsLetter(c));
+
     // Didžioji raidė, skyryba: kad žodis atrodytų kaip tekste
-    public static string Decorate(string word, Lesson lesson, char[] punct, bool capitals, List<string> names, Random rng)
+    public static string Decorate(string word, Lesson lesson, char[] punct, bool capitals, List<string> names, bool ltCaps, Random rng)
     {
         if (word.Length == 0)
             return word;
@@ -301,7 +319,7 @@ public static class LessonEngine
             {
                 if (names.Count > 0 && rng.NextDouble() < 0.5)
                     word = names[rng.Next(names.Count)];
-                else if (IsBasicLatin(word[0]))
+                else if (CanCapitalise(word[0], ltCaps))
                     word = char.ToUpperInvariant(word[0]) + word.Substring(1);
             }
         }
@@ -342,13 +360,14 @@ public static class LessonEngine
     public static bool IsTypeable(Lesson lesson, string text)
     {
         var capitals = lesson.AllowedKeys.Contains(LessonCatalog.Shift);
+        var ltCaps = lesson.AllowedKeys.Contains(LessonCatalog.LtCapitals);
         foreach (var c in text)
         {
             if (c == ' ')
                 continue;
             if (char.IsLetter(c))
             {
-                if (char.IsUpper(c) && (!capitals || !IsBasicLatin(c)))
+                if (char.IsUpper(c) && (!capitals || !CanCapitalise(c, ltCaps)))
                     return false;
                 if (!lesson.AllowedKeys.Contains(char.ToLowerInvariant(c)))
                     return false;
@@ -383,7 +402,7 @@ public static class LessonEngine
             if (words.Count == 0)
                 break;
             var line = string.Join(" ", words);
-            line = (IsBasicLatin(line[0]) ? char.ToUpperInvariant(line[0]) : line[0]) + line.Substring(1) + ".";
+            line = (CanCapitalise(line[0], lesson.AllowedKeys.Contains(LessonCatalog.LtCapitals)) ? char.ToUpperInvariant(line[0]) : line[0]) + line.Substring(1) + ".";
             if (!lesson.AllowedKeys.Contains('.'))
                 line = line.TrimEnd('.');
             if (!lesson.AllowedKeys.Contains(LessonCatalog.Shift))

@@ -45,6 +45,8 @@ public sealed class Lesson
     public bool Capitals { get; init; }
 
     public bool IsReview => NewKeys.Length == 0;
+    // pamoka, kurioje mokomasi rašyti didžiąsias lietuviškas raides (Ą, Č, Š, Ž ...)
+    public bool LtCapitals => NewKeys.Contains(LessonCatalog.LtCapitals);
 }
 
 // Visa mokymo programa vienoje vietoje (kaip ShopCatalog). Pamokos eina iš eilės; raidės kaupiamos:
@@ -55,6 +57,23 @@ public static class LessonCatalog
     public const int FreeLessons = 3;
     // „Shift“ kaip mokomas klavišas (didžiosios raidės)
     public const char Shift = '⇧';
+    // „didžiosios lietuviškos raidės“: nuo šios pamokos žodžiuose ir sakiniuose gali būti Ą, Č, Š, Ž ... didžiosiomis
+    public const char LtCapitals = '⇪';
+
+    // Mokomų klavišų užrašai kortelėms ir pamokos įžangai
+    public static IEnumerable<string> KeyLabels(Lesson lesson)
+    {
+        foreach (var key in lesson.NewKeys)
+        {
+            if (key == Shift)
+                yield return "Shift";
+            else if (key == LtCapitals)
+                foreach (var letter in "ĄČĘĖĮŠŲŪŽ")
+                    yield return letter.ToString();
+            else
+                yield return key.ToString().ToUpperInvariant();
+        }
+    }
 
     public static readonly IReadOnlyList<LessonModule> Modules;
     public static readonly IReadOnlyList<Lesson> All;
@@ -122,9 +141,11 @@ public static class LessonCatalog
             {
                 new("5-1", "Didžiosios raidės", Shift.ToString(), LessonKind.Words, 1, 1,
                     "Laikyk Shift priešingos rankos mažuoju pirštu: kairės rankos raidei dešinį Shift, dešinės rankos raidei kairįjį. Pirma nuspausk Shift, paskui raidę.", capitals: true),
-                new("5-2", "Klaustukas ir brūkšnelis", "?-", LessonKind.Words, 1, 1,
+                new("5-2", "Didžiosios lietuviškos raidės", LtCapitals.ToString(), LessonKind.Words, 2, 1,
+                    "Lietuviškos didžiosios rašomos taip pat: laikyk Shift priešingos rankos mažuoju pirštu ir spausk raidę skaičių eilutėje. Pavyzdžiui, Š yra Shift ir 6 klavišas (dešinės rankos rodomasis). Jei vietoje raidės matai skaičių ar ženklą (! @ #), perjunk klaviatūrą į lietuvišką (Alt + Shift). Kai kuriuose išdėstymuose didžiąją raidę gausi su Caps Lock.", capitals: true),
+                new("5-3", "Klaustukas ir brūkšnelis", "?-", LessonKind.Words, 1, 1,
                     "Klaustukas rašomas su Shift. Brūkšnelis yra šalia nulio, dešiniajame skaičių eilutės gale."),
-                new("5-3", "Pirmieji sakiniai", "", LessonKind.Sentences, 1, 2,
+                new("5-4", "Pirmieji sakiniai", "", LessonKind.Sentences, 1, 2,
                     "Tikri tekstai su didžiosiomis raidėmis, kableliais ir taškais."),
             }),
             ("6", "Ritmas ir greitis", "Tolygiai, be pauzių. Pirmieji 30 WPM.", "trophy", new List<LessonSpec>

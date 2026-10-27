@@ -22,6 +22,9 @@ const MR_LAYOUT = {
     spaceFinger: "rt"
 };
 
+// US išdėstyme Shift + skaičių eilutės klavišas
+const MR_SHIFTED_DIGITS = { "1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&", "8": "*", "=": "+" };
+
 const MR_FINGER_NAMES = {
     lp: "kairės rankos mažuoju pirštu",
     lr: "kairės rankos bevardžiu",
@@ -173,6 +176,12 @@ const LessonKeyboard = (() => {
                 Object.values(shiftEls).forEach(node => node.classList.add("is-new"));
                 continue;
             }
+            // didžiosios lietuviškos raidės: Shift ir visos lietuviškos raidės skaičių eilutėje
+            if (ch === "⇪") {
+                Object.values(shiftEls).forEach(node => node.classList.add("is-new"));
+                MR_LAYOUT.rows[0].filter(def => def.lt).forEach(def => keyEls.get(def.k).classList.add("is-new"));
+                continue;
+            }
             const spot = locate(ch);
             if (spot && spot.el) spot.el.classList.add("is-new");
             if (ch in MR_LAYOUT.shifted && spot && spot.shiftEl) spot.shiftEl.classList.add("is-new");
@@ -182,8 +191,10 @@ const LessonKeyboard = (() => {
     // Ar paspaustas ženklas yra to paties klavišo skaičius (lietuviškos raidės vietoje) – tikėtina, kad įjungtas ne lietuviškas išdėstymas
     function looksLikeWrongLayout(expected, typed) {
         const spot = locate(expected);
-        return !!(spot && spot.el && !spot.space && /[0-9`\-=]/.test(typed) &&
-            MR_LAYOUT.rows[0].some(def => def.lt === expected.toLowerCase() && def.k === typed));
+        // skaičius arba jo Shift ženklas (! @ # ...) tame pačiame klavise, kur turėjo išeiti lietuviška raidė
+        return !!(spot && spot.el && !spot.space &&
+            MR_LAYOUT.rows[0].some(def => def.lt === expected.toLowerCase() &&
+                (def.k === typed || MR_SHIFTED_DIGITS[def.k] === typed)));
     }
 
     return { render, attachHands, highlight, clearTargets, flash, markNew, locate, looksLikeWrongLayout };

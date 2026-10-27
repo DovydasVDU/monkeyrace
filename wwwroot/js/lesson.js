@@ -5,6 +5,7 @@
     const lesson = data.lesson;
     const $ = id => document.getElementById(id);
     const SHIFT = "⇧";
+    const LT_CAPS = "⇪"; // pamoka „didžiosios lietuviškos raidės“ (LessonCatalog.LtCapitals)
     const PREF_KEY = "monkeyrace-lesson-prefs";
     const GUEST_KEY = "monkeyrace-lessons";
 
@@ -90,7 +91,7 @@
 
     // ---------- pagrindiniai klavišai (fokusas) ----------
 
-    const focusKeys = lesson.newKeys.includes(SHIFT) ? [SHIFT]
+    const focusKeys = lesson.newKeys.includes(SHIFT) || lesson.newKeys.includes(LT_CAPS) ? [SHIFT]
         : [...lesson.newKeys.replace(/[^\p{L}]/gu, "")].length > 0
             ? [...lesson.newKeys.replace(/[^\p{L}]/gu, "")] : [...lesson.newKeys];
 
@@ -290,7 +291,9 @@
         if (isUpper(expected) && typed === expected.toLowerCase())
             setFeedback("Pirma nuspausk Shift, laikyk jį ir tada spausk raidę.");
         else if (LessonKeyboard.looksLikeWrongLayout(expected, typed))
-            setFeedback("Atrodo, įjungta ne lietuviška klaviatūra. Perjunk išdėstymą (Alt + Shift) ir bandyk dar kartą.");
+            setFeedback(isUpper(expected)
+                ? "Vietoje raidės išėjo skaičius ar ženklas. Perjunk klaviatūrą į lietuvišką (Alt + Shift) arba bandyk didžiąją raidę su Caps Lock."
+                : "Atrodo, įjungta ne lietuviška klaviatūra. Perjunk išdėstymą (Alt + Shift) ir bandyk dar kartą.");
         updateChips();
         updateStats();
     }

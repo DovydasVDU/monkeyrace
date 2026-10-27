@@ -96,6 +96,18 @@ public class LessonEngineTests
     }
 
     [Fact]
+    public void LtCapitalsLesson_MostlyLithuanianCapitalInitials()
+    {
+        var rng = new Random(8);
+        var lesson = Lesson("5-2");
+        Assert.True(lesson.LtCapitals);
+        var items = Enumerable.Range(0, 10)
+            .SelectMany(_ => LessonEngine.WordItems(lesson, 1, 10, Array.Empty<char>(), Array.Empty<string>(), rng)).ToList();
+        var lithuanian = items.Count(item => "ĄČĘĖĮŠŲŪŽ".Contains(item[0]));
+        Assert.True(lithuanian >= items.Count / 2, $"lietuviška didžioji tik {lithuanian}/{items.Count}");
+    }
+
+    [Fact]
     public void WeakKeys_AreRepeated_InReviewLessons()
     {
         var rng = new Random(4);
@@ -187,7 +199,7 @@ public class LessonEngineTests
     [Fact]
     public void ExtractSentences_KeepsOnlyTypeableOnes()
     {
-        var lesson = Lesson("5-3");
+        var lesson = Lesson("5-4");
         var texts = new[]
         {
             "Saulė kyla kiekvieną rytą. Šuo loja garsiai ir ilgai. „Labas“, tarė jis ir nuėjo. Jis turi 5 obuolius namuose. Namuose šiandien labai ramu."
@@ -195,15 +207,17 @@ public class LessonEngineTests
         var sentences = LessonEngine.ExtractSentences(lesson, texts);
         Assert.Contains("Saulė kyla kiekvieną rytą.", sentences);
         Assert.DoesNotContain(sentences, s => s.Contains('5') || s.Contains('„'));
-        // didžioji Š priklauso nuo išdėstymo, todėl tokie sakiniai nenaudojami
-        Assert.DoesNotContain(sentences, s => s.StartsWith("Šuo"));
+        // lietuviškų didžiųjų jau išmokta (5-2), todėl Š sakinio pradžioje leidžiama
+        Assert.Contains("Šuo loja garsiai ir ilgai.", sentences);
+        // ... o iki tos pamokos – ne, nes didžiųjų lietuviškų raidžių rinkimas priklauso nuo išdėstymo
+        Assert.DoesNotContain(LessonEngine.ExtractSentences(Lesson("5-1"), texts), s => s.StartsWith("Šuo"));
         Assert.Contains("Namuose šiandien labai ramu.", sentences);
     }
 
     [Fact]
     public void SentenceLessons_FallBackToWordLines()
     {
-        var lesson = Lesson("5-3");
+        var lesson = Lesson("5-4");
         var items = LessonEngine.SentenceItems(lesson, 1, 3, Array.Empty<string>(), Array.Empty<string>(), new Random(7));
         Assert.Equal(3, items.Count);
         Assert.All(items, item => Assert.EndsWith(".", item));
