@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -68,6 +69,19 @@ public class Startup
                 options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Strict; // apsaugo nuo CSRF atakų, neleidžia siųsti cookie su trečiųjų šalių užklausomis
 
                 options.ExpireTimeSpan = TimeSpan.FromDays(7); // nustato, kiek laiko galioja cookie (7 dienos)
+
+                // Ištrinto vartotojo slapukas (pvz. paskyra ištrinta kitame įrenginyje) nebegalioja
+                // shortcut: viena PK užklausa per kiekvieną prisijungusio vartotojo užklausą; jei apkrova išaugs, cache'inti kelioms minutėms
+                options.Events.OnValidatePrincipal = async context =>
+                {
+                    var userId = PlayerIdentity.GetUserId(context.HttpContext);
+                    var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                    if (userId == null || !await db.Users.AnyAsync(u => u.Id == userId.Value))
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    }
+                };
             });
 
         // Naudojami services: 
