@@ -202,7 +202,7 @@ GET /api/stats/text/{id} ───────► šio teksto lyderiai
 
 **Tekstai kaip duomenų failas.** Python scraperiai paruošia `Data/texts-lt.jsonl`, o programa jį importuoja paleidimo metu. `TextImporter.Clean` sutvarko scraperio tarpus („žodis .“, „( a , b )“), o pataisytas tekstas atnaujinamas ir jau veikiančioje DB – užtenka pataisyti failą ir perkrauti.
 
-**Jokių trečiųjų šalių.** Šriftai (Fredoka, Plus Jakarta Sans, JetBrains Mono) ir SignalR klientas laikomi `wwwroot`, ne Google Fonts ar CDN. Analitikos nėra, slapukai tik būtinieji – todėl slapukų sutikimo lango nereikia, o lankytojo IP nemato jokia kita įmonė.
+**Jokių trečiųjų šalių.** Šriftai (Rubik, Plus Jakarta Sans, JetBrains Mono) ir SignalR klientas laikomi `wwwroot`, ne Google Fonts ar CDN. Analitikos nėra, slapukai tik būtinieji – todėl slapukų sutikimo lango nereikia, o lankytojo IP nemato jokia kita įmonė.
 
 **Dizaino sistema vienoje vietoje.** Visos spalvos – CSS kintamieji (`var(--…)`), ikonos ir iliustracijos – inline SVG (`_Icons`, `_Monkey`, `_Banana`), jokių emoji. Taisyklės ir JS naudojami ID/klasės aprašyti [`DESIGN.md`](DESIGN.md).
 
@@ -299,7 +299,7 @@ Testai, tarp jų:
 
 - **Vikipedija** (~1 080 tekstų) – [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); autorius ir nuoroda rodomi „Apie tekstą“.
 - **Vikišaltiniai** (~3 660 tekstų) – lietuvių klasika (J. Biliūnas, Šatrijos Ragana, Lazdynų Pelėda, Vaižgantas), viešasis domenas.
-- **Šriftai** – Fredoka, Plus Jakarta Sans, JetBrains Mono, [SIL Open Font License](wwwroot/fonts); **SignalR klientas** – MIT.
+- **Šriftai** – Rubik, Plus Jakarta Sans, JetBrains Mono, [SIL Open Font License](wwwroot/fonts); **SignalR klientas** – MIT.
 
 ---
 

@@ -36,14 +36,14 @@ Charakteris: šilta, žaisminga džiunglių tema. Tamsiai žalias fonas, kremin�
 Taisyklė: komponentuose ir view'uose tik `var(--…)`, jokių hardcoded hex. Išimtis – SVG iliustracijų spalvos partial'uose (`_Monkey`, `_Banana`).
 
 ## Šriftai (lokalūs `wwwroot/fonts`, `@font-face` – `site.css` viršuje, `display: swap`; jokių Google Fonts / CDN)
-- **Fredoka** 500/600/700 – antraštės, skaičiai, mygtukų pavadinimai.
+- **Rubik** 500/600/700 (kintamas, 300–900) – antraštės, skaičiai, mygtukų pavadinimai. Anksčiau buvo Fredoka, bet ji neturi ą č ę ė į ū ų (naršyklė jas imdavo iš kito šrifto); Rubik turi visas lietuviškas raides.
 - **Plus Jakarta Sans** 500–800 – visa kita.
 - **JetBrains Mono** 500/600 – TIK lenktynių tekstas.
 Visi trys turi latin-ext (ą č ę ė į š ų ū ž).
 
 ## Fonas
 - `body`: `radial-gradient(900px 600px at 15% -5%, rgba(80,170,100,.35), transparent 60%)`, `radial-gradient(800px 600px at 95% 40%, rgba(255,201,60,.10), transparent 60%)` + 44×44 px tinklelis (1px linijos `rgba(255,246,220,.045)`).
-- Dekoracijos – tik `Views/Shared/_Backdrop.cshtml` (absolute/fixed, `pointer-events:none`, `aria-hidden`, po turiniu): burbulai (kontūras arba rgba užpildas) ir „klavišai" Ą Č Ę Ė Į Š Ų Ū Ž (44–64 px, radius 14, 2px kontūras `rgba(255,246,220,.16)`, užpildas `rgba(255,246,220,.05)`, Fredoka raidė `rgba(255,246,220,.28)`, pasukimai −10..10°). Mobile ≤640px: tik 4–5.
+- Dekoracijos – tik `Views/Shared/_Backdrop.cshtml` (absolute/fixed, `pointer-events:none`, `aria-hidden`, po turiniu): burbulai (kontūras arba rgba užpildas) ir „klavišai" Ą Č Ę Ė Į Š Ų Ū Ž (44–64 px, radius 14, 2px kontūras `rgba(255,246,220,.16)`, užpildas `rgba(255,246,220,.05)`, Rubik raidė `rgba(255,246,220,.28)`, pasukimai −10..10°). Mobile ≤640px: tik 4–5.
 
 ## Komponentai (`site.css`)
 - `.card` – cream fonas, `var(--border)`, radius 24, `--shadow-card`, ink tekstas. `.card--soon` – `#CBD9C4` (`--soon`), dashed kontūras.
