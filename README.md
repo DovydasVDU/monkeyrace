@@ -67,6 +67,15 @@ peržiūrėti visas lenktynes iš naujo, o už rezultatus gauni XP, lygius ir ba
 - **Šio teksto lyderiai** – 10 geriausių online rezultatų būtent šiam tekstui, su perklausa ir data.
 - **Apie tekstą** – autorius, kūrinys, šaltinis, licencija ir ypatybės (kabutės, skaičiai, daugtaškis…).
 
+### Pamokos (`/pamokos`)
+
+Klaviatūros kursas: 6 modulių, 29 pamokų žemėlapis nuo namų eilutės iki sakinių su didžiosiomis raidėmis.
+
+- **Prisitaikantis variklis** (`Services/LessonEngine.cs`, grynos funkcijos): kiekvienas raundas sudaromas iš žodžių su dar neįvaldytais klavišais, dažniau kartojami silpni klavišai, ilgis auga ar mažėja pagal tikslumą. Tempas (ramiai / įprastai / greitai) keičia reikalaujamą tikslumą ir raundo ilgį.
+- **Klaviatūra ir rankos** – rodomas kitas klavišas ir pirštas (spalvos pagal pirštą), užuominas galima išjungti. Lietuviškos raidės (ą č ę ė į š ų ū ž) rašomos kaip lietuviškoje klaviatūroje, o didžiosios – su Shift (pvz. Š = Shift + 6).
+- **Pažanga**: 1–3 žvaigždutės (tikslumas, pamokoms su tikslu – ir WPM), XP ir bananai tik už naujai gautas žvaigždutes. Pirmos 3 pamokos žaidžiamos be paskyros (progresas naršyklėje, prisijungus sinchronizuojamas), likusios atsirakina paeiliui.
+- Serveris be būsenos: klientas siunčia raundo statistiką, serveris grąžina kitą raundą; baigus pamoką rezultatas perskaičiuojamas serveryje ir tikrinamas pagal pamokos pradžios laiką.
+
 ### Progresas ir bendruomenė
 
 - **XP ir 10 lygių**, **bananai** ir **parduotuvė** – kepurės, kailio spalvos ir trasų stiliai beždžionėlei.
@@ -114,7 +123,7 @@ Botų nustatymai (`appsettings.json` → `Bots`): iki kiek žaidėjų pildyti, n
 ## Projekto struktūra
 
 ```
-Controllers/        HTTP: Home, Auth, Race, User (profilis, parduotuvė, ištrynimas), StatsApi (/api/stats)
+Controllers/        HTTP: Home, Auth, Race, Lessons (pamokos), User (profilis, parduotuvė, ištrynimas), StatsApi (/api/stats)
 Hubs/RaceHub.cs     SignalR: JoinRace, SendProgress, StartFriendRace, LeaveRace
 Services/
   MatchmakingService  kambariai, lobby, botai, progresas, finišas, rezultatų įrašymas (singleton)
@@ -123,10 +132,13 @@ Services/
   Progression         XP, lygių ir bananų taisyklės (grynos funkcijos)
   BotModels           botų greitis pagal žaidėjų lygį
   WordService         žodžių režimo tekstas, ShopCatalog – parduotuvės prekės
-Data/               AppDbContext, TextImporter, texts-lt.jsonl, words-lt.txt
+  LessonCatalog       pamokų turinys (moduliai, klavišai, tekstai)
+  LessonEngine        prisitaikantis raundų sudarymas, žvaigždutės (grynos funkcijos)
+  LessonWords         pamokų žodynas (Data/lesson-words.txt + words-lt.txt)
+Data/               AppDbContext, TextImporter, texts-lt.jsonl, words-lt.txt, lesson-words.txt
 Models/             EF modeliai ir view modeliai
-Views/              Razor: Home, Race (Play, MultiPlay, Replay), User, Shared (_Layout, _Navbar, _Footer, _Icons, _Monkey…)
-wwwroot/            css, js (typing, replay, progress, login, signalr), fonts, favicon
+Views/              Razor: Home, Lessons, Race (Play, MultiPlay, Replay), User, Shared (_Layout, _Navbar, _Footer, _Icons, _Monkey…)
+wwwroot/            css (site, lessons), js (typing, replay, progress, login, signalr, lesson, lesson-keyboard), fonts, favicon
 Migrations/         EF Core migracijos
 tests/              xUnit testai
 *.py                tekstų scraperiai ir konvertavimas į Data/texts-lt.jsonl
@@ -167,6 +179,7 @@ GET /api/stats/text/{id} ───────► šio teksto lyderiai
 | `UserKeyStats` | Kiek kartų laukiant raidės X paspausta Y – klaidų analizei |
 | `UserWordMistakes` | Žodžiai su klaidomis – treniruokliui |
 | `UserItems` | Nupirktos parduotuvės prekės |
+| `UserLessonProgress` | Pamokų žvaigždutės, geriausi tikslumas ir WPM (raktas: vartotojas + pamoka) |
 
 ---
 
@@ -200,8 +213,12 @@ GET /api/stats/text/{id} ───────► šio teksto lyderiai
 
 - **SQL injection** – visos užklausos per EF Core su parametrais, neapdoroto SQL nėra.
 - **XSS** – vartotojo tekstas išvalomas prieš įterpiant į HTML, JSON į puslapį įdedamas su `<` → `<`, slapyvardis ribojamas `^[\p{L}\p{N}_]{3,20}$`.
-- **Slaptažodžiai** – BCrypt maišos, bent 6 simboliai; prisijungimas ir registracija ribojami iki 10 bandymų per minutę iš IP.
-- **Slapukas** – `HttpOnly`, `Secure`, `SameSite=Strict`, 7 dienos; paskyros ištrynimo forma su antiforgery žetonu.
+- **Slaptažodžiai** – BCrypt maišos, bent 6 simboliai; prisijungimas ir registracija ribojami iki 30 užklausų per minutę iš IP (didesnė riba, nes mokykloje visa klasė gali būti už vieno IP).
+- **Slaptažodžių spėliojimas** – po 8 nepavykusių prisijungimų slapyvardžiui 10 min. grąžinamas 429 (net teisingas slaptažodis tuo metu nepriimamas). Skaitliukas laikomas atmintyje.
+- **Slapukas** – `HttpOnly`, `Secure`, `SameSite=Strict`, 7 dienos; paskyros ištrynimo forma su antiforgery žetonu. Kiekvienos užklausos metu tikrinama, ar vartotojas dar egzistuoja, todėl ištrintos paskyros slapukas nustoja galioti.
+- **Šifravimo raktai** – slapukų raktai (Data Protection) saugomi diske (`App_Data/keys`, keičiama per `DataProtection:KeysPath`), todėl perkrovus ar atnaujinus svetainę žaidėjai neatsijungia. Aplanko diegiant netrinti ir nekomituoti (`.gitignore`).
+- **Saugumo antraštės** – `Content-Security-Policy` (tik savo domenas, `frame-ancestors 'none'`, `object-src 'none'`, `form-action 'self'`), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`.
+- **Pamokų dažnio riba** – `POST /pamokos/{id}/round` ir `/complete`: 60 per minutę prisijungusiam vartotojui, 300 svečiui (pagal IP).
 - **HTTPS** ir HSTS, produkcijoje – klaidos puslapis vietoj stack trace.
 - **Sukčiavimas** – serverio laikrodžiu paremtos ribos (žr. sprendimus), SignalR tikrina, kad `playerKey` priklauso sesijai.
 - **BDAR** – [privatumo puslapis](Views/Home/Privacy.cshtml) (`/privatumas`): kokie duomenys saugomi, kokie slapukai, kaip ištrinti paskyrą.
@@ -235,6 +252,10 @@ Visos taisyklės – `Services/Progression.cs` (grynos funkcijos, padengtos test
 | `POST /Race/SaveResult` | Solo rezultatas (vienkartinis, tikrinamas) |
 | `POST /race/mistakes` | Raidžių ir žodžių klaidos profilio analizei |
 | `POST /shop/equip/{itemId}` | Nupirkti / užsidėti prekę (kaina tik serveryje) |
+| `GET /pamokos`, `GET /pamokos/{id}` | Pamokų žemėlapis ir pamoka (svečiams – tik pirmos 3) |
+| `POST /pamokos/{id}/round` | Kito raundo parinkimas pagal ankstesnio statistiką (be būsenos) |
+| `POST /pamokos/{id}/complete` | Pamokos rezultatas: serveris perskaičiuoja tikslumą, WPM, žvaigždutes ir apdovanojimus |
+| `POST /pamokos/sync` | Svečio pamokų progreso sujungimas po prisijungimo (tik nemokamos pamokos, be XP) |
 | SignalR `/racehub` | `JoinRace`, `SendProgress`, `StartFriendRace`, `LeaveRace` |
 
 ---
@@ -245,7 +266,7 @@ Visos taisyklės – `Services/Progression.cs` (grynos funkcijos, padengtos test
 dotnet test monkeyrace.sln
 ```
 
-41 testas, tarp jų:
+Testai, tarp jų:
 
 - **Progresas** – XP, lygių ir bananų formulės.
 - **Solo anti-cheat** (`WebApplicationFactory`) – per greitas rezultatas atmetamas, lygiagretūs išsaugojimai apdovanoja tik kartą.
@@ -253,6 +274,9 @@ dotnet test monkeyrace.sln
 - **Lenktynių analizė** – lyderiai, aplenkimai, perklausa.
 - **Tekstų importas** – metaduomenys, tarpų valymas, pataisyto teksto atnaujinimas.
 - **Šio teksto lyderiai** – tik to teksto online rezultatai, geriausi pirmi.
+- **Pamokos** – katalogas (kaupiami klavišai, žodžių pakanka), variklis (silpni klavišai, lygio keitimas, ankstyvas pabaigimas, žvaigždutės, sakiniai, lietuviškos didžiosios), apdovanojimai ir HTTP kelias (`complete`, svečio sinchronizacija).
+- **Slapukas ištrintam vartotojui** – po paskyros ištrynimo senas slapukas atmetamas.
+- **Saugumas** – saugumo antraštės yra, o 8 nepavykę prisijungimai užrakina tik tą slapyvardį.
 - **Paskyros ištrynimas** – neteisingas slaptažodis paskyrą palieka, teisingas ištrina viską ir anonimizuoja perklausas.
 
 ---
@@ -261,7 +285,11 @@ dotnet test monkeyrace.sln
 
 - **Viena instancija.** Kambariai laikomi atmintyje, todėl programos negalima paleisti keliuose serveriuose, o perkrovimas nutraukia vykstančias lenktynes.
 - **Progresas siunčiamas po kiekvieno klavišo.** Esant šimtams žaidėjų vienu metu verta siųsti paketais kas ~150–250 ms ir naudoti atskirą `lock` kiekvienam kambariui. Apkrovos testas dar neatliktas.
-- **SignalR hub'as be dažnio ribojimo** ir saugumo antraštės (CSP, `X-Content-Type-Options`) – kitas saugumo žingsnis.
+- **SignalR hub'as be dažnio ribojimo.** `RaceHub` tikrina `playerKey`, naudoja serverio laikrodį progresui ir apkerpa `typing` iki 30 simbolių, bet pranešimų dažnis neribojamas.
+- **CSP leidžia `'unsafe-inline'`**, nes dalyje puslapių yra inline `<script>` ir `onclick`. Jis vis tiek blokuoja kitų domenų skriptus ir įdėjimą į svetimą svetainę; griežtam CSP (nonce) reikėtų iškelti visą inline kodą į failus. Įdiegus pažiūrėk naršyklės konsolę, ar nėra CSP pranešimų.
+- **Prisijungimo užrakinimas laikomas atmintyje** (viena instancija) ir leidžia kitam žmogui 10 min. užrakinti svetimą slapyvardį. Keliems serveriams skaitiklį reikėtų laikyti DB.
+- **Klientų IP už tarpinio serverio.** Dažnio ribos remiasi `RemoteIpAddress`. Hostingo pusėje patikrink, ar ten ne proxy IP; jei programa už patikimo proxy, įjunk `ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` (kitaip `X-Forwarded-For` galėtų suklastoti bet kas).
+- **Slaptažodžio keitimo / atstatymo nėra** (ir nėra el. pašto), todėl pamiršusiam slaptažodį paskyra prarandama. Planuojama vėliau.
 - **Vikišaltinių tekstų licencija** pažymėta `PD-PATIKRINTI` – reikia patvirtinti, kad visi kūriniai viešajame domene.
 
 ---

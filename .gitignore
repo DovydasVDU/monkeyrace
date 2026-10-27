@@ -16,3 +16,6 @@ __pycache__/
 cache/
 cache-wikipedia/
 out/
+
+# Data Protection raktai (slapukų šifravimas) – nekomituoti
+App_Data/

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace monkeyrace.Controllers
@@ -70,6 +71,7 @@ namespace monkeyrace.Controllers
 
         // Kitas raundas. Serveris nieko neatsimena: visa būsena atkeliauja iš naršyklės.
         [HttpPost("/pamokos/{id}/round")]
+        [EnableRateLimiting("lessons")]
         public async Task<IActionResult> Round(string id, [FromBody] LessonRoundDto dto)
         {
             var lesson = LessonCatalog.Find(id);
@@ -102,6 +104,7 @@ namespace monkeyrace.Controllers
 
         // Pamokos pabaiga: žvaigždutės skaičiuojamos serveryje iš raundų statistikos
         [HttpPost("/pamokos/{id}/complete")]
+        [EnableRateLimiting("lessons")]
         public async Task<IActionResult> Complete(string id, [FromBody] LessonCompleteDto dto)
         {
             var lesson = LessonCatalog.Find(id);

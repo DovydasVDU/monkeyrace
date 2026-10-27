@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.IO;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Threading.RateLimiting;
@@ -15,6 +17,11 @@ using Microsoft.AspNetCore.RateLimiting;
 
 public class Startup
 {
+    private const string ContentSecurityPolicy =
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data:; font-src 'self'; connect-src 'self' ws: wss:; object-src 'none'; " +
+        "base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
     private readonly IWebHostEnvironment _env;
     private readonly IConfiguration _configuration;
 
@@ -41,9 +48,21 @@ public class Startup
             options.RejectionStatusCode = 429;
             options.OnRejected = (context, token) => new ValueTask(context.HttpContext.Response.WriteAsJsonAsync(
                 new { message = "Per daug bandymų. Pabandyk po minutės." }, token));
+            // 30 per IP, o ne 10: mokykloje visa klasė eina per vieną IP. Slaptažodžių spėliojimą sustabdo
+            // ir nepavykusių prisijungimų riba pagal slapyvardį (AuthController)
             options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "",
-                _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) }));
+            // Pamokų raundai: prisijungusiam – pagal vartotoją, svečiui – pagal IP (didesnė riba dėl klasių)
+            options.AddPolicy("lessons", context =>
+            {
+                var userId = PlayerIdentity.GetUserId(context);
+                return userId != null
+                    ? RateLimitPartition.GetFixedWindowLimiter("user:" + userId,
+                        _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1) })
+                    : RateLimitPartition.GetFixedWindowLimiter("ip:" + context.Connection.RemoteIpAddress,
+                        _ => new FixedWindowRateLimiterOptions { PermitLimit = 300, Window = TimeSpan.FromMinutes(1) });
+            });
         });
 
         // Vystymui naudojame naują SQLite DB failą. Schema sukuriama paleidimo metu.
@@ -52,6 +71,19 @@ public class Startup
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(connectionString));
 
+
+        // Slapuko ir sesijos šifravimo raktai laikomi diske, kad perkrovus aplikaciją žaidėjai neatsijungtų.
+        // Aplankas keičiamas per DataProtection:KeysPath; diegiant svetainę jo netrinti (App_Data/keys).
+        var keysPath = _configuration["DataProtection:KeysPath"] ?? Path.Combine(_env.ContentRootPath, "App_Data", "keys");
+        try
+        {
+            Directory.CreateDirectory(keysPath);
+            services.AddDataProtection().SetApplicationName("MonkeyRace").PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // shortcut: aplanko sukurti nepavyko, raktai lieka numatytoje vietoje (perkrovus gali atjungti žaidėjus); nurodyti DataProtection:KeysPath
+        }
 
         // cookies autentikavimas
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -102,6 +134,20 @@ public class Startup
             app.UseExceptionHandler("/Home/Error");
             app.UseHsts();
         }
+
+        // Saugumo antraštės. CSP su 'unsafe-inline', nes puslapiuose yra inline <script> ir onclick; vis tiek neleidžia
+        // kitų domenų skriptų, įdėjimo į kitą svetainę (frame-ancestors), <base> ir formų siuntimo į kitus adresus.
+        // shortcut: pilnai griežtam CSP (nonce) reikėtų iškelti visus inline skriptus ir onclick į failus.
+        app.Use(async (context, next) =>
+        {
+            var headers = context.Response.Headers;
+            headers["X-Content-Type-Options"] = "nosniff";
+            headers["X-Frame-Options"] = "DENY";
+            headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+            headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+            headers["Content-Security-Policy"] = ContentSecurityPolicy;
+            await next();
+        });
 
         // Automatiškai peradresuoja HTTP → HTTPS
         // http://localhost:5000 → https://localhost:5001

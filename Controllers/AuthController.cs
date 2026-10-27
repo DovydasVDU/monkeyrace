@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
@@ -15,6 +16,13 @@ using System.Threading.Tasks;
 
 public class AuthController : Controller
 {
+    // Nepavykę prisijungimai pagal slapyvardį (riba pagal IP neapsaugo, kai spėliojama iš daug adresų).
+    // Po 8 nepavykusių – 10 min. pertrauka. shortcut: laikoma atmintyje (viena instancija, perkrovus nunulinama);
+    // keliems serveriams perkelti į DB. Kita pusė: kitas žmogus gali užrakinti svetimą slapyvardį 10 min.
+    private static readonly ConcurrentDictionary<string, (int Count, DateTime Since)> FailedLogins = new();
+    private const int MaxFailedLogins = 8;
+    private static readonly TimeSpan LoginLockWindow = TimeSpan.FromMinutes(10);
+
     private readonly AppDbContext _db; // tai kintamasis, kuris leidžia pasiekti duomenų bazę
 
     public AuthController(AppDbContext db)
@@ -65,10 +73,22 @@ public class AuthController : Controller
     public async Task<IActionResult> Login(string username, string password)
     {
        // Asinchroniškai grąžina pirmą elementą, kuris atitinka nurodytą sąlygą (u.Username == username). Jei nerandama, grąžina null.
+        var failedKey = (username ?? "").Trim().ToLowerInvariant();
+        if (FailedLogins.TryGetValue(failedKey, out var failed) && failed.Count >= MaxFailedLogins &&
+            DateTime.UtcNow - failed.Since < LoginLockWindow)
+            return StatusCode(429, new { message = "Per daug nepavykusių bandymų. Pabandyk po kelių minučių." });
+
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username); 
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        {
+            if (FailedLogins.Count > 10_000)
+                FailedLogins.Clear();
+            FailedLogins.AddOrUpdate(failedKey, (1, DateTime.UtcNow), (_, old) =>
+                DateTime.UtcNow - old.Since >= LoginLockWindow ? (1, DateTime.UtcNow) : (old.Count + 1, old.Since));
             return Unauthorized(new { message = "Neteisingi prisijungimo duomenys" }); // JSON formatu grąžinama žinutė į html
+        }
+        FailedLogins.TryRemove(failedKey, out _);
         // kitu atveju prijungiamas
         //HttpContext.Session.SetString("UserId", user.Id.ToString()); // į sesiją įrašomas vartotojo ID - jis prisijungęs
         //HttpContext.Session.SetString("Username", user.Username);
