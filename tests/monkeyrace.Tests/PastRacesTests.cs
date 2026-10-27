@@ -40,13 +40,16 @@ public sealed class PastRacesTests : IDisposable
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var userId = db.Users.Single(u => u.Username == "istorija").Id;
-            var race = new Race { TextSnippetId = 1, StartedAt = DateTime.UtcNow, IsMultiplayer = false };
-            db.Races.Add(race);
-            db.SaveChanges();
             var start = DateTime.UtcNow.AddHours(-2);
+            // po lenktynes kiekvienam rezultatui: (RaceId, UserId) yra unikalus
             for (var i = 0; i < 25; i++)
+            {
+                var race = new Race { TextSnippetId = 1, StartedAt = DateTime.UtcNow, IsMultiplayer = false };
+                db.Races.Add(race);
+                db.SaveChanges();
                 db.RaceResults.Add(new RaceResult
                     { UserId = userId, RaceId = race.Id, WPM = 100 + i, Accuracy = 100, CompletedAt = start.AddMinutes(i) });
+            }
             db.SaveChanges();
         }
 
@@ -77,11 +80,13 @@ public sealed class PastRacesTests : IDisposable
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var userId = db.Users.Single(u => u.Username == "mazai").Id;
-            var race = new Race { TextSnippetId = 1, StartedAt = DateTime.UtcNow, IsMultiplayer = false };
-            db.Races.Add(race);
-            db.SaveChanges();
             for (var i = 0; i < 10; i++)
+            {
+                var race = new Race { TextSnippetId = 1, StartedAt = DateTime.UtcNow, IsMultiplayer = false };
+                db.Races.Add(race);
+                db.SaveChanges();
                 db.RaceResults.Add(new RaceResult { UserId = userId, RaceId = race.Id, WPM = 50 + i, Accuracy = 100 });
+            }
             db.SaveChanges();
         }
 

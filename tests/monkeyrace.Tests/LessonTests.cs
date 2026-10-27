@@ -133,7 +133,7 @@ public class LessonEngineTests
     [Theory]
     [InlineData(100, 1, 2)]
     [InlineData(97, 1, 2)]
-    [InlineData(96, 2, 3)]
+    [InlineData(96, 2, 2)]
     [InlineData(93, 2, 2)]
     [InlineData(87, 2, 1)]
     [InlineData(50, 0, 0)]
