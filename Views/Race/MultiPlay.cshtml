@@ -52,7 +52,7 @@
         }
         <div class="queue-status" id="queue-status" aria-live="polite">Jungiama prie lenktynių...</div>
         <div class="queue-meta" id="queue-meta"></div>
-        <div class="countdown" id="countdown" aria-live="polite" hidden></div>
+        <div class="countdown" id="countdown" aria-live="polite" hidden><span class="countdown-num" id="countdown-num"></span></div>
 
         <div class="card tracks-card">
             <div class="players-track" id="players-track"></div>
@@ -231,6 +231,7 @@ const input = document.getElementById("input-field");
 const queueStatus = document.getElementById("queue-status");
 const queueMeta = document.getElementById("queue-meta");
 const countdown = document.getElementById("countdown");
+const countdownNum = document.getElementById("countdown-num");
 
 function serverNow() {
     return Date.now() + serverOffsetMs;
@@ -349,15 +350,34 @@ function prepareCountdown(startAt, serverNowUtc, text) {
     renderText();
     countdown.hidden = false;
     input.disabled = true;
+    // skaičius – takelių kortelės viduryje: ten nėra teksto, o jis lieka matomas ir skaitomas prieš startą
+    placeCountdown();
+    window.requestAnimationFrame(placeCountdown);
     countdownTimer = setInterval(() => {
         const remaining = Math.ceil((startAtUtc - serverNow()) / 1000);
-        countdown.textContent = remaining > 0 ? remaining : "GO!";
+        const label = remaining > 0 ? String(remaining) : "GO!";
+        if (countdownNum.textContent !== label) {
+            countdownNum.textContent = label;
+            countdownNum.classList.toggle("is-go", remaining <= 0);
+            countdownNum.classList.remove("pop");
+            void countdownNum.offsetWidth;
+            countdownNum.classList.add("pop");
+        }
         if (remaining <= 0) {
             clearInterval(countdownTimer);
-            setTimeout(() => countdown.hidden = true, 1000);
+            setTimeout(() => countdown.hidden = true, 700);
         }
     }, 50);
 }
+
+function placeCountdown() {
+    const card = document.querySelector(".tracks-card");
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const y = Math.min(window.innerHeight - 80, Math.max(80, rect.top + rect.height / 2));
+    countdown.style.setProperty("--countdown-y", `${y}px`);
+}
+window.addEventListener("resize", placeCountdown);
 
 function prepareRace(startAt, serverNowUtc, text) {
     targetText = text || targetText;

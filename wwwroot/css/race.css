@@ -123,26 +123,55 @@
     margin-top: -1rem;
 }
 
-/* GO! / atgalinis skaičiavimas: plūduriuoja viršuje dešinėje, nestumia teksto */
+/* 3 · 2 · 1 · GO!: silpnai patamsintas ekranas, skaičius ekrano viduryje, bet aukščiau – virš takelių (JS rašo --countdown-y),
+   todėl tekstas lieka matomas ir neužgožtas; jį galima paskaityti prieš startą. Neblokuoja rašymo. */
 .countdown {
-    background: var(--banana);
-    border: var(--border);
-    border-radius: var(--radius-pill);
-    box-shadow: 0 5px 0 var(--banana-shadow);
-    color: var(--ink);
-    font-family: var(--font-display);
-    font-size: 2.25rem;
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    line-height: 1;
-    min-width: 4.5rem;
-    padding: .6rem 1.2rem;
+    background: var(--scrim-soft);
+    inset: 0;
     pointer-events: none;
     position: fixed;
-    right: max(16px, 4vw);
-    text-align: center;
-    top: 96px;
     z-index: 50;
+}
+
+.countdown-num {
+    align-items: center;
+    background: var(--ink);
+    border: 3px solid var(--banana);
+    border-radius: 50%;
+    box-shadow: var(--shadow-card);
+    color: var(--banana);
+    display: flex;
+    font-family: var(--font-display);
+    font-size: 3.8rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    height: 6.5rem;
+    justify-content: center;
+    left: 50%;
+    line-height: 1;
+    position: absolute;
+    top: var(--countdown-y, 50%);
+    transform: translate(-50%, -50%);
+    width: 6.5rem;
+}
+
+.countdown-num.is-go {
+    font-size: 2.3rem;
+}
+
+.countdown-num.pop {
+    animation: countdown-pop .45s ease-out;
+}
+
+@keyframes countdown-pop {
+    from { opacity: .4; transform: translate(-50%, -50%) scale(1.35); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* tekstas virš patamsinimo: jis lieka aiškus, kol skaičiuojama */
+body:has(.countdown:not([hidden])) .text-card {
+    position: relative;
+    z-index: 51;
 }
 
 /* ---------- Takeliai ---------- */
@@ -777,6 +806,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .countdown-num.pop {
+        animation: none;
+    }
+
     .text-display {
         scroll-behavior: auto;
     }
