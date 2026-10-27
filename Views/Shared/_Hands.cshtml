@@ -1,0 +1,21 @@
+@* Dvi rankos su dešimt pirštų. data-finger: l/r + p (mažasis), r (bevardis), m (vidurinis), i (rodomasis), t (nykštys).
+   LessonKeyboard uždeda .is-active pirštui, kuriuo reikia spausti. Spalvos – site.css --finger-* *@
+@{
+    // x ir viršus kairiai rankai; dešinė – veidrodinis atspindys
+    var fingers = new[] { ("p", 14, 66), ("r", 46, 40), ("m", 78, 30), ("i", 110, 44) };
+}
+<svg class="hands" viewBox="0 0 500 190" role="img" aria-label="Rankų pirštai">
+    @foreach (var side in new[] { "l", "r" })
+    {
+        <g transform="@(side == "l" ? "" : "translate(500,0) scale(-1,1)")">
+            <rect class="hand-palm" x="10" y="104" width="150" height="76" rx="30"></rect>
+            @foreach (var finger in fingers)
+            {
+                <rect class="hand-finger" data-finger="@(side + finger.Item1)" x="@finger.Item2" y="@finger.Item3"
+                      width="28" height="@(128 - finger.Item3)" rx="14"></rect>
+            }
+            <rect class="hand-finger" data-finger="@(side)t" x="146" y="112" width="28" height="62" rx="14"
+                  transform="rotate(38 160 168)"></rect>
+        </g>
+    }
+</svg>

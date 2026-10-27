@@ -1,0 +1,124 @@
+@model Dictionary<string, UserLessonProgress>
+
+@{
+    ViewData["Title"] = "Pamokos - MonkeyRace";
+    bool loggedIn = ViewBag.LoggedIn == true;
+    var total = LessonCatalog.All.Count;
+    var done = Model.Values.Count(p => p.Stars > 0);
+    int Stars(string id) => Model.TryGetValue(id, out var p) ? p.Stars : 0;
+    // prisijungusiam: atrakinta, kai praėjo ankstesnę pamoką; svečiui: pirmos nemokamos
+    bool Unlocked(Lesson lesson) => loggedIn
+        ? lesson.Index == 0 || Stars(LessonCatalog.All[lesson.Index - 1].Id) > 0
+        : LessonCatalog.IsFree(lesson);
+    Microsoft.AspNetCore.Html.IHtmlContent NodeBody(Lesson lesson, int stars, bool open)
+    {
+        var enc = System.Net.WebUtility.HtmlEncode;
+        var sb = new System.Text.StringBuilder();
+        sb.Append("<span class='lesson-node-id'>").Append(lesson.Id).Append("</span>");
+        sb.Append("<span class='lesson-node-title'>").Append(enc(lesson.Title)).Append("</span>");
+        sb.Append("<span class='lesson-node-keys'>");
+        if (lesson.IsReview)
+            sb.Append("Kartojimas");
+        foreach (var key in lesson.NewKeys)
+            sb.Append("<kbd>").Append(key == LessonCatalog.Shift ? "Shift" : enc(key.ToString().ToUpperInvariant())).Append("</kbd>");
+        sb.Append("</span>");
+        sb.Append("<span class='lesson-stars' aria-label='").Append(stars).Append(" iš 3 žvaigždučių'>");
+        if (!open)
+            sb.Append("<svg class='ui-icon' aria-hidden='true'><use href='#icon-lock'></use></svg>");
+        else
+            for (var i = 1; i <= 3; i++)
+                sb.Append("<svg class='ui-icon lesson-star ").Append(i <= stars ? "is-on" : "is-off")
+                  .Append("' aria-hidden='true'><use href='#icon-star'></use></svg>");
+        sb.Append("</span>");
+        return Html.Raw(sb.ToString());
+    }
+}
+
+<section class="home-section lessons-page" aria-labelledby="lessons-title">
+    <h1 id="lessons-title">Aklasis rašymas nuo nulio</h1>
+    <p class="lessons-intro">Pamokos žingsnis po žingsnio: nuo pirštų padėties iki pirmųjų 30 WPM. Klaviatūra ir rankos rodo, kurį klavišą spausti, o pamoka prisitaiko prie tavo tikslumo. Už kiekvieną naują žvaigždutę gausi XP ir bananų.</p>
+
+    @if (loggedIn)
+    {
+        <p class="lessons-progress"><strong>@done</strong> iš @total pamokų įveikta</p>
+    }
+    else
+    {
+        <div class="card lessons-guest">
+            <p>Pirmas @LessonCatalog.FreeLessons pamokas gali išbandyti be paskyros. Prisijunk, kad išsaugotum progresą, gautum XP ir bananų ir atrakintum visas pamokas.</p>
+            <button class="btn btn-p" type="button" onclick="openLogin()">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-user"></use></svg>Prisijungti
+            </button>
+        </div>
+    }
+
+    @foreach (var module in LessonCatalog.Modules)
+    {
+        var moduleDone = module.Lessons.Count(l => Stars(l.Id) > 0);
+        <div class="lesson-module">
+            <header class="lesson-module-head">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-@module.Icon"></use></svg></span>
+                <div>
+                    <h2>@module.Id. @module.Title</h2>
+                    <p>@module.Summary</p>
+                </div>
+                @if (loggedIn)
+                {
+                    <span class="pill">@moduleDone / @module.Lessons.Count</span>
+                }
+            </header>
+            <div class="lesson-grid">
+                @foreach (var lesson in module.Lessons)
+                {
+                    var stars = Stars(lesson.Id);
+                    var open = Unlocked(lesson);
+                    var cls = "lesson-node" + (open ? "" : " is-locked") + (stars > 0 ? " is-done" : "");
+                    if (open)
+                    {
+                        <a class="@cls" href="/pamokos/@lesson.Id" data-lesson="@lesson.Id">
+                            @NodeBody(lesson, stars, true)
+                        </a>
+                    }
+                    else
+                    {
+                        // svečiui užrakinta pamoka atidaro prisijungimą, prisijungusiam tiesiog neprieinama
+                        <button class="@cls" type="button" data-lesson="@lesson.Id"
+                                onclick="@(loggedIn ? "" : "openLogin()")" aria-disabled="@(loggedIn ? "true" : "false")">
+                            @NodeBody(lesson, stars, false)
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    }
+</section>
+
+<script>
+    (() => {
+        const KEY = "monkeyrace-lessons";
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { saved = {}; }
+        const loggedIn = @(loggedIn ? "true" : "false");
+
+        // prisijungus: svečio progresas (nemokamos pamokos) perkeliamas į paskyrą
+        if (loggedIn) {
+            const items = Object.entries(saved).map(([id, value]) =>
+                ({ id, stars: value.stars, accuracy: value.accuracy, wpm: value.wpm }));
+            if (items.length === 0) return;
+            fetch("/pamokos/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(items) })
+                .then(response => { if (response.ok) { try { localStorage.removeItem(KEY); } catch { } location.reload(); } })
+                .catch(() => { });
+            return;
+        }
+
+        // svečias: žvaigždutės iš naršyklės
+        document.querySelectorAll(".lesson-node[data-lesson]").forEach(node => {
+            const stars = (saved[node.dataset.lesson] || {}).stars || 0;
+            node.classList.toggle("is-done", stars > 0);
+            node.querySelectorAll(".lesson-star").forEach((star, index) =>
+                star.classList.toggle("is-on", index < stars));
+            node.querySelectorAll(".lesson-star").forEach((star, index) =>
+                star.classList.toggle("is-off", index >= stars));
+        });
+    })();
+</script>

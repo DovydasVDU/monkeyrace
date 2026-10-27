@@ -1,0 +1,163 @@
+@model Lesson
+@using System.Text.Json
+
+@{
+    var module = (LessonModule)ViewBag.Module;
+    var next = ViewBag.Next as Lesson;
+    bool locked = ViewBag.Locked == true;
+    bool loggedIn = ViewBag.LoggedIn == true;
+    ViewData["Title"] = $"{Model.Title} - Pamokos - Monkeyrace";
+
+    var json = JsonSerializer.Serialize(new
+    {
+        lesson = new
+        {
+            id = Model.Id,
+            index = Model.Index,
+            title = Model.Title,
+            kind = Model.Kind.ToString(),
+            newKeys = Model.NewKeys,
+            hints = Model.Hints,
+            startLevel = Model.StartLevel,
+            targetWpm = Model.TargetWpm,
+            nextId = next?.Id,
+            nextFree = next != null && LessonCatalog.IsFree(next)
+        },
+        paces = LessonEngine.Paces.Select(pace => new
+        {
+            name = pace.Name,
+            passAccuracy = pace.PassAccuracy,
+            masteryMissRate = pace.MasteryMissRate,
+            minAttempts = pace.MinAttempts,
+            roundItems = pace.RoundItems
+        }),
+        loggedIn,
+        bestStars = (int)ViewBag.BestStars
+    }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+    // naujų klavišų pavadinimai pamokos įžangai
+    var newKeyLabels = Model.NewKeys.Select(key => key == LessonCatalog.Shift ? "Shift" : key.ToString().ToUpperInvariant()).ToList();
+}
+
+<div class="lesson-page">
+    <section class="race-screen lesson-screen">
+        <div class="race-topbar">
+            <a class="btn btn-g race-leave" href="/pamokos">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+                <span>Pamokos</span>
+            </a>
+            <div class="race-title-wrap">
+                <p class="eyebrow">@module.Title · @Model.Id</p>
+                <h1>@Model.Title</h1>
+            </div>
+            <div class="race-stats" aria-label="Statistika">
+                <span class="stat-pill"><small>WPM</small><strong id="wpm-display">0</strong></span>
+                <span class="stat-pill"><small>Tikslumas</small><strong><span id="accuracy-display">100</span>%</strong></span>
+                <span class="stat-pill"><small>Raundas</small><strong id="round-display">1</strong></span>
+            </div>
+        </div>
+
+        @if (locked)
+        {
+            <section class="card lesson-intro">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg></span>
+                <h2>Šiai pamokai reikia paskyros</h2>
+                <p>Pirmas @LessonCatalog.FreeLessons pamokas gali išbandyti be paskyros. Prisijunk, kad išsaugotum žvaigždutes, gautum XP ir bananų ir atrakintum visas pamokas.</p>
+                <div class="lesson-actions">
+                    <button class="btn btn-p" type="button" onclick="openLogin()">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#icon-user"></use></svg>Prisijungti
+                    </button>
+                    <a class="btn btn-s" href="/pamokos">Pamokų žemėlapis</a>
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="card lesson-intro" id="lesson-intro">
+                <p class="lesson-new">
+                    @if (Model.IsReview)
+                    {
+                        <span>Kartojimas</span>
+                    }
+                    else
+                    {
+                        <span>Naujas:</span>
+                        @foreach (var label in newKeyLabels)
+                        {
+                            <kbd>@label</kbd>
+                        }
+                    }
+                </p>
+                <p class="lesson-intro-text">@Model.Intro</p>
+
+                <div class="lesson-options">
+                    <div class="lesson-pace" role="group" aria-label="Tempas">
+                        <span class="lesson-options-label">Tempas</span>
+                        <button class="btn btn-s" type="button" data-pace="ramiai">Ramiai</button>
+                        <button class="btn btn-s" type="button" data-pace="iprastai">Įprastai</button>
+                        <button class="btn btn-s" type="button" data-pace="greitai">Greitai</button>
+                    </div>
+                </div>
+
+                <div class="lesson-actions">
+                    <button class="btn btn-p" type="button" id="lesson-start">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Pradėti
+                    </button>
+                    @if (!loggedIn)
+                    {
+                        <span class="lesson-guest-note">Be paskyros progresas lieka tik šioje naršyklėje.</span>
+                    }
+                </div>
+            </section>
+
+            <section class="lesson-stage" id="lesson-stage" hidden>
+                <div class="card text-card lesson-text-card">
+                    <div class="lesson-chips" id="lesson-chips" aria-label="Treniruojami klavišai"></div>
+                    <div class="lesson-text" id="lesson-text" aria-label="Rašomas tekstas"></div>
+                    <p class="lesson-feedback" id="lesson-feedback" role="status" aria-live="polite"></p>
+                </div>
+            </section>
+
+            <section class="card lesson-keys" id="lesson-keys">
+                <div class="lesson-keys-head">
+                    <p class="lesson-caption" id="finger-caption" aria-live="polite"></p>
+                    <button class="btn btn-g lesson-hint-btn" type="button" id="hint-toggle">Pagalba</button>
+                </div>
+                <div class="lesson-keyboard" id="lesson-keyboard" aria-hidden="true"></div>
+                <div class="lesson-hands" id="lesson-hands">
+                    <partial name="_Hands" />
+                </div>
+            </section>
+
+            <p class="lesson-touch-note">Pamokoms reikia kompiuterio klaviatūros.</p>
+        }
+    </section>
+</div>
+
+@if (!locked)
+{
+    <div class="results-overlay" id="results-overlay">
+        <section class="card results-box personal-result lesson-result" role="dialog" aria-modal="true" aria-labelledby="result-title">
+            <div class="lesson-result-stars" id="result-stars" role="img"></div>
+            <div class="result-head">
+                <div>
+                    <p class="eyebrow">@Model.Id · @Model.Title</p>
+                    <h2 id="result-title">Pamoka baigta</h2>
+                </div>
+            </div>
+            <p id="result-message"></p>
+            <div class="personal-result-grid">
+                <div class="result-metric"><span>Tikslumas</span><strong><span id="result-accuracy">0</span>%</strong></div>
+                <div class="result-metric"><span>WPM</span><strong id="result-wpm">0</strong></div>
+                <div class="result-metric"><span>Raundai</span><strong id="result-rounds">0</strong></div>
+            </div>
+            <div id="lesson-reward" aria-live="polite" hidden></div>
+            <div class="result-actions" id="result-actions"></div>
+        </section>
+    </div>
+
+    <script id="lesson-data" type="application/json">@Html.Raw(json)</script>
+    <script src="~/js/typing.js" asp-append-version="true"></script>
+    <script src="~/js/lesson-keyboard.js" asp-append-version="true"></script>
+    <script src="~/js/lesson.js" asp-append-version="true"></script>
+}

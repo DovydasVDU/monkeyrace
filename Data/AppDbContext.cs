@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<UserKeyStat> UserKeyStats { get; set; }
     public DbSet<UserWordMistake> UserWordMistakes { get; set; }
     public DbSet<UserItem> UserItems { get; set; }
+    public DbSet<UserLessonProgress> UserLessonProgresses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +28,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<UserWordMistake>().HasKey(w => new { w.UserId, w.Word });
         // Ta pati prekė perkama tik kartą (RaceService.EquipItemAsync)
         modelBuilder.Entity<UserItem>().HasKey(i => new { i.UserId, i.ItemId });
+        // Pamokų progresas: viena eilutė žaidėjui ir pamokai (RaceService.SaveLessonResultAsync)
+        modelBuilder.Entity<UserLessonProgress>().HasKey(p => new { p.UserId, p.LessonId });
 
         // Seed data – pradiniai duomenys. Tekstus padarome iškart, kad nereiktų jų suvedinėti ranka
         modelBuilder.Entity<TextSnippet>().HasData(

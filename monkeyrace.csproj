@@ -21,6 +21,7 @@
 		<!-- WordService ir TextImporter skaito iš Data/ šalia dll -->
 		<None Include="Data\words-lt.txt" CopyToOutputDirectory="PreserveNewest" />
 		<None Include="Data\texts-lt.jsonl" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Data\lesson-words.txt" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

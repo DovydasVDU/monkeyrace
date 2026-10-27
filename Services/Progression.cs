@@ -104,6 +104,26 @@ public static class Progression
         };
     }
 
+    // Pamoka: apdovanojama tik už NAUJAI užsidirbtas žvaigždutes (kartojant jau gautą rezultatą nieko nepridedama).
+    // 1 žvaigždutė – 20 XP ir 3 bananai, 2 – 10 XP ir 2, 3 – 10 XP ir 3, pakilus lygiui – kaip lenktynėse.
+    public static Reward LessonReward(int stars, int previousStars, int xpBefore)
+    {
+        var levelBefore = LevelFor(xpBefore);
+        var xp = 0;
+        var bananas = 0;
+        for (var star = Math.Max(0, previousStars) + 1; star <= Math.Min(3, stars); star++)
+        {
+            xp += star == 1 ? 20 : 10;
+            bananas += star switch { 1 => 3, 2 => 2, _ => 3 };
+        }
+
+        var levelAfter = LevelFor(xpBefore + xp);
+        for (var level = levelBefore + 1; level <= levelAfter; level++)
+            bananas += 20 * level;
+
+        return new Reward { Xp = xp, Bananas = bananas, LevelBefore = levelBefore, LevelAfter = levelAfter };
+    }
+
     private static int PlaceBonusXp(int? place) => place switch
     {
         1 => 30,

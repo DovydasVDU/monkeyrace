@@ -297,6 +297,54 @@ public class RaceService
         }
     }
 
+    // Pamokos rezultatas: išsaugo geriausią rezultatą ir apdovanoja tik už naujas žvaigždutes.
+    // Tas pats užraktas kaip SaveRaceResultAsync, kad XP ir bananai nepasimestų lygiagrečiai.
+    public async Task<LessonSaveResult> SaveLessonResultAsync(int userId, string lessonId, int stars,
+        double accuracy, int wpm)
+    {
+        var userLock = _userLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        await userLock.WaitAsync();
+        try
+        {
+            await using var transaction = await _db.Database.BeginTransactionAsync();
+            var user = await _db.Users.FirstAsync(u => u.Id == userId);
+            var progress = await _db.UserLessonProgresses
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.LessonId == lessonId);
+            if (progress == null)
+                _db.UserLessonProgresses.Add(progress = new UserLessonProgress { UserId = userId, LessonId = lessonId });
+
+            var previousStars = progress.Stars;
+            var reward = Progression.LessonReward(stars, previousStars, user.Xp);
+            var xpBefore = user.Xp;
+            user.Xp += reward.Xp;
+            user.Bananas += reward.Bananas;
+
+            progress.Attempts++;
+            progress.Stars = Math.Max(progress.Stars, stars);
+            progress.BestAccuracy = Math.Max(progress.BestAccuracy, accuracy);
+            progress.BestWpm = Math.Max(progress.BestWpm, wpm);
+            progress.UpdatedAt = DateTime.UtcNow;
+            if (stars > 0 && progress.CompletedAt == null)
+                progress.CompletedAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return new LessonSaveResult
+            {
+                Stars = stars,
+                BestStars = progress.Stars,
+                NewStars = Math.Max(0, stars - previousStars),
+                Reward = RaceReward.Create(xpBefore, user.Xp, user.Bananas, reward.Xp, reward.Bananas,
+                    firstRace: false, saved: true)
+            };
+        }
+        finally
+        {
+            userLock.Release();
+        }
+    }
+
     // Svečiui: kiek būtų gavęs, jei būtų prisijungęs. Niekur nesaugoma.
     public static RaceReward GuestReward(RaceMode mode, int? place, int wpm, double accuracy,
         int? durationSeconds = null)
@@ -362,4 +410,16 @@ public sealed class RaceReward
             Saved = saved
         };
     }
+}
+
+// Pamokos išsaugojimo atsakymas naršyklei
+public sealed class LessonSaveResult
+{
+    // šio bandymo žvaigždutės
+    public int Stars { get; init; }
+    // geriausias rezultatas po šio bandymo
+    public int BestStars { get; init; }
+    // kiek žvaigždučių gauta pirmą kartą (už jas duotas apdovanojimas)
+    public int NewStars { get; init; }
+    public RaceReward Reward { get; init; }
 }

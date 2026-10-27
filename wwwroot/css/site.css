@@ -91,6 +91,13 @@
     --player-2: var(--leaf);
     --player-3: #7E57C2;
 
+    /* pamokų pirštai (klaviatūra ir rankos, lessons.css): spalva pagal pirštą, --finger-ink – tekstas ant tos spalvos */
+    --finger-pinky: var(--player-3);
+    --finger-ring: var(--water);
+    --finger-middle: var(--leaf);
+    --finger-index: var(--banana);
+    --finger-thumb: var(--brown);
+
     /* permatomos versijos (rgba negali imti var() hex'o) */
     --cream-a05: rgba(255, 246, 220, .05);
     --cream-a10: rgba(255, 246, 220, .10);

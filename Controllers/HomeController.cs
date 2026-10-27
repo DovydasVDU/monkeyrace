@@ -19,9 +19,6 @@ namespace monkeyrace.Controllers
         [HttpGet("/apie")]
         public IActionResult About() => View();
 
-        [HttpGet("/pamokos")]
-        public IActionResult Lessons() => View();
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error() // jeigu nutinka netikėta klaida, ji nusiunčia vartotoją į /home/erorr langą, kuriame parodoma klaida
         {

@@ -513,6 +513,37 @@ namespace monkeyrace.Migrations
                     b.ToTable("UserKeyStats");
                 });
 
+            modelBuilder.Entity("UserLessonProgress", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LessonId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("BestAccuracy")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("BestWpm")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Stars")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "LessonId");
+
+                    b.ToTable("UserLessonProgresses");
+                });
+
             modelBuilder.Entity("UserWordMistake", b =>
                 {
                     b.Property<int>("UserId")
@@ -575,6 +606,17 @@ namespace monkeyrace.Migrations
                 });
 
             modelBuilder.Entity("UserKeyStat", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UserLessonProgress", b =>
                 {
                     b.HasOne("User", "User")
                         .WithMany()
