@@ -4,15 +4,19 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
-// Atsakingas už vartotojo profilio puslapį, kuriame rodomi vidutiniai rezultatai ir paskutinių 20 žaidimų statistika
+// Atsakingas už vartotojo profilio puslapį, kuriame rodomi vidutiniai rezultatai ir paskutinių žaidimų statistika (po 10, kitus 10 užkrauna PastRaces)
 public class UserController : Controller
 {
+    // kiek paskutinių lenktynių rodoma iš karto ir kiek pridedama paspaudus „Užkrauti daugiau“
+    private const int PastRacesPageSize = 10;
+
     private readonly AppDbContext _db;
     private readonly RaceService _raceService;
 
@@ -24,7 +28,7 @@ public class UserController : Controller
 
     [HttpGet]
     [Authorize]
-    // Šis metodas rodo vartotojo profilio puslapį su vidutiniais rezultatais ir paskutinių 20 žaidimų statistika.
+    // Šis metodas rodo vartotojo profilio puslapį su vidutiniais rezultatais ir paskutinių 10 žaidimų statistika.
     // Pirmiausia tikrinama, ar vartotojas prisijungęs, tada gaunami visi jo žaidimai iš duomenų bazės, apskaičiuojami vidurkiai,
     // ir galiausiai sukuriamas UserProfileViewModel objektas, kuris perduodamas į View.
     public async Task<IActionResult> Stats()
@@ -48,21 +52,9 @@ public class UserController : Controller
             Username = user.Username,
             AverageWpm = results.Any() ? (int)results.Average(r => r.WPM) : 0, // su klaustukai tikriname, ar yra informacija, jei ne - grąžiname "unknown" arba "0"
             AverageAccuracy = results.Any() ? results.Average(r => r.Accuracy) : 0,
+            TotalRaces = results.Count,
             // atskira projekcija, kad nebūtų kraunamas ReplayJson
-            PastRaces = await _db.RaceResults
-                .Where(r => r.UserId == userId)
-                .OrderByDescending(r => r.CompletedAt)
-                .Take(20)
-                .Select(r => new PastRaceViewModel
-                {
-                    ResultId = r.Id,
-                    CompletedAt = r.CompletedAt,
-                    Wpm = r.WPM,
-                    Accuracy = r.Accuracy,
-                    ErrorCount = r.ErrorCount,
-                    HasReplay = r.Race.ReplayJson != null
-                })
-                .ToListAsync(),
+            PastRaces = await QueryPastRaces(userId, 0),
             Mistakes = await _raceService.GetMistakeStatsAsync(userId),
             OwnedItems = (await _db.UserItems.Where(i => i.UserId == userId).Select(i => i.ItemId).ToListAsync()).ToHashSet(),
             EquippedItems = new[]
@@ -75,6 +67,36 @@ public class UserController : Controller
 
         return View("Stats", model); // perudodame į /Stats puslapį
     }
+
+    // Profilio „Užkrauti daugiau“: kitos PastRacesPageSize lenktynių eilutės (HTML partial) nuo skip-osios
+    [HttpGet("/User/PastRaces")]
+    [Authorize]
+    public async Task<IActionResult> PastRaces(int skip)
+    {
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        if (userId == null)
+            return Unauthorized();
+        return PartialView("_PastRaceRows", await QueryPastRaces(userId.Value, Math.Max(0, skip)));
+    }
+
+    // Id kaip antras rikiavimo raktas, kad puslapiai nesikartotų, jei dvi lenktynės baigėsi tuo pačiu momentu
+    private Task<List<PastRaceViewModel>> QueryPastRaces(int userId, int skip) =>
+        _db.RaceResults
+            .Where(r => r.UserId == userId)
+            .OrderByDescending(r => r.CompletedAt)
+            .ThenByDescending(r => r.Id)
+            .Skip(skip)
+            .Take(PastRacesPageSize)
+            .Select(r => new PastRaceViewModel
+            {
+                ResultId = r.Id,
+                CompletedAt = r.CompletedAt,
+                Wpm = r.WPM,
+                Accuracy = r.Accuracy,
+                ErrorCount = r.ErrorCount,
+                HasReplay = r.Race.ReplayJson != null
+            })
+            .ToListAsync();
 
     // Parduotuvė: nupirkti (jei dar neturi) ir užsidėti. Forma iš Stats.cshtml, atsakymas – žinutė parduotuvėje.
     [HttpPost("/shop/equip/{itemId}")]

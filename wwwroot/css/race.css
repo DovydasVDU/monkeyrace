@@ -187,17 +187,61 @@
         var(--cream-2);
 }
 
-/* Parduotuvės takeliai (PlayerCard.track, MultiPlay renderPlayers); „classic“ – numatytosios spalvos aukščiau */
-.player-track.lane-leaf::before {
-    background:
-        linear-gradient(90deg, var(--leaf) var(--progress), transparent var(--progress)),
-        var(--cream-2);
+/* Parduotuvės takeliai (PlayerCard.track, MultiPlay renderPlayers); „classic“ – numatytosios spalvos aukščiau.
+   Bananų, lapų ir vandens takelio užpildas – ::after su formų kauke (--mask-* iš site.css :root), todėl
+   ::before lieka tik tuščias takelis; beždžionė (z-index) važiuoja virš užpildo. 26px = 30px takelis be 2px kontūro. */
+.player-track.lane-leaf::before,
+.player-track.lane-banana::before,
+.player-track.lane-water::before {
+    background: var(--cream-2);
 }
 
-.player-track.lane-banana::before {
-    background:
-        linear-gradient(90deg, var(--banana) var(--progress), transparent var(--progress)),
-        var(--cream-2);
+.player-track.lane-leaf::after,
+.player-track.lane-banana::after,
+.player-track.lane-water::after {
+    border-radius: var(--radius-pill);
+    content: "";
+    grid-column: 2;
+    grid-row: 1;
+    height: 26px;
+    justify-self: start;
+    margin-left: 2px;
+    max-width: calc(100% - 4px);
+    -webkit-mask-position: 0 50%;
+    mask-position: 0 50%;
+    -webkit-mask-repeat: repeat-x;
+    mask-repeat: repeat-x;
+    width: var(--progress);
+}
+
+.player-track.lane-leaf::after {
+    background: var(--leaf);
+    -webkit-mask-image: var(--mask-leaf);
+    mask-image: var(--mask-leaf);
+    -webkit-mask-size: 60px 26px;
+    mask-size: 60px 26px;
+}
+
+.player-track.lane-banana::after {
+    background: var(--banana);
+    -webkit-mask-image: var(--mask-banana);
+    mask-image: var(--mask-banana);
+    -webkit-mask-size: 44px 26px;
+    mask-size: 44px 26px;
+}
+
+.player-track.lane-water::after {
+    background: linear-gradient(var(--water-light), var(--water));
+    -webkit-mask-image: var(--mask-wave);
+    mask-image: var(--mask-wave);
+    -webkit-mask-size: 40px 26px;
+    mask-size: 40px 26px;
+}
+
+.player-track.lane-leaf .player-monkey,
+.player-track.lane-banana .player-monkey,
+.player-track.lane-water .player-monkey {
+    z-index: 1;
 }
 
 .player-monkey {
@@ -352,6 +396,7 @@
 }
 
 .race-screen:has(#text-display:empty) .player-track::before,
+.race-screen:has(#text-display:empty) .player-track::after,
 .race-screen:has(#text-display:empty) .player-wpm {
     display: none;
 }
@@ -1384,6 +1429,7 @@
 }
 
 .words-mode .player-track::before,
+.words-mode .player-track::after,
 .words-mode .race-lane-label {
     display: none;
 }

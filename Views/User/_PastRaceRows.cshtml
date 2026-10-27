@@ -1,0 +1,24 @@
+@model IEnumerable<PastRaceViewModel>
+@* Paskutinių lenktynių eilutės: Stats.cshtml (pirmi 10) ir UserController.PastRaces („Užkrauti daugiau“) *@
+@foreach (var race in Model)
+{
+    @* eilutė su perklausa – nuoroda kaip Top 10 *@
+    if (race.HasReplay)
+    {
+        <a class="lb-row" role="row" href="/race/replay/@race.ResultId" title="Žiūrėti perklausą">
+            <span class="lb-date" role="cell"><svg class="ui-icon lb-replay-icon" aria-hidden="true"><use href="#icon-play"></use></svg>@race.CompletedAt.ToString("yyyy-MM-dd")</span>
+            <span class="lb-num" role="cell"><strong>@race.Wpm</strong></span>
+            <span role="cell">@race.Accuracy.ToString("0.0")%</span>
+            <span role="cell">@race.ErrorCount</span>
+        </a>
+    }
+    else
+    {
+        <div class="lb-row" role="row">
+            <span class="lb-date" role="cell">@race.CompletedAt.ToString("yyyy-MM-dd")</span>
+            <span class="lb-num" role="cell"><strong>@race.Wpm</strong></span>
+            <span role="cell">@race.Accuracy.ToString("0.0")%</span>
+            <span role="cell">@race.ErrorCount</span>
+        </div>
+    }
+}

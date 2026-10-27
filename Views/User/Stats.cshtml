@@ -235,29 +235,15 @@
                     <span role="columnheader">Tikslumas</span>
                     <span role="columnheader">Klaidos</span>
                 </div>
-                @foreach (var race in Model.PastRaces)
-                {
-                    @* eilutė su perklausa – nuoroda kaip Top 10 *@
-                    if (race.HasReplay)
-                    {
-                        <a class="lb-row" role="row" href="/race/replay/@race.ResultId" title="Žiūrėti perklausą">
-                            <span class="lb-date" role="cell"><svg class="ui-icon lb-replay-icon" aria-hidden="true"><use href="#icon-play"></use></svg>@race.CompletedAt.ToString("yyyy-MM-dd")</span>
-                            <span class="lb-num" role="cell"><strong>@race.Wpm</strong></span>
-                            <span role="cell">@race.Accuracy.ToString("0.0")%</span>
-                            <span role="cell">@race.ErrorCount</span>
-                        </a>
-                    }
-                    else
-                    {
-                        <div class="lb-row" role="row">
-                            <span class="lb-date" role="cell">@race.CompletedAt.ToString("yyyy-MM-dd")</span>
-                            <span class="lb-num" role="cell"><strong>@race.Wpm</strong></span>
-                            <span role="cell">@race.Accuracy.ToString("0.0")%</span>
-                            <span role="cell">@race.ErrorCount</span>
-                        </div>
-                    }
-                }
+                <partial name="_PastRaceRows" model="Model.PastRaces" />
             </div>
+
+            @if (Model.TotalRaces > Model.PastRaces.Count)
+            {
+                <button class="btn btn-s history-more" type="button" id="history-more"
+                        data-total="@Model.TotalRaces" data-loaded="@Model.PastRaces.Count">Užkrauti daugiau</button>
+                <p class="shop-note is-error" id="history-error" role="alert" hidden>Nepavyko užkrauti. Pabandyk dar kartą.</p>
+            }
         }
     </section>
 
@@ -288,4 +274,27 @@
         document.querySelectorAll('[data-shop-tab]').forEach(t => t.setAttribute('aria-pressed', String(t === tab)));
         document.querySelectorAll('[data-shop-panel]').forEach(p => p.hidden = p.dataset.shopPanel !== tab.dataset.shopTab);
     }));
+
+    // Paskutinės lenktynės: „Užkrauti daugiau“ prideda dar 10 eilučių (UserController.PastRaces)
+    const historyMore = document.getElementById('history-more');
+    if (historyMore) historyMore.addEventListener('click', async () => {
+        const error = document.getElementById('history-error');
+        error.hidden = true;
+        historyMore.disabled = true;
+        try {
+            const res = await fetch(`/User/PastRaces?skip=${historyMore.dataset.loaded}`);
+            // peradresavimas = sesija pasibaigė, gautume prisijungimo puslapį
+            if (!res.ok || res.redirected) throw new Error(res.status);
+            const template = document.createElement('template');
+            template.innerHTML = await res.text();
+            const added = template.content.querySelectorAll('.lb-row').length;
+            document.querySelector('.history-table').append(template.content);
+            historyMore.dataset.loaded = String(Number(historyMore.dataset.loaded) + added);
+            if (added === 0 || Number(historyMore.dataset.loaded) >= Number(historyMore.dataset.total)) historyMore.remove();
+            else historyMore.disabled = false;
+        } catch {
+            error.hidden = false;
+            historyMore.disabled = false;
+        }
+    });
 </script>

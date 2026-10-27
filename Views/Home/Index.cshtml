@@ -19,65 +19,48 @@
         </div>
     </section>
 
-    <a class="play-card" href="/race/quick">
-        <div class="play-card-copy">
-            <span class="play-card-tag">Daugelio žaidėjų režimas</span>
-            <h2>Žaisti internetu</h2>
-            <p>Sistema per kelias sekundes suras 2–4 panašaus lygio varžovus. Kas pirmas finišuos be klaidų, laimės.</p>
-        </div>
-        <div class="play-card-side">
-            <div class="play-card-art" aria-hidden="true">
-                <span class="play-card-monkey">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F", Mood = "run" })</span>
-                <span class="play-card-banana">@await Html.PartialAsync("_Banana")</span>
+    <div class="home-play">
+        <a class="play-card" href="/race/quick">
+            <div class="play-card-copy">
+                <span class="play-card-tag">Daugelio žaidėjų režimas</span>
+                <h2>Žaisti internetu</h2>
+                <p>Per kelias sekundes surasime 2–4 panašaus lygio varžovus.</p>
             </div>
-            <span class="play-card-btn">
-                <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Žaisti
-            </span>
-        </div>
-    </a>
+            <div class="play-card-side">
+                <div class="play-card-art" aria-hidden="true">
+                    <span class="play-card-monkey">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#2E8B4F", Mood = "run" })</span>
+                    <span class="play-card-banana">@await Html.PartialAsync("_Banana")</span>
+                </div>
+                <span class="play-card-btn">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Žaisti
+                </span>
+            </div>
+        </a>
+
+        <article class="card mode-card">
+            <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg></span>
+            <h3>Dažniausi žodžiai</h3>
+            <p>Atsitiktiniai žodžiai iš 1000 dažniausių lietuviškų. Rašyk, kol baigsis laikas.</p>
+            <div class="tm-group" role="group" aria-label="Trukmė">
+                @foreach (var seconds in WordService.AllowedSeconds)
+                {
+                    <button class="tm" type="button" data-words-seconds="@seconds"
+                            aria-pressed="@(seconds == 30 ? "true" : "false")">@(seconds < 60 ? $"{seconds} s" : $"{seconds / 60} min")</button>
+                }
+            </div>
+            <div class="mode-actions">
+                <a class="btn btn-p" id="words-solo" href="/race/words?seconds=30">Solo</a>
+                <a class="btn btn-s" id="words-online" href="/race/quick?seconds=30">Online</a>
+            </div>
+        </article>
+    </div>
 
     <section class="home-section" aria-labelledby="modes-title">
-        <h2 id="modes-title" class="section-title">Kiti režimai</h2>
+        <h2 id="modes-title" class="section-title">Kiti žaidimai</h2>
         <div class="mode-grid">
-            <article class="card mode-card">
-                <h3 class="bot-mode-title">
-                    <span class="bot-mode-monkey" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#7E57C2" })</span>
-                    Lenktyniauk su botais
-                </h3>
-                <p>Trys botai, kiekvienas su savo charakteriu: prisitaikantis, lengvas, vidutinis ar sunkus.</p>
-                <div class="mode-actions">
-                    <a class="btn btn-p" id="bots-play" href="/race/bots?levels=adaptive,adaptive,adaptive">Žaisti</a>
-                    <button class="btn btn-s" type="button" id="bots-settings-open">Botų nustatymai</button>
-                </div>
-            </article>
-
-            <article class="card mode-card">
-                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg></span>
-                <h3>Solo treniruotė</h3>
-                <p>Treniruok greitį ir tikslumą savo tempu, be varžovų.</p>
-                <a class="btn btn-p" href="/Race/Play">Pradėti</a>
-            </article>
-
-            <article class="card mode-card">
-                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg></span>
-                <h3>Dažniausi žodžiai</h3>
-                <p>Atsitiktiniai žodžiai iš 1000 dažniausių lietuviškų. Rašyk, kol baigsis laikas.</p>
-                <div class="tm-group" role="group" aria-label="Trukmė">
-                    @foreach (var seconds in WordService.AllowedSeconds)
-                    {
-                        <button class="tm" type="button" data-words-seconds="@seconds"
-                                aria-pressed="@(seconds == 30 ? "true" : "false")">@(seconds < 60 ? $"{seconds} s" : $"{seconds / 60} min")</button>
-                    }
-                </div>
-                <div class="mode-actions">
-                    <a class="btn btn-p" id="words-solo" href="/race/words?seconds=30">Solo</a>
-                    <a class="btn btn-s" id="words-online" href="/race/quick?seconds=30">Online</a>
-                </div>
-            </article>
-
             <article class="card mode-card" id="friends">
                 <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg></span>
-                <h3>Su draugais</h3>
+                <h3>Žaisk su draugais</h3>
                 <p>Sukurk privatų kambarį ir pasidalink kodu. Lenktynes pradeda kambario kūrėjas.</p>
                 @* pakvietimo nuoroda be vardo grąžina čia su ?room=KODAS *@
                 <form class="friends-form" method="get" action="/race/room/join">
@@ -98,6 +81,31 @@
                         <button class="btn btn-s" type="submit" id="room-join">Prisijungti</button>
                     </div>
                 </form>
+            </article>
+
+            <article class="card mode-card">
+                <h3 class="bot-mode-title">
+                    <span class="bot-mode-monkey" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = "#7E57C2" })</span>
+                    Žaisk su botais
+                </h3>
+                <p>Trys botai, kiekvienas su savo charakteriu: prisitaikantis, lengvas, vidutinis ar sunkus.</p>
+                <div class="mode-actions">
+                    <a class="btn btn-p" id="bots-play" href="/race/bots?levels=adaptive,adaptive,adaptive">Žaisti</a>
+                    <button class="btn btn-s" type="button" id="bots-settings-open">Botų nustatymai</button>
+                </div>
+            </article>
+
+            <article class="card mode-card">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg></span>
+                <h3>Solo treniruotė</h3>
+                <p>Treniruok greitį ir tikslumą savo tempu, be varžovų.</p>
+                <a class="btn btn-p" href="/Race/Play">Pradėti</a>
+            </article>
+
+            <article class="card mode-card card--soon">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg></span>
+                <h3>Turnyrai <span class="pill">Netrukus</span></h3>
+                <p>Nemokami savaitiniai turnyrai su prizais ir priminimu el. paštu prieš startą. Papildomi prizai už pakviestus draugus, o privatų turnyrą galėsi susikurti savo klasei ar komandai.</p>
             </article>
         </div>
     </section>

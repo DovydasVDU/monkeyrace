@@ -7,6 +7,8 @@ public class UserProfileViewModel
     public string Username { get; set; } = string.Empty;
     public int AverageWpm { get; set; }
     public double AverageAccuracy { get; set; }
+    // visos vartotojo lenktynės (PastRaces – tik pirmas puslapis), kad žinotume, ar rodyti „Užkrauti daugiau“
+    public int TotalRaces { get; set; }
     public List<PastRaceViewModel> PastRaces { get; set; } = new List<PastRaceViewModel>();
     public MistakeStats Mistakes { get; set; } = new MistakeStats();
     // Parduotuvė: nupirktų ir užsidėtų prekių Id (ShopCatalog)

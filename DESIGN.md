@@ -23,6 +23,8 @@ Charakteris: šilta, žaisminga džiunglių tema. Tamsiai žalias fonas, kremin�
 | `--brown` | `#8B5E3C` | beždžionė |
 | `--error` | `#C93A3A` | klaida |
 | `--error-soft` | `#FBE9E9` | klaidos fonas |
+| `--water` / `--water-light` | `#2F8FD8` / `#7CC4F2` | parduotuvės vandens takelis (mėlyna – tik čia) |
+| `--mask-banana` / `--mask-leaf` / `--mask-wave` | data-URI SVG | takelių formų kaukės (`mask-image`): tik silueto forma, spalvą duoda `background` su `var(--…)` |
 | `--player-0`…`--player-3` | banana / `#E53935` / leaf / `#7E57C2` | perklausos žaidėjų spalvos (kepurės) |
 | `--radius-card` | `24px` | |
 | `--radius-ctl` | `16px` | |
@@ -52,6 +54,9 @@ Visi trys turi latin-ext (ą č ę ė į š ų ū ž).
 - `.chip` (ant tamsaus: `rgba(cream,.1)` fonas), `.pill` (ant šviesaus: cream fonas, 2px kontūras).
 - `.tm` – pasirinkimo pill (15 s / 30 s / 1 min, greičiai), `.on` = ink fonas + banana tekstas.
 - `.xp-track` – aukštis 14px, fonas `--cream-2`, 2px kontūras, užpildas `--leaf` (XP) arba `--banana` (lenktynių „Tu").
+- Parduotuvės takeliai (`ShopCatalog.Tracks`, klasė `.lane-<Value>` lenktynėse, `.track-<Value>` parduotuvės peržiūroje): `classic` – vientisas užpildas; `leaf` (lapeliai), `banana` (bananai), `water` (bangos) – užpildas iš pasikartojančių formų: `::after` su `mask-image: var(--mask-…)`, 26px aukščio, `width: var(--progress)`; beždžionė (`z-index: 1`) važiuoja virš užpildo.
+- Pagrindinis puslapis: „Žaisti internetu“ (`.play-card`, kompaktiška) ir „Dažniausi žodžiai“ – vienoje eilutėje (`.home-play`); skyrius „Kiti žaidimai“: Žaisk su draugais, Žaisk su botais, Solo treniruotė, Turnyrai.
+- Profilio „Paskutinės lenktynės“: 10 eilučių, `#history-more` („Užkrauti daugiau“) kviečia `/User/PastRaces?skip=N`.
 - Lenktynių takelis – 30px cream-2 pill, 2px kontūras, užpildas banana („Tu") / leaf-light (kiti), 32px beždžionė ant progreso galo; „Tu" beždžionė su žalia kepure.
 - Lentelės eilutės – grid, dashed 2px skyrikliai `rgba(ink,.18)`; vietos 1/2/3 apskritimai (banana / `#D7D9D2` / `#E0A36A`) su 2px kontūru; vartotojo eilutė `--banana-soft`.
 - Skaičiai – `font-variant-numeric: tabular-nums`.

@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Pamokos - MonkeyRace";
+    var lessons = new[]
+    {
+        (Icon: "keyboard", Title: "Pagrindinė eilutė", Text: "Pirštai ant A S D F ir J K L. Išmok rašyti nežiūrėdamas į klaviatūrą."),
+        (Icon: "target", Title: "Viršutinė ir apatinė eilutės", Text: "Kiekvienas pirštas turi savo klavišus – pratimai po vieną eilutę."),
+        (Icon: "star", Title: "Lietuviškos raidės", Text: "Ą Č Ę Ė Į Š Ų Ū Ž be dvejonių – skaičių eilutė ir dažniausi žodžiai."),
+        (Icon: "medal", Title: "Didžiosios raidės ir skyryba", Text: "Shift abiem rankom, kableliai, taškai ir kabutės."),
+        (Icon: "chart", Title: "Pirmieji 30 WPM", Text: "Pirma tikslumas, tada greitis. Trumpi tekstai, kol pasieksi 30 WPM.")
+    };
+}
+
+<section class="home-section lessons-page" aria-labelledby="lessons-title">
+    <h1 id="lessons-title">Aklasis rašymas nuo nulio</h1>
+    <p class="lessons-intro">Nemokamos pamokos žingsnis po žingsnio: nuo pirštų padėties iki pirmųjų lenktynių. Už kiekvieną įveiktą pamoką gausi XP ir bananų.</p>
+    <div class="mode-grid">
+        @foreach (var lesson in lessons)
+        {
+            <article class="card mode-card card--soon">
+                <span class="mode-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-@lesson.Icon"></use></svg></span>
+                <h3>@lesson.Title <span class="pill">Netrukus</span></h3>
+                <p>@lesson.Text</p>
+            </article>
+        }
+    </div>
+</section>

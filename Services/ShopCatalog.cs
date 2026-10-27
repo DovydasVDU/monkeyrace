@@ -22,6 +22,7 @@ public static class ShopCatalog
         new("fur-dark", Furs, "Tamsi", "#5E3B22", 600),
         new("track-classic", Tracks, "Klasikinis", "classic", 0),
         new("track-leaf", Tracks, "Lapų", "leaf", 250),
+        new("track-water", Tracks, "Vandens", "water", 350),
         new("track-banana", Tracks, "Bananų", "banana", 500)
     };
 

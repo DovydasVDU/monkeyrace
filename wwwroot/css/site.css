@@ -78,6 +78,13 @@
     --soon: #CBD9C4;
     --silver: #D7D9D2;
     --bronze: #E0A36A;
+    /* parduotuvės vandens takelis (.lane-water, .track-water) */
+    --water: #2F8FD8;
+    --water-light: #7CC4F2;
+    /* takelių formos: tik silueto kaukės (mask), spalvą duoda background su var(--…) */
+    --mask-banana: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='26' viewBox='0 0 44 26'%3E %3Cpath fill='black' d='M2 5 C3 3.5 5.5 3.5 6.5 5 C9 11 15 15 22 15 C29 15 34 11 36.5 6 L36 3 L39.5 2 L41.5 5.5 C39.5 15.5 31 24.5 21 24.5 C11 24.5 4 16.5 2 7 Z'/%3E %3C/svg%3E");
+    --mask-leaf: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='26' viewBox='0 0 60 26'%3E %3Cg fill='black' fill-rule='evenodd'%3E %3Cpath id='l' d='M3 13 C8 3 20 2 28 5 C27 13 22 22 8 23 C5 21 3 17 3 13 Z M6.5 19 L21 9.5 L21.4 10.4 L7.4 19.6 Z'/%3E %3Cuse href='%23l' transform='translate(60 26) rotate(180)'/%3E %3C/g%3E%3C/svg%3E");
+    --mask-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='26' viewBox='0 0 40 26'%3E %3Cpath fill='black' fill-rule='evenodd' d='M0 9 C5 3 10 3 20 9 C30 15 35 15 40 9 L40 26 L0 26 Z M9 17 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0 Z M27 21 a1.5 1.5 0 1 0 3 0 a1.5 1.5 0 1 0 -3 0 Z'/%3E %3C/svg%3E");
     /* perklausos žaidėjų spalvos = kepurės #replay-monkey-templates (_Replay.cshtml) */
     --player-0: var(--banana);
     --player-1: #E53935;
@@ -656,7 +663,7 @@ main {
         gap: .1rem;
         justify-content: center;
         min-height: 48px;
-        min-width: 64px;
+        min-width: 56px;
         text-decoration: none;
     }
 
@@ -716,29 +723,29 @@ main {
     background: linear-gradient(135deg, var(--banana-light), var(--banana));
     border: var(--border);
     border-radius: var(--radius-card);
-    box-shadow: 0 10px 0 var(--banana-shadow);
+    box-shadow: 0 6px 0 var(--banana-shadow);
     color: var(--ink);
     display: grid;
-    gap: 2rem;
-    grid-template-columns: 1fr auto;
-    padding: 40px 48px;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+    padding: 24px 28px;
     text-decoration: none;
     transition: transform .15s, box-shadow .15s;
 }
 
 .play-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 13px 0 var(--banana-shadow);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 0 var(--banana-shadow);
 }
 
 .play-card:active {
-    transform: translateY(5px);
-    box-shadow: 0 5px 0 var(--banana-shadow);
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 var(--banana-shadow);
 }
 
 .play-card-copy {
     display: grid;
-    gap: .9rem;
+    gap: .6rem;
     justify-items: start;
 }
 
@@ -752,13 +759,13 @@ main {
 }
 
 .play-card h2 {
-    font-size: clamp(2.4rem, 5vw, 56px);
+    font-size: clamp(1.8rem, 3.5vw, 2.25rem);
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.05;
 }
 
 .play-card p {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     max-width: 560px;
 }
@@ -767,29 +774,30 @@ main {
     align-items: center;
     display: grid;
     gap: 1rem;
-    justify-items: center;
+    grid-template-columns: auto 1fr;
+    justify-items: stretch;
 }
 
 .play-card-art {
-    height: 150px;
+    height: 96px;
     position: relative;
-    width: 190px;
+    width: 120px;
 }
 
 .play-card-monkey {
     display: block;
-    height: 150px;
-    width: 150px;
+    height: 96px;
+    width: 96px;
 }
 
 .play-card-banana {
     bottom: 0;
     display: block;
-    height: 70px;
+    height: 48px;
     position: absolute;
     right: 0;
     transform: rotate(-12deg);
-    width: 70px;
+    width: 48px;
 }
 
 .play-card-btn {
@@ -799,13 +807,21 @@ main {
     color: var(--banana);
     display: inline-flex;
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     gap: .5rem;
     justify-content: center;
-    min-height: 72px;
-    min-width: 220px;
-    padding: 0 2rem;
+    min-height: 56px;
+    min-width: 0;
+    padding: 0 1.5rem;
+}
+
+/* „Žaisti internetu“ (mažesnė, kad nebaugintų) ir „Dažniausi žodžiai“ vienoje eilutėje */
+.home-play {
+    align-items: stretch;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .section-title {
@@ -1088,7 +1104,8 @@ a.lb-row:hover {
 }
 
 @media (max-width: 900px) {
-    .mode-grid {
+    .mode-grid,
+    .home-play {
         grid-template-columns: 1fr;
     }
 
@@ -1342,9 +1359,41 @@ a.lb-row:hover {
     width: 65%;
 }
 
+/* peržiūra kaip lenktynių takelyje (race.css .lane-*): užpildas iš formų, ne vientisas */
 .track-classic span { background: var(--leaf-light); }
-.track-leaf span { background: var(--leaf); }
-.track-banana span { background: var(--banana); }
+
+.track-leaf span,
+.track-banana span,
+.track-water span {
+    -webkit-mask-position: 0 50%;
+    mask-position: 0 50%;
+    -webkit-mask-repeat: repeat-x;
+    mask-repeat: repeat-x;
+}
+
+.track-leaf span {
+    background: var(--leaf);
+    -webkit-mask-image: var(--mask-leaf);
+    mask-image: var(--mask-leaf);
+    -webkit-mask-size: 60px 26px;
+    mask-size: 60px 26px;
+}
+
+.track-banana span {
+    background: var(--banana);
+    -webkit-mask-image: var(--mask-banana);
+    mask-image: var(--mask-banana);
+    -webkit-mask-size: 44px 26px;
+    mask-size: 44px 26px;
+}
+
+.track-water span {
+    background: linear-gradient(var(--water-light), var(--water));
+    -webkit-mask-image: var(--mask-wave);
+    mask-image: var(--mask-wave);
+    -webkit-mask-size: 40px 26px;
+    mask-size: 40px 26px;
+}
 
 .shop-note {
     align-items: center;
@@ -1383,6 +1432,12 @@ a.lb-row:hover {
 
 .history-table .lb-row {
     grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+}
+
+/* „Užkrauti daugiau“ po lentele (Stats.cshtml) */
+.history-more {
+    justify-self: center;
+    min-width: 220px;
 }
 
 /* Paskyros ištrynimas (UserController.DeleteAccount) */
@@ -1819,4 +1874,16 @@ a.lb-row:hover {
     .legal-cookies div {
         grid-template-columns: minmax(0, 1fr);
     }
+}
+
+/* /pamokos */
+.lessons-page h1 {
+    font-size: clamp(1.8rem, 6vw, 2.4rem);
+}
+
+.lessons-intro {
+    color: var(--muted-on-dark);
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    max-width: 640px;
 }

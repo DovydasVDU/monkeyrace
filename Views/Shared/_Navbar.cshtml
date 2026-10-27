@@ -11,6 +11,7 @@
     var playActive = path.StartsWith("/race", StringComparison.OrdinalIgnoreCase);
     var profileActive = path.StartsWith("/User/Stats", StringComparison.OrdinalIgnoreCase);
     var aboutActive = path.StartsWith("/apie", StringComparison.OrdinalIgnoreCase);
+    var lessonsActive = path.StartsWith("/pamokos", StringComparison.OrdinalIgnoreCase);
 }
 
 <header class="navbar monkey-navbar">
@@ -24,6 +25,7 @@
 
     <nav class="desktop-nav" aria-label="Pagrindinė navigacija">
         <a href="/race/quick" class="@(playActive ? "is-active" : "")" aria-current="@(playActive ? "page" : null)">Žaisti</a>
+        <a href="/pamokos" class="@(lessonsActive ? "is-active" : "")" aria-current="@(lessonsActive ? "page" : null)">Pamokos</a>
         <a href="/#top10-body">Lyderiai</a>
         <a href="@(isAuthenticated ? "/User/Stats#shop" : "#")"
            class="@(isAuthenticated ? "" : "nav-disabled")"
@@ -85,6 +87,9 @@
 <nav class="mobile-tabs" aria-label="Mobilioji navigacija">
     <a href="/race/quick" class="@(playActive ? "is-active" : "")">
         <svg class="ui-icon" aria-hidden="true"><use href="#icon-flag"></use></svg>Žaisti
+    </a>
+    <a href="/pamokos" class="@(lessonsActive ? "is-active" : "")">
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"></use></svg>Pamokos
     </a>
     <a href="/#top10-body">
         <svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Lyderiai
