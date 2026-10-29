@@ -38,6 +38,27 @@
     <h1 id="lessons-title">Aklasis rašymas nuo nulio</h1>
     <p class="lessons-intro">Pamokos žingsnis po žingsnio: nuo pirštų padėties iki pirmųjų 30 WPM. Klaviatūra ir rankos rodo, kurį klavišą spausti, o pamoka prisitaiko prie tavo tikslumo. Už kiekvieną naują žvaigždutę gausi XP ir bananų.</p>
 
+    @{
+        var passMin = (int)LessonEngine.Paces.Min(p => p.PassAccuracy);
+        var passMax = (int)LessonEngine.Paces.Max(p => p.PassAccuracy);
+    }
+    <details class="card lessons-how" id="lessons-how" open>
+        <summary>
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-info"></use></svg>
+            <span>Kaip veikia pamokos</span>
+        </summary>
+        <ol class="how-steps">
+            <li><strong>Rašyk naujas raides.</strong> @LessonCatalog.Modules.Count modulių, @total pamokų: nuo pagrindinės eilutės iki skaičių ir ženklų. Kiekviena pamoka – keli trumpi raundai su klavišais, kuriuos treniruoji.</li>
+            <li><strong>Rink žvaigždutes.</strong> Žvaigždutės rodo tikslumą, ne greitį: pirmą gauni pasiekęs pamokos ribą, antrą – nuo 95 %, trečią – nuo 98 %.</li>
+            <li><strong>Atrakink kitą pamoką.</strong> Kita pamoka atsidaro, kai praėjusioje gauni bent vieną žvaigždutę.</li>
+            <li><strong>Rink prizus.</strong> Už kiekvieną naują žvaigždutę gauni XP ir bananų. Kartoti jau įveiktą pamoką galima bet kada, bet prizas duodamas tik už naujas žvaigždutes.</li>
+        </ol>
+        <div class="how-notes">
+            <p><strong>Kodėl tekstas keičiasi?</strong> Pamoka stebi tavo tikslumą ir tempą. Dažnai klystant, žodžiai paprastėja; rašant labai tiksliai – sunkėja. Tai normalu: svarbiausia tikslumas, greitis ateina pats.</p>
+            <p><strong>Tikslumo riba</strong> priklauso nuo tempo, kurį pasirenki pamokos pradžioje: @passMin–@passMax %. Rankų ir klaviatūros pagalbą bet kada gali išjungti mygtuku „Pagalba".</p>
+        </div>
+    </details>
+
     @if (loggedIn)
     {
         <p class="lessons-progress"><strong>@done</strong> iš @total pamokų įveikta</p>
@@ -94,6 +115,14 @@
 </section>
 
 <script>
+    (() => {
+        // paaiškinimas lieka suskleistas, jei žaidėjas jį jau uždarė
+        const how = document.getElementById("lessons-how");
+        try { if (localStorage.getItem("monkeyrace-lessons-how") === "closed") how.open = false; } catch { }
+        how.addEventListener("toggle", () => {
+            try { localStorage.setItem("monkeyrace-lessons-how", how.open ? "open" : "closed"); } catch { }
+        });
+    })();
     (() => {
         const KEY = "monkeyrace-lessons";
         let saved = {};

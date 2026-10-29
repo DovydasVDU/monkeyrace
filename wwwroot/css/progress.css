@@ -179,6 +179,38 @@
     margin: .45rem 0;
 }
 
+.player-card-pop .pc-title {
+    color: var(--leaf);
+    font-family: var(--font-display);
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+    margin-bottom: .15rem;
+    text-transform: uppercase;
+}
+
+.player-card-pop .pc-rows {
+    margin: 0;
+}
+
+.player-card-pop .pc-rows div {
+    border-top: 1px solid var(--ink-a18);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: .25rem 0;
+}
+
+.player-card-pop .pc-rows dt {
+    color: var(--ink-a60);
+    font-weight: 600;
+}
+
+.player-card-pop .pc-rows dd {
+    font-weight: 800;
+    margin: 0;
+}
+
 .player-card-pop p {
     color: var(--ink-a60);
     font-weight: 600;

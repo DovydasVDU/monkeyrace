@@ -14,16 +14,6 @@ function progressPercent(value) {
     return `${Math.round(Math.max(0, Math.min(1, value || 0)) * 100)}%`;
 }
 
-// Lietuviška daugiskaita: 1 žaidimas, 2 žaidimai, 10 žaidimų, 21 žaidimas
-function racesWord(count) {
-    const lastTwo = count % 100;
-    const last = count % 10;
-    if (lastTwo >= 11 && lastTwo <= 19) return "žaidimų";
-    if (last === 1) return "žaidimas";
-    if (last >= 2) return "žaidimai";
-    return "žaidimų";
-}
-
 // Botų lygis pagal greitį (WPM/8, 1-10), kad trasa atrodytų vientisai
 function botLevel(wpm) {
     return Math.max(1, Math.min(10, Math.round((wpm || 0) / 8)));
@@ -99,9 +89,15 @@ function playerCardHtml(player) {
     if (!card) {
         return `<div class="pc-head">${name}</div><p>Svečias: prisijunk, kad kauptum XP</p>`;
     }
-    return `<div class="pc-head">${name}<span>Lygis ${card.level}</span></div>
+    // titulas viršuje, kiekvienas duomuo savo eilutėje; titulo dar gali nebūti (card.title)
+    const title = card.title ? `<div class="pc-title">${progressEscape(card.title)}</div>` : "";
+    return `${title}<div class="pc-head">${name}<span>Lygis ${card.level}</span></div>
         <div class="xp-track"><span style="width:${progressPercent(card.levelProgress)}"></span></div>
-        <p>PB ${card.bestWpm} · vid. ${card.averageWpm} WPM · ${Number(card.averageAccuracy).toFixed(0)}%</p>`;
+        <dl class="pc-rows">
+            <div><dt>Geriausias WPM</dt><dd>${card.bestWpm}</dd></div>
+            <div><dt>Vidutinis WPM</dt><dd>${card.averageWpm}</dd></div>
+            <div><dt>Tikslumas</dt><dd>${Number(card.averageAccuracy).toFixed(1)}%</dd></div>
+        </dl>`;
 }
 
 // Lygis, rodomas ant beždžionėlės (null svečiui)
