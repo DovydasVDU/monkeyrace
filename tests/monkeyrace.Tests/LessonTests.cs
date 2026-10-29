@@ -286,7 +286,7 @@ public sealed class LessonCompleteTests : IDisposable
             Assert.Equal("1-1", progress.LessonId);
             Assert.Equal(2, progress.Stars); // 40 / 41 = 97,6 %
             // 1 žvaigždutė 20 XP + 3 bananai, 2 žvaigždutė 10 XP + 2 bananai
-            Assert.Equal(30, user.Xp);
+            Assert.Equal(30 + Achievements.Find("first-lesson").Xp, user.Xp); // pamokos XP + pasiekimas
             Assert.Equal(5, user.Bananas);
         }
 
@@ -297,7 +297,7 @@ public sealed class LessonCompleteTests : IDisposable
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            Assert.Equal(30, db.Users.Single(u => u.Username == "mokinys").Xp);
+            Assert.Equal(30 + Achievements.Find("first-lesson").Xp, db.Users.Single(u => u.Username == "mokinys").Xp);
             Assert.Equal(2, db.UserLessonProgresses.Single().Attempts);
         }
     }

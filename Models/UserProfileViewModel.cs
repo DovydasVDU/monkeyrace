@@ -13,6 +13,8 @@ public class UserProfileViewModel
     public MistakeStats Mistakes { get; set; } = new MistakeStats();
     // Parduotuvė: nupirktų ir užsidėtų prekių Id (ShopCatalog)
     public HashSet<string> OwnedItems { get; set; } = new HashSet<string>();
+    // Įvykdytų pasiekimų raktai (Achievements.All)
+    public HashSet<string> UnlockedAchievements { get; set; } = new HashSet<string>();
     public HashSet<string> EquippedItems { get; set; } = new HashSet<string>();
 }
 // lygiai taspats, tik surenkama buvusių naudotojo žaidimų istorija

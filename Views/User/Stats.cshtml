@@ -155,6 +155,27 @@
         </section>
     </div>
 
+    <section class="card achievements" id="achievements" aria-labelledby="achievements-title">
+        <div class="shop-head">
+            <h2 id="achievements-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Pasiekimai</h2>
+            <span class="pill">@Model.UnlockedAchievements.Count / @Achievements.All.Count</span>
+        </div>
+        <ul class="achievement-grid">
+            @foreach (var achievement in Achievements.All)
+            {
+                var unlocked = Model.UnlockedAchievements.Contains(achievement.Key);
+                <li class="achievement @(unlocked ? "is-unlocked" : "")">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-@(unlocked ? "medal" : "lock")"></use></svg>
+                    <div>
+                        <strong>@achievement.Title</strong>
+                        <span>@achievement.Description</span>
+                    </div>
+                    <span class="achievement-xp">+@achievement.Xp XP</span>
+                </li>
+            }
+        </ul>
+    </section>
+
     <section class="card mistakes" aria-labelledby="mistakes-title">
         <div class="shop-head">
             <h2 id="mistakes-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg>Klaidų analizė</h2>

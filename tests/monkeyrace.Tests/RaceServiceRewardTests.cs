@@ -9,7 +9,15 @@ public sealed class RaceServiceRewardTests : IDisposable
     private AppDbContext NewContext() => new AppDbContext(
         new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={_path}").Options);
 
-    private (int UserId, int[] RaceIds) Seed(int races)
+    // Pasiekimai duoda papildomo XP, todėl skaičiavimo testuose jie pažymimi kaip jau gauti (jų pačių testai – claimAchievements: false)
+    internal static void ClaimAllAchievements(AppDbContext db, int userId)
+    {
+        db.UserClaims.AddRange(Achievements.All.Select(a =>
+            new UserClaim { UserId = userId, Key = Achievements.ClaimPrefix + a.Key }));
+        db.SaveChanges();
+    }
+
+    private (int UserId, int[] RaceIds) Seed(int races, bool claimAchievements = true)
     {
         using var db = NewContext();
         db.Database.Migrate(); // migracijos tuščiai DB
@@ -20,6 +28,8 @@ public sealed class RaceServiceRewardTests : IDisposable
             .ToList();
         db.Races.AddRange(raceList);
         db.SaveChanges();
+        if (claimAchievements)
+            ClaimAllAchievements(db, user.Id);
         return (user.Id, raceList.Select(race => race.Id).ToArray());
     }
 
@@ -328,7 +338,8 @@ public sealed class RaceServiceRewardTests : IDisposable
         Assert.Equal(2, last.Reward.Notes.Count);
         using (var db = NewContext())
         {
-            var claims = db.UserClaims.Where(c => c.UserId == userId).Select(c => c.Key).ToHashSet();
+            var claims = db.UserClaims.Where(c => c.UserId == userId && !c.Key.StartsWith(Achievements.ClaimPrefix))
+                .Select(c => c.Key).ToHashSet();
             Assert.Equal(new[] { "module:1", "mastery:1" }.ToHashSet(), claims);
         }
 
@@ -363,6 +374,53 @@ public sealed class RaceServiceRewardTests : IDisposable
             Assert.Equal(ItemSource.Lesson, item.Source);
             Assert.Equal(milestone.Lessons, item.Lessons);
         }
+    }
+
+
+    [Fact]
+    public async Task Achievements_FirstRaceAndPerfectAccuracy_GiveXpOnlyOnce()
+    {
+        var (userId, raceIds) = Seed(2, claimAchievements: false);
+
+        var first = await Save(userId, raceIds[0], 4); // 60 WPM, 100 % tikslumas
+        var bonus = Achievements.Find("first-race").Xp + Achievements.Find("perfect-race").Xp + Achievements.Find("wpm-50").Xp;
+        Assert.Equal(3, first.Notes.Count);
+        Assert.Contains(first.Notes, n => n.Contains("Pirma lenktynė") && n.Contains("+25 XP"));
+        Assert.Equal(UserState(userId).Xp, first.Xp);
+        Assert.True(first.XpGained >= bonus);
+
+        var xpAfterFirst = UserState(userId).Xp;
+        var second = await Save(userId, raceIds[1], 4);
+        Assert.Empty(second.Notes);
+        Assert.Equal(xpAfterFirst + second.XpGained, UserState(userId).Xp);
+    }
+
+    [Fact]
+    public async Task Achievements_OpeningProfile_GivesOldPlayersTheirEarnedOnes()
+    {
+        var (userId, raceIds) = Seed(1, claimAchievements: false);
+        using (var db = NewContext())
+        {
+            db.RaceResults.Add(new RaceResult { UserId = userId, RaceId = raceIds[0], WPM = 85, Accuracy = 99, Place = 1 });
+            db.SaveChanges();
+        }
+        using (var db = NewContext())
+            await new RaceService(db).SettleLevelsForUserAsync(userId);
+        using (var db = NewContext())
+        {
+            var keys = db.UserClaims.Where(c => c.UserId == userId).Select(c => c.Key).ToHashSet();
+            foreach (var key in new[] { "first-race", "wpm-50", "wpm-80", "first-win" })
+                Assert.Contains(Achievements.ClaimPrefix + key, keys);
+            Assert.DoesNotContain(Achievements.ClaimPrefix + "wpm-100", keys);
+            Assert.Equal(25 + 75 + 200 + 75, db.Users.Single(u => u.Id == userId).Xp);
+        }
+    }
+
+    [Fact]
+    public void Achievements_KeysAreUnique_AndXpUsesPlanTiers()
+    {
+        Assert.Equal(Achievements.All.Count, Achievements.All.Select(a => a.Key).Distinct().Count());
+        Assert.All(Achievements.All, a => Assert.Contains(a.Xp, new[] { 25, 75, 200, 500 }));
     }
 
 }

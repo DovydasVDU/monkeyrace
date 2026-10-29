@@ -53,8 +53,9 @@ public sealed class SoloSaveResultTests : IDisposable
         Assert.Equal(1, card.GetProperty("totalRaces").GetInt32());
         using var scope = _factory.Services.CreateScope();
         var user = scope.ServiceProvider.GetRequiredService<AppDbContext>().Users.Single(u => u.Username == "solo");
-        // pirmų lenktynių premija (50) + solo 10 + 40/4 = 70; dvigubas įrašas duotų 140
-        Assert.Equal(70, user.Xp);
+        // pirmų lenktynių premija (50) + solo 10 + 40/4 = 70 + pasiekimai (pirma lenktynė, 100 % tikslumas);
+        // dvigubas įrašas duotų 140 + pasiekimai
+        Assert.Equal(70 + Achievements.Find("first-race").Xp + Achievements.Find("perfect-race").Xp, user.Xp);
     }
 
     public void Dispose()

@@ -222,3 +222,48 @@
         transition: none;
     }
 }
+
+/* Pasiekimų tinklelis profilyje (Stats.cshtml) */
+.achievement-grid {
+    display: grid;
+    gap: .6rem;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+}
+
+.achievement {
+    align-items: center;
+    border: 2px dashed var(--ink-a18);
+    border-radius: var(--radius-card);
+    color: var(--ink-a60);
+    display: grid;
+    gap: .6rem;
+    grid-template-columns: auto 1fr auto;
+    padding: .6rem .8rem;
+}
+
+.achievement strong {
+    color: var(--ink);
+    display: block;
+}
+
+.achievement span {
+    font-size: .85rem;
+}
+
+.achievement.is-unlocked {
+    background: var(--banana-soft);
+    border: var(--border);
+    color: var(--ink);
+}
+
+.achievement.is-unlocked .ui-icon {
+    color: var(--banana-shadow);
+}
+
+.achievement-xp {
+    font-weight: 800;
+    white-space: nowrap;
+}

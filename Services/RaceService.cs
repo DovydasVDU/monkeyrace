@@ -93,10 +93,12 @@ public class RaceService
                 race.Status = "finished";
 
             await _db.SaveChangesAsync();
+            var achievements = await SettleAchievementsAsync(user, newItems);
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return RaceReward.Create(xpBefore, user.Xp, user.Bananas,
-                reward.Xp, reward.Bananas, isFirstRace, saved: true, newItems);
+                reward.Xp + achievements.Xp, reward.Bananas, isFirstRace, saved: true, newItems, achievements.Notes);
         }
         finally
         {
@@ -349,6 +351,9 @@ public class RaceService
             var path = await SettleLessonPathAsync(user);
             newItems.AddRange(path.Items);
             await _db.SaveChangesAsync();
+            var achievements = await SettleAchievementsAsync(user, newItems);
+            path.Notes.AddRange(achievements.Notes);
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return new LessonSaveResult
@@ -356,7 +361,7 @@ public class RaceService
                 Stars = stars,
                 BestStars = progress.Stars,
                 NewStars = Math.Max(0, stars - previousStars),
-                Reward = RaceReward.Create(xpBefore, user.Xp, user.Bananas, reward.Xp, reward.Bananas + path.Bananas,
+                Reward = RaceReward.Create(xpBefore, user.Xp, user.Bananas, reward.Xp + achievements.Xp, reward.Bananas + path.Bananas,
                     firstRace: false, saved: true, newItems, path.Notes)
             };
         }
@@ -442,6 +447,61 @@ public class RaceService
         return (bananas, items, notes);
     }
 
+    // Pasiekimai: išduoda XP už naujai įvykdytus (vienkartinis, UserClaims "ach:..."), po to sumoka bananus už lygius,
+    // kuriuos tas XP galėjo pakelti, ir išduoda jų prizus (newItems papildomas). Kviesti, kai lenktynių / pamokos
+    // duomenys jau išsaugoti (SaveChanges), po to SaveChanges.
+    private async Task<(int Xp, List<string> Notes)> SettleAchievementsAsync(User user, List<ShopItem> newItems)
+    {
+        var stats = await LoadAchievementStatsAsync(user);
+        var claimed = (await _db.UserClaims.Where(c => c.UserId == user.Id && c.Key.StartsWith(Achievements.ClaimPrefix))
+            .Select(c => c.Key).ToListAsync()).ToHashSet();
+        var xp = 0;
+        var notes = new List<string>();
+        foreach (var achievement in Achievements.All)
+        {
+            var key = Achievements.ClaimPrefix + achievement.Key;
+            if (claimed.Contains(key) || !achievement.IsDone(stats))
+                continue;
+            _db.UserClaims.Add(new UserClaim { UserId = user.Id, Key = key });
+            xp += achievement.Xp;
+            notes.Add($"Pasiekimas „{achievement.Title}“: +{achievement.Xp} XP");
+        }
+        if (xp > 0)
+        {
+            user.Xp += xp;
+            newItems.AddRange(await SettleLevelsAsync(user, payBananas: true));
+        }
+        return (xp, notes);
+    }
+
+    private async Task<AchievementStats> LoadAchievementStatsAsync(User user)
+    {
+        var results = _db.RaceResults.Where(r => r.UserId == user.Id);
+        var lastFive = await results.OrderByDescending(r => r.CompletedAt).ThenByDescending(r => r.Id)
+            .Take(5).Select(r => r.Accuracy).ToListAsync();
+        var stars = (await _db.UserLessonProgresses.Where(p => p.UserId == user.Id)
+            .Select(p => new { p.LessonId, p.Stars }).ToListAsync()).ToDictionary(p => p.LessonId, p => p.Stars);
+        int Stars(Lesson lesson) => stars.TryGetValue(lesson.Id, out var s) ? s : 0;
+        var owned = (await _db.UserItems.Where(i => i.UserId == user.Id).Select(i => i.ItemId).ToListAsync())
+            .Select(ShopCatalog.Find).Where(i => i != null).ToList();
+
+        return new AchievementStats
+        {
+            Races = await results.CountAsync(),
+            BestWpm = await results.MaxAsync(r => (int?)r.WPM) ?? 0,
+            PerfectRace = await results.AnyAsync(r => r.Accuracy >= 100),
+            LastFiveAccurate = lastFive.Count == 5 && lastFive.All(a => a >= 98),
+            OnlineWins = await results.CountAsync(r => r.Place == 1 && r.Race.IsMultiplayer),
+            LessonsDone = stars.Values.Count(s => s > 0),
+            ThreeStarLessons = stars.Values.Count(s => s == 3),
+            ModulesDone = LessonCatalog.Modules.Count(m => m.Lessons.All(l => Stars(l) > 0)),
+            Level = Progression.LevelFor(user.Xp),
+            BoughtSomething = owned.Any(i => i.IsPurchasable),
+            OwnedItems = owned.Count,
+            CategoriesOwned = owned.Select(i => i.Category).Distinct().Count()
+        };
+    }
+
     // Profilio atidarymas: išduoda lygių prizus, kurių žaidėjas jau nusipelnė, bet dar negavo (pvz. po XP kreivės pakeitimo)
     public async Task SettleLevelsForUserAsync(int userId)
     {
@@ -451,6 +511,8 @@ public class RaceService
         {
             var user = await _db.Users.FirstAsync(u => u.Id == userId);
             await SettleLevelsAsync(user, payBananas: true);
+            await _db.SaveChangesAsync();
+            await SettleAchievementsAsync(user, new List<ShopItem>()); // senų žaidėjų pasiekimai, kurie jau seniai įvykdyti
             await _db.SaveChangesAsync();
         }
         finally

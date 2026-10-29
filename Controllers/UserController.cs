@@ -58,6 +58,9 @@ public class UserController : Controller
             PastRaces = await QueryPastRaces(userId, 0),
             Mistakes = await _raceService.GetMistakeStatsAsync(userId),
             OwnedItems = (await _db.UserItems.Where(i => i.UserId == userId).Select(i => i.ItemId).ToListAsync()).ToHashSet(),
+            UnlockedAchievements = (await _db.UserClaims
+                .Where(c => c.UserId == userId && c.Key.StartsWith(Achievements.ClaimPrefix))
+                .Select(c => c.Key).ToListAsync()).Select(k => k.Substring(Achievements.ClaimPrefix.Length)).ToHashSet(),
             EquippedItems = new[]
             {
                 ShopCatalog.Equipped(user.HatId, ShopCatalog.Hats).Id,

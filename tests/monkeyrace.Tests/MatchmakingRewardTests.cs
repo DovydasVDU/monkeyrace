@@ -54,6 +54,7 @@ public sealed class MatchmakingRewardTests : IDisposable
         var user = new User { Username = name, PasswordHash = "x" };
         db.Users.Add(user);
         db.SaveChanges();
+        RaceServiceRewardTests.ClaimAllAchievements(db, user.Id);
         return user.Id;
     }
 
