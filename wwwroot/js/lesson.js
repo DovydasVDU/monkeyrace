@@ -23,7 +23,7 @@
 
     const els = {
         intro: $("lesson-intro"), stage: $("lesson-stage"), text: $("lesson-text"), chips: $("lesson-chips"),
-        feedback: $("lesson-feedback"), keyboard: $("lesson-keyboard"), keysWrap: $("lesson-keys"),
+        feedback: $("lesson-feedback"), keyboard: $("lesson-keyboard"), keysWrap: $("lesson-keys"), keysBody: $("lesson-keys-body"),
         hands: $("lesson-hands"), caption: $("finger-caption"), wpm: $("wpm-display"), acc: $("accuracy-display"),
         round: $("round-display"), hintBtn: $("hint-toggle"), start: $("lesson-start"), overlay: $("results-overlay")
     };
@@ -31,7 +31,7 @@
     // ---------- pasirinkimai ----------
 
     function applyHints() {
-        els.keysWrap.hidden = hints === 0;
+        els.keysBody.hidden = hints === 0; // mygtukas lieka matomas, kad pagalbą būtų galima grąžinti
         els.keysWrap.classList.toggle("no-hands", hints < 2);
         els.hintBtn.textContent = `Pagalba: ${HINT_LABELS[hints]}`;
         if (hints === 0) LessonKeyboard.clearTargets();
@@ -39,7 +39,7 @@
     }
 
     els.hintBtn.addEventListener("click", () => {
-        hints = (hints + 1) % 3;
+        hints = (hints + 2) % 3; // rankos -> tik klaviatūra -> be pagalbos -> rankos
         prefs.hints = hints;
         writeJson(PREF_KEY, prefs);
         applyHints();

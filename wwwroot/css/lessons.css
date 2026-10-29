@@ -317,7 +317,12 @@ kbd {
     gap: .75rem;
 }
 
-.lesson-keys[hidden] {
+.lesson-keys-body {
+    display: grid;
+    gap: .75rem;
+}
+
+.lesson-keys-body[hidden] {
     display: none;
 }
 
