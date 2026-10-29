@@ -95,24 +95,27 @@ public sealed class ChallengeTests : IDisposable
     public async Task Http_GuestCannotStart_AndInstantFinishIsRejected()
     {
         var guest = _factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
-        Assert.Equal(HttpStatusCode.Unauthorized, (await guest.PostAsync("/challenge/start", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await guest.PostAsync("/challenge/begin", null)).StatusCode);
+        // svečias iš rašymo ekrano nukreipiamas į iššūkio puslapį
+        Assert.Equal("/menesio-issukis", (await guest.GetAsync("/menesio-issukis/zaisti")).RequestMessage!.RequestUri!.AbsolutePath);
         Assert.Equal(HttpStatusCode.OK, (await guest.GetAsync("/menesio-issukis")).StatusCode);
 
         var player = _factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
         (await player.PostAsync("/Auth/Register", new FormUrlEncodedContent(
             new Dictionary<string, string> { ["username"] = "iss_zaidejas", ["password"] = "slaptas1" }))).EnsureSuccessStatusCode();
 
-        var started = await player.PostAsync("/challenge/start", null);
-        started.EnsureSuccessStatusCode();
-        var json = JsonDocument.Parse(await started.Content.ReadAsStringAsync()).RootElement;
-        Assert.Equal(MonthlyChallenge.SignatureWord, json.GetProperty("words")[0].GetString());
+        // rašymo ekranas rodo mėnesio žodžius
+        var page = await player.GetStringAsync("/menesio-issukis/zaisti");
+        // tekstas įrašytas į puslapį kaip JSON (raidės su diakritika užkoduotos)
+        Assert.Contains(JsonSerializer.Serialize(string.Join(' ', MonthlyChallenge.WordsFor(MonthlyChallenge.MonthKey(DateTime.UtcNow)))), page);
+        Assert.Equal(HttpStatusCode.NoContent, (await player.PostAsync("/challenge/begin", null)).StatusCode);
 
-        // iškart baigus – per greita (ir mažiau nei atgalinė atskaita)
+        // iškart baigus – per greita
         var finished = await player.PostAsJsonAsync("/challenge/finish", new { errors = 0 });
         Assert.Equal(HttpStatusCode.BadRequest, finished.StatusCode);
         using var db = NewContext();
         Assert.Empty(db.ChallengeEntries);
-        // be naujo „Pradėti“ baigti negalima
+        // be naujo rašymo ekrano atidarymo baigti negalima
         Assert.Equal(HttpStatusCode.BadRequest, (await player.PostAsJsonAsync("/challenge/finish", new { errors = 0 })).StatusCode);
     }
 

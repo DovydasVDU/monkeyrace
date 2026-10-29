@@ -9,7 +9,7 @@
 <section class="home-section challenge-page" aria-labelledby="challenge-title">
     <p class="eyebrow">@Model.Month</p>
     <h1 id="challenge-title">Mėnesio iššūkis: ilgiausi žodžiai</h1>
-    <p class="lessons-intro">Parašyk @Model.Words.Count labai ilgus lietuviškus žodžius iš eilės kuo greičiau ir be klaidų. Laiką matuoja serveris,
+    <p class="lessons-intro">Parašyk @Model.Words.Count labai ilgus lietuviškus žodžius iš eilės kuo greičiau ir be klaidų. Rašai įprastame rašymo ekrane, laikas pradeda bėgti nuo pirmo klavišo ir jį matuoja serveris,
         o kiekviena klaida prideda @penalty s. Skaičiuojamas geriausias mėnesio bandymas. Pirmą kartą dalyvavęs gauni @MonthlyChallenge.ParticipationXp XP ir @MonthlyChallenge.ParticipationBananas bananų.</p>
 
     <div class="card challenge-card">
@@ -27,9 +27,9 @@
             {
                 <p class="shop-note">Tavo geriausias: <strong>@mine.BestScore.ToString("0.00") s</strong> (@mine.BestSeconds.ToString("0.00") s, klaidų: @mine.BestErrors), bandymų: @mine.Attempts.</p>
             }
-            <button class="btn btn-p" type="button" id="challenge-start">
-                <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Pradėti
-            </button>
+            <a class="btn btn-p" href="/menesio-issukis/zaisti">
+                <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>@(mine == null ? "Pradėti" : "Bandyti dar kartą")
+            </a>
         }
         else
         {
@@ -38,16 +38,6 @@
                 <svg class="ui-icon" aria-hidden="true"><use href="#icon-user"></use></svg>Prisijungti
             </button>
         }
-
-        <div id="challenge-stage" class="challenge-stage" hidden>
-            <p id="challenge-count" class="challenge-count" aria-live="assertive"></p>
-            <p id="challenge-word" class="challenge-word" aria-live="off"></p>
-            <p id="challenge-progress" class="shop-note"></p>
-            <input id="challenge-input" class="visually-hidden" type="text" autocomplete="off" autocapitalize="off"
-                   autocorrect="off" spellcheck="false" aria-label="Rašyk žodį">
-        </div>
-        <div id="challenge-result" class="reward-panel" role="status" hidden></div>
-        <p id="challenge-error" class="shop-note is-error" role="alert" hidden></p>
     </div>
 
     <div class="card challenge-card">
@@ -71,4 +61,3 @@
     </div>
 </section>
 
-<script src="~/js/challenge.js" asp-append-version="true"></script>

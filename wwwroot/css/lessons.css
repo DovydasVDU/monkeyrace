@@ -838,7 +838,12 @@ kbd {
     margin: 0;
 }
 
-/* Mėnesio iššūkis (Views/Challenge/Index.cshtml) */
+/* Mėnesio iššūkis (Views/Challenge/Index.cshtml): rašymo ekranas – įprastas Views/Race/Play.cshtml */
+.challenge-page {
+    margin: 0 auto;
+    max-width: 760px;
+}
+
 .challenge-card {
     margin-bottom: 1.5rem;
 }
@@ -850,65 +855,23 @@ kbd {
     word-break: break-word;
 }
 
-.challenge-stage {
-    margin-top: 1rem;
-}
-
-.challenge-count {
-    color: var(--leaf);
-    font-size: 1.5rem;
-    font-weight: 800;
-    margin: 0 0 .5rem;
-    min-height: 2rem;
-}
-
-.challenge-word {
-    font-family: var(--font-mono, monospace);
-    font-size: clamp(1.1rem, 4.5vw, 2rem);
-    font-weight: 700;
-    letter-spacing: .04em;
-    margin: 0 0 .5rem;
-    overflow-wrap: anywhere;
-}
-
-.challenge-word span {
-    color: var(--ink-a60);
-}
-
-.challenge-word .is-done {
-    color: var(--leaf);
-}
-
-.challenge-word .is-current {
-    background: var(--banana-soft);
-    border-radius: 4px;
-    color: var(--ink);
-}
-
-.challenge-word.is-wrong {
-    animation: challenge-shake .2s;
-}
-
-@keyframes challenge-shake {
-    25% { transform: translateX(-4px); }
-    75% { transform: translateX(4px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .challenge-word.is-wrong {
-        animation: none;
-    }
-}
-
 .challenge-board {
     display: grid;
-    gap: .4rem;
+    gap: .5rem;
     margin: .75rem 0 0;
     padding-left: 1.4rem;
 }
 
-.challenge-board li span {
-    float: right;
+.challenge-board li::marker {
+    font-weight: 800;
+}
+
+.challenge-board li {
+    padding-left: .25rem;
+}
+
+.challenge-board li strong {
+    margin-right: .5rem;
 }
 
 .challenge-board small {

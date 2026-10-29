@@ -21,8 +21,6 @@ public static class MonthlyChallenge
     };
 
     public const int ExtraWords = 3;
-    // tiek sekundžių rodoma atgalinė atskaita prieš pradedant; serveris ją atima iš išmatuoto laiko
-    public const int CountdownSeconds = 3;
     public const int ErrorPenaltySeconds = 2;
     // vienkartinis prizas už pirmą dalyvavimą kiekvieną mėnesį
     public const int ParticipationXp = 50;

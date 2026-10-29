@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
-// Mėnesio iššūkis (/menesio-issukis): visi rašo tuos pačius ilgus žodžius, laiką matuoja serveris
+// Mėnesio iššūkis (/menesio-issukis): visi rašo tuos pačius ilgus žodžius solo rašymo ekrane, laiką matuoja serveris
 public class ChallengeController : Controller
 {
     private const string StartedKey = "ChallengeStartedAt";
@@ -21,7 +21,9 @@ public class ChallengeController : Controller
         _raceService = raceService;
     }
 
+    // be talpyklos, kad grįžus iš rašymo ekrano lyderių lentelė būtų šviežia
     [HttpGet("/menesio-issukis")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Index()
     {
         var month = MonthlyChallenge.MonthKey(DateTime.UtcNow);
@@ -42,17 +44,31 @@ public class ChallengeController : Controller
         });
     }
 
-    // Paspaudus „Pradėti“: serveris užfiksuoja pradžios laiką
-    [HttpPost("/challenge/start")]
+    // Rašymo ekranas: tas pats kaip solo treniruotėje (Views/Race/Play.cshtml), tik tekstas – mėnesio žodžiai
+    [HttpGet("/menesio-issukis/zaisti")]
+    public IActionResult Play()
+    {
+        if (PlayerIdentity.GetUserId(HttpContext) == null)
+            return Redirect("/menesio-issukis");
+        var month = MonthlyChallenge.MonthKey(DateTime.UtcNow);
+        HttpContext.Session.SetString(MonthKey, month);
+        HttpContext.Session.Remove(StartedKey);
+        ViewBag.Challenge = true;
+        return View("~/Views/Race/Play.cshtml", new TextSnippet { Content = string.Join(' ', MonthlyChallenge.WordsFor(month)) });
+    }
+
+    // Pirmas paspaustas klavišas: serveris užfiksuoja pradžios laiką (kartoti negalima)
+    [HttpPost("/challenge/begin")]
     [EnableRateLimiting("lessons")]
-    public IActionResult Start()
+    public IActionResult Begin()
     {
         if (PlayerIdentity.GetUserId(HttpContext) == null)
             return Unauthorized();
-        var month = MonthlyChallenge.MonthKey(DateTime.UtcNow);
-        HttpContext.Session.SetString(StartedKey, DateTime.UtcNow.ToString("O"));
-        HttpContext.Session.SetString(MonthKey, month);
-        return Json(new { words = MonthlyChallenge.WordsFor(month), countdown = MonthlyChallenge.CountdownSeconds });
+        if (HttpContext.Session.GetString(MonthKey) == null)
+            return BadRequest("Challenge unavailable.");
+        if (HttpContext.Session.GetString(StartedKey) == null)
+            HttpContext.Session.SetString(StartedKey, DateTime.UtcNow.ToString("O"));
+        return NoContent();
     }
 
     public sealed class FinishDto
@@ -74,8 +90,8 @@ public class ChallengeController : Controller
         HttpContext.Session.Remove(StartedKey);
         HttpContext.Session.Remove(MonthKey);
 
-        // laikas nuo „Pradėti“ be atgalinės atskaitos; jei mėnuo jau pasikeitė – bandymas negalioja
-        var seconds = (DateTime.UtcNow - startedAt).TotalSeconds - MonthlyChallenge.CountdownSeconds;
+        // laikas nuo pirmo klavišo; jei mėnuo jau pasikeitė – bandymas negalioja
+        var seconds = (DateTime.UtcNow - startedAt).TotalSeconds;
         if (month != MonthlyChallenge.MonthKey(DateTime.UtcNow) || dto.Errors < 0 || dto.Errors > 500)
             return BadRequest("Challenge unavailable.");
         if (!MonthlyChallenge.IsPlausible(month, seconds))

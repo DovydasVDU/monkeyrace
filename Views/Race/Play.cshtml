@@ -8,20 +8,22 @@
     var durationLabel = duration < 60 ? $"{duration} s" : $"{duration / 60} min";
     // /race/train: tekstas iš žaidėjo klaidų, rezultatas nesaugomas
     bool training = ViewBag.Training == true;
-    var modeLabel = training ? "Treniruoklis" : duration == null ? "Solo treniruotė" : "Dažniausi žodžiai";
+    // /menesio-issukis/zaisti: mėnesio žodžiai, rezultatą ir laiką saugo ChallengeController
+    bool challenge = ViewBag.Challenge == true;
+    var modeLabel = challenge ? "Mėnesio iššūkis" : training ? "Treniruoklis" : duration == null ? "Solo treniruotė" : "Dažniausi žodžiai";
 }
 
 
 <div class="race-page">
     <section class="race-screen">
         <div class="race-topbar">
-            <a class="btn btn-g race-leave" href="/">
+            <a class="btn btn-g race-leave" href="@(challenge ? "/menesio-issukis" : "/")">
                 <svg class="ui-icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
                 <span>Išeiti</span>
             </a>
             <div class="race-title-wrap">
                 <p class="eyebrow">@modeLabel</p>
-                <h1>@(training ? "Rašyk savo klaidų žodžius" : duration == null ? "Rašyk savo tempu" : $"Rašyk {durationLabel}")</h1>
+                <h1>@(challenge ? "Ilgiausi žodžiai" : training ? "Rašyk savo klaidų žodžius" : duration == null ? "Rašyk savo tempu" : $"Rašyk {durationLabel}")</h1>
             </div>
             <div class="race-stats" id="stats-bar" aria-label="Statistika">
                 <span class="stat-pill"><small>WPM</small><strong id="wpm-display">0</strong></span>
@@ -36,7 +38,7 @@
                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                    placeholder="Pradėk spausdinti..." autofocus />
         </div>
-        <p class="race-hint">@(duration == null ? "" : "Laikas pradeda bėgti nuo pirmo klavišo. ")Žodis su klaida neleidžia pereiti toliau. Ištaisyk jį, kad tęstum.</p>
+        <p class="race-hint">@(duration == null && !challenge ? "" : "Laikas pradeda bėgti nuo pirmo klavišo. ")@(challenge ? $"Kiekviena klaida prideda {MonthlyChallenge.ErrorPenaltySeconds} s prie rezultato. " : "")Žodis su klaida neleidžia pereiti toliau. Ištaisyk jį, kad tęstum.</p>
     </section>
 </div>
 <div class="results-overlay" id="results-overlay">
@@ -45,7 +47,7 @@
             <span class="place-badge" aria-hidden="true"><svg class="ui-icon" aria-hidden="true"><use href="#icon-flag"></use></svg></span>
             <div>
                 <p class="eyebrow">@(duration == null ? modeLabel : $"{modeLabel} · {durationLabel}")</p>
-                <h2 id="solo-result-title">@(duration == null ? "Tekstas baigtas!" : "Laikas baigėsi!")</h2>
+                <h2 id="solo-result-title">@(duration == null ? challenge ? "Iššūkis baigtas!" : "Tekstas baigtas!" : "Laikas baigėsi!")</h2>
             </div>
         </div>
         <div class="personal-result-grid">
@@ -61,9 +63,18 @@
             <button class="btn btn-p" type="button" onclick="restartRace()">
                 <svg class="ui-icon" aria-hidden="true"><use href="#icon-play"></use></svg>Žaisti dar kartą
             </button>
-            <button class="btn btn-s" type="button" onclick="retrySameText()">
-                <svg class="ui-icon" aria-hidden="true"><use href="#icon-redo"></use></svg>Kartoti tekstą
-            </button>
+            @if (challenge)
+            {
+                <a class="btn btn-s" href="/menesio-issukis">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Lyderių lentelė
+                </a>
+            }
+            else
+            {
+                <button class="btn btn-s" type="button" onclick="retrySameText()">
+                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-redo"></use></svg>Kartoti tekstą
+                </button>
+            }
             <a class="btn btn-s" href="/">
                 <svg class="ui-icon" aria-hidden="true"><use href="#icon-home"></use></svg>Į pradžią
             </a>
@@ -98,6 +109,7 @@
         // 0 = klasikinis režimas (iki teksto pabaigos), kitaip rašoma tiek sekundžių
         const DURATION_SECONDS = @(duration ?? 0);
         const TRAINING = @training.ToString().ToLowerInvariant();
+        const CHALLENGE = @challenge.ToString().ToLowerInvariant();
 
         const klaidosSet = new Set();
         let targetWords = [];
@@ -150,6 +162,8 @@
 
                 if (startTime === null) {
                     startTime = Date.now();
+                    // mėnesio iššūkis: laiką matuoja serveris nuo pirmo klavišo
+                    if (CHALLENGE) fetch('/challenge/begin', { method: 'POST' }).catch(() => {});
                     timerHandle = setInterval(updateTimer, 200);
                     // telefone vieną kartą starte (pirmas klavišas): teksto kortelė ekrano viršuje, virš klaviatūros
                     if (window.matchMedia('(max-width: 640px)').matches)
@@ -352,6 +366,11 @@
                 return;
             }
 
+            if (CHALLENGE) {
+                saveChallenge(klaidos);
+                return;
+            }
+
             fetch('/Race/SaveResult', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -365,6 +384,33 @@
                 .then(res => res.ok ? res.json() : null)
                 .then(data => renderReward(document.getElementById('solo-reward'), data && data.reward))
                 .catch(() => renderReward(document.getElementById('solo-reward'), null));
+        }
+
+        // Mėnesio iššūkis: serveris grąžina savo išmatuotą laiką, rezultatą, vietą ir bonusus
+        function saveChallenge(errors) {
+            const box = document.getElementById('solo-reward');
+            box.hidden = false;
+            box.classList.add('reward-panel');
+            const line = (cls, text) => {
+                const p = document.createElement('p');
+                p.className = cls;
+                p.textContent = text;
+                box.append(p);
+            };
+            box.replaceChildren();
+            fetch('/challenge/finish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ errors })
+            })
+                .then(res => res.ok ? res.json() : Promise.reject(res.status))
+                .then(data => {
+                    line('reward-gains', `Rezultatas: ${data.score.toFixed(2)} s · vieta: ${data.rank}`);
+                    line('reward-next', `${data.seconds.toFixed(2)} s + ${data.errors} klaidų × ${@MonthlyChallenge.ErrorPenaltySeconds} s`);
+                    line('reward-next', data.isBest ? 'Naujas geriausias rezultatas!' : `Geriausias liko ${data.bestScore.toFixed(2)} s`);
+                    data.notes.forEach(note => line('reward-levelup', note));
+                })
+                .catch(() => line('reward-muted', 'Rezultato išsaugoti nepavyko (per greitas laikas arba pasibaigė mėnuo).'));
         }
 
         function retrySameText(){
@@ -396,7 +442,7 @@
         }
 
         function restartRace() {
-            window.location.href = TRAINING ? '/race/train'
+            window.location.href = CHALLENGE ? '/menesio-issukis/zaisti' : TRAINING ? '/race/train'
                 : DURATION_SECONDS ? `/race/words?seconds=${DURATION_SECONDS}` : `/Race/Play`;
         }
 
