@@ -193,9 +193,8 @@ public class RaceController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
             return true;
-        username = username?.Trim();
-        if (!string.IsNullOrEmpty(username))
-            HttpContext.Session.SetString("MatchmakingUsername", username.Substring(0, Math.Min(20, username.Length)));
+        if (!string.IsNullOrWhiteSpace(username))
+            HttpContext.Session.SetString("MatchmakingUsername", PlayerIdentity.GuestName(username));
         return HttpContext.Session.GetString("MatchmakingUsername") != null;
     }
 

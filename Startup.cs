@@ -40,8 +40,6 @@ public class Startup
         services.AddControllersWithViews();
         services.AddSignalR(); // multiplayer websocket
         services.AddSession();
-        services.AddHttpContextAccessor();
-        services.AddMemoryCache();
         services.Configure<BotOptions>(_configuration.GetSection("Bots"));
         // Login/Register: ne daugiau 10 bandymų per minutę iš vieno IP (apsauga nuo slaptažodžių spėliojimo)
         services.AddRateLimiter(options =>

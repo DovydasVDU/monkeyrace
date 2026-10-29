@@ -501,7 +501,7 @@ async function loadTextLeaderboard(textId, myName) {
             <${row.hasReplay ? `a href="/race/replay/${row.resultId}" title="Žiūrėti perklausą"` : "div"}
                 class="lb-row ${row.username === myName ? "is-me" : ""}" role="listitem">
                 <span class="lb-place ${index < 3 ? "lb-place-" + (index + 1) : ""}">${index + 1}</span>
-                <span class="lb-name">${escapeHtml(row.username)}</span>
+                <span class="lb-name">${progressEscape(row.username)}</span>
                 <span class="lb-num"><strong>${row.wpm}</strong></span>
                 <span class="lb-num">${row.accuracy}%</span>
                 <span class="lb-date">${row.hasReplay ? `<svg class="ui-icon lb-replay-icon" aria-hidden="true"><use href="#icon-play"></use></svg>` : ""}${row.date}</span>
@@ -575,7 +575,7 @@ connection.on("PlayerFinished", data => {
         track.style.setProperty("--progress", "100%");
         const name = track.querySelector(".player-name");
         if (name) name.innerHTML =
-            `${escapeHtml(data.username)} · #${data.place} ${botBadge(data)}`;
+            `${progressEscape(data.username)} · #${data.place} ${botBadge(data)}`;
     }
     if (data.playerKey === PLAYER_KEY) showPersonalResult(data);
 });
@@ -600,7 +600,7 @@ connection.on("RaceFinished", data => {
     document.getElementById("final-results-list").innerHTML = data.players.map(player => `
         <div class="podium-item lb-row ${player.playerKey === PLAYER_KEY ? "is-me" : ""}">
             <span class="lb-place ${player.place && player.place <= 3 ? "lb-place-" + player.place : ""}">${player.place || "–"}</span>
-            <span class="result-player-name">${escapeHtml(player.username)}
+            <span class="result-player-name">${progressEscape(player.username)}
                 ${player.playerKey === PLAYER_KEY ? `<span class="tag tag-me">Tu</span>` : botBadge(player)}</span>
             <span class="lb-num"><strong>${player.wpm}</strong> WPM</span>
             <span class="lb-num">${Math.round(player.accuracy)}%${player.isDnf ? " · DNF" : ""}</span>
@@ -858,7 +858,7 @@ function renderText() {
         .map((range, index) =>
             `<span class="word ${index === 0 ? "active" : ""}" data-word-index="${index}">` +
             [...range.word].map(char =>
-                `<span class="char">${escapeHtml(char)}</span>`).join("") +
+                `<span class="char">${progressEscape(char)}</span>`).join("") +
             `</span>`).join(" ");
 }
 
@@ -873,15 +873,15 @@ function renderRaceHistory() {
     const total = Math.max(1, raceAnalysis.totalMs);
     bar.innerHTML = raceAnalysis.leaderSegments.map(segment => `
         <span style="width:${(segment.toMs - segment.fromMs) * 100 / total}%"
-              title="${escapeHtml(names[segment.playerId] || segment.playerId)}">${escapeHtml(names[segment.playerId] || segment.playerId)}</span>`).join("");
+              title="${progressEscape(names[segment.playerId] || segment.playerId)}">${progressEscape(names[segment.playerId] || segment.playerId)}</span>`).join("");
     status.textContent = "Lenktynių istorija paruošta";
     document.getElementById("result-overtakes-list").innerHTML =
         raceAnalysis.overtakes.length
             ? raceAnalysis.overtakes.map(item =>
                 `<p>${(item.atMs / 1000).toFixed(1)} s
-                 ${escapeHtml(names[item.passerId] || item.passerId)}
+                 ${progressEscape(names[item.passerId] || item.passerId)}
                  ${botBadge(timelinePlayers[item.passerId])}
-                 aplenkė ${escapeHtml(names[item.passedId] || item.passedId)}
+                 aplenkė ${progressEscape(names[item.passedId] || item.passedId)}
                  ${botBadge(timelinePlayers[item.passedId])}</p>`).join("")
             : "<p>Aplenkimų nebuvo.</p>";
     const leader = raceAnalysis.leaderTimeMs[PLAYER_KEY] || 0;
@@ -961,12 +961,12 @@ function renderWordErrors() {
     const markup = words.map((word, index) => {
         const state = wordErrorStates[index] || 0;
         return `<span class="${state === 1 ? "word-fixed" : state === 2 ? "word-wrong" : ""}">
-            ${escapeHtml(word)}</span>`;
+            ${progressEscape(word)}</span>`;
     }).join(" ");
     document.getElementById("result-error-words").innerHTML = markup;
     document.getElementById("result-error-list").innerHTML = words
         .filter((word, index) => wordErrorStates[index] > 0)
-        .map(word => `<li>${escapeHtml(word)}</li>`).join("") || "<li>Nėra klaidingų žodžių.</li>";
+        .map(word => `<li>${progressEscape(word)}</li>`).join("") || "<li>Nėra klaidingų žodžių.</li>";
 }
 
 
@@ -974,11 +974,11 @@ function renderPlayers() {
     document.getElementById("players-track").innerHTML =
         Object.values(players).map((player, index) => `
         <div class="player-track ${player.playerKey === PLAYER_KEY ? "is-me" : ""} ${player.card ? "lane-" + player.card.track : ""}" id="track-${cssId(player.playerKey)}" style="--progress: 0%"
-             tabindex="0" aria-label="${escapeHtml(player.username)}: žaidėjo kortelė">
+             tabindex="0" aria-label="${progressEscape(player.username)}: žaidėjo kortelė">
             <span class="player-monkey ${player.isBot ? "player-monkey-bot" : "player-monkey-human"}">
                 ${monkeyTemplate(player.playerKey === PLAYER_KEY ? 2 : player.isBot ? getBotColorIndex(player, index) : index, playerLevel(player), player.isBot ? null : player.card)}
             </span>
-            <span class="player-name">${escapeHtml(player.username)}
+            <span class="player-name">${progressEscape(player.username)}
                 ${player.playerKey === PLAYER_KEY ? `<span class="tag tag-me">Tu</span>` : botBadge(player) || `<span class="tag">Žaidėjas</span>`}</span>
             <span class="player-typing" id="typing-${cssId(player.playerKey)}"></span>
             <span class="player-wpm" id="wpm-${cssId(player.playerKey)}">${player.wpm || 0} WPM</span>
@@ -997,11 +997,6 @@ document.getElementById("players-track").addEventListener("click", event => {
 
 function cssId(value) {
     return value.replace(/[^a-zA-Z0-9_-]/g, "_");
-}
-
-function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, char =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
 }
 
 async function leaveRace() {

@@ -104,13 +104,6 @@ public sealed class BotSkillProvider
     }
 }
 
-public sealed class BotTypingModel
-{
-    public double TargetWpm { get; init; }
-    public double Accuracy { get; init; }
-    public int Seed { get; init; }
-}
-
 public sealed class BotPlan
 {
     private readonly int[] _progressAtTicks;
@@ -118,17 +111,15 @@ public sealed class BotPlan
     public double Accuracy { get; }
     public double TargetWpm { get; }
     public int ErrorCount { get; }
-    public BotTypingModel Model { get; }
 
     private BotPlan(
-        int[] progressAtTicks, int finishMs, BotTypingModel model,
-        int errorCount)
+        int[] progressAtTicks, int finishMs, double targetWpm,
+        double accuracy, int errorCount)
     {
         _progressAtTicks = progressAtTicks;
         FinishMs = finishMs;
-        Model = model;
-        Accuracy = model.Accuracy;
-        TargetWpm = model.TargetWpm;
+        Accuracy = accuracy;
+        TargetWpm = targetWpm;
         ErrorCount = errorCount;
     }
 
@@ -161,11 +152,6 @@ public sealed class BotPlan
         var errorCount = accuracy >= 1
             ? 0
             : Math.Max(0, (int)Math.Round(text.Length * (1 - accuracy) / accuracy));
-        return new BotPlan(ticks, finishMs, new BotTypingModel
-        {
-            TargetWpm = targetWpm,
-            Accuracy = accuracy,
-            Seed = seed
-        }, errorCount);
+        return new BotPlan(ticks, finishMs, targetWpm, accuracy, errorCount);
     }
 }

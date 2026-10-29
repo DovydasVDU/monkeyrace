@@ -215,11 +215,6 @@
 <script>
     const CURRENT_USER = @Json.Serialize(currentUser);
 
-    function escapeHtml(value) {
-        return String(value).replace(/[&<>"']/g, char =>
-            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
-    }
-
     async function loadTop10() {
         const body = document.getElementById('top10-body');
         try {
@@ -230,8 +225,8 @@
                 <${user.hasReplay ? `a href="/race/replay/${user.resultId}" title="Žiūrėti perklausą"` : `div tabindex="0"`}
                     class="lb-row lb-top10 ${user.username === CURRENT_USER ? "is-me" : ""}" role="listitem">
                     <span class="lb-place ${index < 3 ? "lb-place-" + (index + 1) : ""}">${index + 1}</span>
-                    <div class="lb-card" data-card-user="${escapeHtml(user.username)}">
-                        <span class="lb-name">${escapeHtml(user.username)}</span>
+                    <div class="lb-card" data-card-user="${progressEscape(user.username)}">
+                        <span class="lb-name">${progressEscape(user.username)}</span>
                         <div class="player-card-pop" role="tooltip"></div>
                     </div>
                     <span class="lb-num"><strong>${user.wpm}</strong></span>

@@ -1,3 +1,4 @@
+using System;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
@@ -23,6 +24,13 @@ public static class PlayerIdentity
     {
         return httpContext.User.FindFirstValue(ClaimTypes.Name) ??
             httpContext.Session.GetString("MatchmakingUsername") ??
-            (string.IsNullOrWhiteSpace(fallback) ? "Svečias" : fallback.Trim());
+            (string.IsNullOrWhiteSpace(fallback) ? "Svečias" : GuestName(fallback));
+    }
+
+    // Svečio vardas ateina iš adreso ir rodomas kitiems lenktynių žaidėjams
+    public static string GuestName(string name)
+    {
+        name = name.Trim();
+        return name.Substring(0, Math.Min(20, name.Length));
     }
 }
