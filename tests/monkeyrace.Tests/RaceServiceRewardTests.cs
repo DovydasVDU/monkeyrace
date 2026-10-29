@@ -248,4 +248,64 @@ public sealed class RaceServiceRewardTests : IDisposable
         SqliteConnection.ClearAllPools();
         try { File.Delete(_path); } catch (IOException) { }
     }
+
+    [Fact]
+    public async Task LevelPrizes_OldPlayerIsPaidOnceAndGetsItemsForReachedLevels()
+    {
+        var (userId, raceIds) = Seed(2);
+        using (var db = NewContext())
+        {
+            // pradžia 15 lygio: senoje kreivėje tai 10 lygis (jau gauta), naujoje – 15 (viena lenktynė 16-o nepasieks)
+            var user = db.Users.Single(u => u.Id == userId);
+            user.Xp = Enumerable.Range(0, 20000).First(xp => Progression.LevelFor(xp) == 15) + 5;
+            user.ClaimedLevel = 10;
+            user.Bananas = 0;
+            db.SaveChanges();
+        }
+        var level = 15;
+        var expected = Enumerable.Range(11, level - 10).Sum(Progression.LevelUpBananas);
+
+        var first = await Save(userId, raceIds[0], 4);
+        using (var db = NewContext())
+        {
+            var user = db.Users.Single(u => u.Id == userId);
+            Assert.Equal(level, user.ClaimedLevel);
+            Assert.Equal(expected + first.BananasGained, user.Bananas);
+            var items = db.UserItems.Where(i => i.UserId == userId).Select(i => i.ItemId).ToHashSet();
+            Assert.Equal(
+                ShopCatalog.Items.Where(i => i.Source == ItemSource.Level && i.Level <= level).Select(i => i.Id).ToHashSet(),
+                items);
+            Assert.Contains("bg-sand", items);
+            Assert.Contains("hat-student", items);
+            Assert.Contains("fur-latte", items);
+        }
+        Assert.Equal(3, first.NewItems.Count);
+
+        // antra lenktynė: skola nebemokama, prizai nesikartoja
+        var bananasBefore = UserState(userId).Bananas;
+        var second = await Save(userId, raceIds[1], 4);
+        Assert.Empty(second.NewItems);
+        Assert.Equal(bananasBefore + second.BananasGained, UserState(userId).Bananas);
+    }
+
+    [Fact]
+    public async Task LevelPrizes_CrossingLevelFiveInRace_GrantsSandBackground_AndCanBeEquipped()
+    {
+        var (userId, raceIds) = Seed(1);
+        using (var db = NewContext())
+        {
+            db.Users.Single(u => u.Id == userId).Xp = 690; // iki 5 lygio (700) trūksta 10 XP
+            db.SaveChanges();
+        }
+        var reward = await Save(userId, raceIds[0], 1);
+
+        Assert.True(reward.LeveledUp);
+        Assert.Equal("bg-sand", Assert.Single(reward.NewItems).Id);
+        using var ctx = NewContext();
+        Assert.Equal(5, ctx.Users.Single(u => u.Id == userId).ClaimedLevel);
+        Assert.Null(await new RaceService(ctx).EquipItemAsync(userId, "bg-sand"));
+        // dar nepasiektas lygis – neperkamas
+        Assert.Contains("nusipirkti negalima", await new RaceService(ctx).EquipItemAsync(userId, "hat-king"));
+    }
+
 }

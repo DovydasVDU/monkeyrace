@@ -81,6 +81,11 @@
     /* parduotuvės vandens takelis (.lane-water, .track-water) */
     --water: #2F8FD8;
     --water-light: #7CC4F2;
+    /* takeliai už lygius (.lane-dunes, .lane-sunwave, .lane-jungle) */
+    --sand: #EBDDB0;
+    --sand-dark: #C9A55B;
+    --sunset: #EB6834;
+    --leaf-dark: #1C5E34;
     /* takelių formos: tik silueto kaukės (mask), spalvą duoda background su var(--…) */
     --mask-banana: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='26' viewBox='0 0 44 26'%3E %3Cpath fill='black' d='M2 5 C3 3.5 5.5 3.5 6.5 5 C9 11 15 15 22 15 C29 15 34 11 36.5 6 L36 3 L39.5 2 L41.5 5.5 C39.5 15.5 31 24.5 21 24.5 C11 24.5 4 16.5 2 7 Z'/%3E %3C/svg%3E");
     --mask-leaf: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='26' viewBox='0 0 60 26'%3E %3Cg fill='black' fill-rule='evenodd'%3E %3Cpath id='l' d='M3 13 C8 3 20 2 28 5 C27 13 22 22 8 23 C5 21 3 17 3 13 Z M6.5 19 L21 9.5 L21.4 10.4 L7.4 19.6 Z'/%3E %3Cuse href='%23l' transform='translate(60 26) rotate(180)'/%3E %3C/g%3E%3C/svg%3E");
@@ -1378,7 +1383,11 @@ a.lb-row:hover {
 
 .track-leaf span,
 .track-banana span,
-.track-water span {
+.track-water span,
+.track-dunes span,
+.track-sunwave span,
+.track-jungle span,
+.track-bananarain span {
     -webkit-mask-position: 0 50%;
     mask-position: 0 50%;
     -webkit-mask-repeat: repeat-x;
@@ -1407,6 +1416,38 @@ a.lb-row:hover {
     mask-image: var(--mask-wave);
     -webkit-mask-size: 40px 26px;
     mask-size: 40px 26px;
+}
+
+.track-dunes span {
+    background: linear-gradient(var(--sand), var(--sand-dark));
+    -webkit-mask-image: var(--mask-wave);
+    mask-image: var(--mask-wave);
+    -webkit-mask-size: 40px 26px;
+    mask-size: 40px 26px;
+}
+
+.track-sunwave span {
+    background: linear-gradient(var(--banana-light), var(--sunset));
+    -webkit-mask-image: var(--mask-wave);
+    mask-image: var(--mask-wave);
+    -webkit-mask-size: 40px 26px;
+    mask-size: 40px 26px;
+}
+
+.track-jungle span {
+    background: linear-gradient(var(--leaf-light), var(--leaf-dark));
+    -webkit-mask-image: var(--mask-leaf);
+    mask-image: var(--mask-leaf);
+    -webkit-mask-size: 60px 26px;
+    mask-size: 60px 26px;
+}
+
+.track-bananarain span {
+    background: linear-gradient(var(--banana-light), var(--sunset));
+    -webkit-mask-image: var(--mask-banana);
+    mask-image: var(--mask-banana);
+    -webkit-mask-size: 44px 26px;
+    mask-size: 44px 26px;
 }
 
 .shop-note {

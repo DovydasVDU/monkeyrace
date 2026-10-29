@@ -64,7 +64,12 @@ function renderReward(container, reward) {
         </div>
         <p class="reward-next">${next} · ${progressIcon("banana")} ${reward.bananas}</p>
         ${reward.leveledUp
-            ? `<p class="reward-levelup" role="status">${progressIcon("star")} Naujas lygis! Dabar esi ${reward.level} lygio.</p>`
+            ? `<p class="reward-levelup" role="status">${progressIcon("star")} Naujas lygis! Dabar esi ${reward.level} lygio.${
+                reward.newTitle ? ` Naujas titulas: <strong>${reward.newTitle}</strong>.` : ""}</p>`
+            : ""}
+        ${(reward.newItems || []).length
+            ? `<p class="reward-levelup" role="status">${progressIcon("medal")} Atrakinta: ${
+                reward.newItems.map(i => `<strong>${i.name}</strong>`).join(", ")}. Užsidėk profilyje.</p>`
             : ""}`;
 
     // XP juosta užsipildo nuo ankstesnės padėties iki naujos

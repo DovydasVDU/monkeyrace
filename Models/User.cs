@@ -24,6 +24,9 @@ public class User
     public string BackgroundId { get; set; }
     public string FrameId { get; set; }
 
+    // Iki kurio lygio jau išdalinti bananai už lygių pakilimą (RaceService.SettleLevels); naujam žaidėjui – 1
+    public int ClaimedLevel { get; set; } = 1;
+
     // Foreign key į RaceResult, kad galėtume matyti žaidimus, kuriuose dalyvavo
     public ICollection<RaceResult> RaceResults { get; set; } = new List<RaceResult>();
 }

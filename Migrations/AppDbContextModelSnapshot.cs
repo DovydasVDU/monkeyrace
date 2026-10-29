@@ -449,6 +449,9 @@ namespace monkeyrace.Migrations
                     b.Property<int>("Bananas")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ClaimedLevel")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 

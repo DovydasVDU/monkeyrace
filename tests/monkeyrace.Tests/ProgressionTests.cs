@@ -6,7 +6,11 @@ public class ProgressionTests
     [InlineData(100, 2)]
     [InlineData(3199, 9)]
     [InlineData(3200, 10)]
-    [InlineData(99999, 10)]
+    [InlineData(3949, 10)]
+    [InlineData(3950, 11)]
+    [InlineData(189049, 99)]
+    [InlineData(189050, 100)]
+    [InlineData(999999, 100)]
     public void LevelFor_Thresholds(int xp, int level)
     {
         Assert.Equal(level, Progression.LevelFor(xp));
@@ -17,7 +21,45 @@ public class ProgressionTests
     {
         Assert.Equal(1, Progression.ToNextLevel(99));
         Assert.Equal(150, Progression.ToNextLevel(100));
-        Assert.Null(Progression.ToNextLevel(3200));
+        Assert.Equal(750, Progression.ToNextLevel(3200));
+        Assert.Null(Progression.ToNextLevel(189050));
+    }
+
+    [Fact]
+    public void Levels_AreStrictlyIncreasing_AndEndAtHundred()
+    {
+        Assert.Equal(100, Progression.MaxLevel);
+        var previous = 0;
+        for (var level = 1; level <= 100; level++)
+        {
+            var xp = previous;
+            while (Progression.LevelFor(xp) < level) xp += 50;
+            Assert.True(level == 1 || xp > previous, $"lygis {level}");
+            previous = xp;
+        }
+    }
+
+    [Theory]
+    [InlineData(1, "Naujokas")]
+    [InlineData(10, "Naujokas")]
+    [InlineData(11, "Pirmokas")]
+    [InlineData(50, "Beždžionėlė")]
+    [InlineData(55, "Gorila")]
+    [InlineData(100, "Džiunglių Karalius")]
+    public void TitleFor_ChangesEveryTenLevels(int level, string title)
+    {
+        Assert.Equal(title, Progression.TitleFor(level));
+    }
+
+    [Theory]
+    [InlineData(2, 40)]
+    [InlineData(10, 200)]
+    [InlineData(11, 360)]
+    [InlineData(12, 60)]
+    [InlineData(21, 360)]
+    public void LevelUpBananas_BigBonusAtStartOfEachTen(int level, int bananas)
+    {
+        Assert.Equal(bananas, Progression.LevelUpBananas(level));
     }
 
     private static Reward Multi(int? place, double wpm = 60, double accuracy = 100,

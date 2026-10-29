@@ -38,6 +38,7 @@ public class UserController : Controller
             return Redirect("/");
 
         var userId = int.Parse(userIdStr);
+        await _raceService.SettleLevelsForUserAsync(userId);
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId); // surandame vartotoją duomenų bazėje pagal ID
         if (user == null)
             return Redirect("/");

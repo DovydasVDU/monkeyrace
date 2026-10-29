@@ -9,7 +9,7 @@ public enum ItemSource { Default, Shop, Level, Lesson, Achievement }
 // takeliui – lenktynių juostos stilius (race.css .lane-*).
 // Unlock: kaip gauti daiktą, kai jis neperkamas (rodoma parduotuvėje)
 public sealed record ShopItem(string Id, string Category, string Name, string Value, int Price,
-    ItemSource Source = ItemSource.Shop, string Rarity = "common", string Unlock = null)
+    ItemSource Source = ItemSource.Shop, string Rarity = "common", string Unlock = null, int Level = 0)
 {
     public bool IsDefault => Source == ItemSource.Default;
     public bool IsPurchasable => Source == ItemSource.Shop;
@@ -42,8 +42,38 @@ public static class ShopCatalog
         new("bg-sun", Backgrounds, "Saulėtas fonas", "rgba(255, 201, 60, 0.45)", 300),
         new("frame-none", Frames, "Be rėmelio", "none", 0, ItemSource.Default),
         new("frame-leaf", Frames, "Lapų rėmelis", "#2E8B4F", 600, Rarity: "rare"),
-        new("frame-banana", Frames, "Bananų rėmelis", "#FFC93C", 900, Rarity: "rare")
+        new("frame-banana", Frames, "Bananų rėmelis", "#FFC93C", 900, Rarity: "rare"),
+        // Prizai už lygius (tik už XP): kas 5 lygius, o 50 ir 100 – po du
+        ForLevel(5, "bg-sand", Backgrounds, "Smėlio fonas", "rgba(233, 221, 184, 0.75)", "common"),
+        ForLevel(10, "hat-student", Hats, "Mokinio kepuraitė", "#3B5BA9", "common"),
+        ForLevel(15, "fur-latte", Furs, "Pienas su šokoladu", "#A67B5B", "common"),
+        ForLevel(20, "track-dunes", Tracks, "Smėlio kopos", "dunes", "common"),
+        ForLevel(25, "bg-sunset", Backgrounds, "Saulėlydis", "rgba(235, 104, 52, 0.45)", "common"),
+        ForLevel(30, "hat-pirate", Hats, "Pirato kepurė", "#2B2B2B", "rare"),
+        ForLevel(35, "fur-albino", Furs, "Albinosas", "#F1E6D0", "rare"),
+        ForLevel(40, "frame-bronze", Frames, "Bronzinis rėmelis", "#E0A36A", "rare"),
+        ForLevel(45, "track-sunwave", Tracks, "Saulės bangos", "sunwave", "rare"),
+        ForLevel(50, "hat-crown-small", Hats, "Mažoji karūnėlė", "#FFD866", "rare"),
+        ForLevel(50, "bg-fog", Backgrounds, "Džiunglių rūkas", "rgba(127, 191, 147, 0.85)", "rare"),
+        ForLevel(55, "fur-blue", Furs, "Mėlynoji beždžionė", "#4F6DB8", "rare"),
+        ForLevel(60, "frame-silver", Frames, "Sidabrinis rėmelis", "#D7D9D2", "epic"),
+        ForLevel(65, "track-jungle", Tracks, "Džiunglių lapai", "jungle", "epic"),
+        ForLevel(70, "hat-tiger", Hats, "Tigro kepurė", "#E27D1A", "epic"),
+        ForLevel(75, "fur-tiger", Furs, "Tigro kailis", "#D9822B", "epic"),
+        ForLevel(80, "bg-storm", Backgrounds, "Perkūnija", "rgba(98, 80, 214, 0.45)", "epic"),
+        ForLevel(85, "track-bananarain", Tracks, "Bananų lietus", "bananarain", "epic"),
+        ForLevel(90, "frame-gold", Frames, "Auksinis rėmelis", "#D9A400", "legendary"),
+        ForLevel(95, "hat-laurel", Hats, "Laurų vainikas", "#5BA05B", "legendary"),
+        ForLevel(100, "hat-king", Hats, "Džiunglių karūna", "#FFD700", "legendary"),
+        ForLevel(100, "fur-royal", Furs, "Karališkas kailis", "#C9A227", "legendary")
     };
+
+    private static ShopItem ForLevel(int level, string id, string category, string name, string value, string rarity) =>
+        new(id, category, name, value, 0, ItemSource.Level, rarity, $"Pasiek {level} lygį", level);
+
+    // Prizai, gaunami pasiekus tam tikrą lygį
+    public static ShopItem[] LevelPrizes(int level) =>
+        Items.Where(item => item.Source == ItemSource.Level && item.Level == level).ToArray();
 
     public static ShopItem Find(string id) => Items.FirstOrDefault(item => item.Id == id);
 

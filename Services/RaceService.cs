@@ -84,8 +84,10 @@ public class RaceService
             });
 
             var xpBefore = user.Xp;
+            var newItems = await SettleLevelsAsync(user, payBananas: true); // senų lygių skolos (po 100 lygių išplėtimo)
             user.Xp += reward.Xp;
             user.Bananas += reward.Bananas;
+            newItems.AddRange(await SettleLevelsAsync(user, payBananas: false)); // bananus už lygį jau įskaičiavo RewardFor
 
             if (race != null && race.Status != "finished")
                 race.Status = "finished";
@@ -94,7 +96,7 @@ public class RaceService
             await transaction.CommitAsync();
 
             return RaceReward.Create(xpBefore, user.Xp, user.Bananas,
-                reward.Xp, reward.Bananas, isFirstRace, saved: true);
+                reward.Xp, reward.Bananas, isFirstRace, saved: true, newItems);
         }
         finally
         {
@@ -250,6 +252,7 @@ public class RaceService
         {
             Username = user.Username,
             Level = level,
+            Title = Progression.TitleFor(level),
             Xp = user.Xp,
             XpToNext = Progression.ToNextLevel(user.Xp),
             LevelProgress = Progression.LevelProgress(user.Xp),
@@ -329,8 +332,10 @@ public class RaceService
             var previousStars = progress.Stars;
             var reward = Progression.LessonReward(stars, previousStars, user.Xp);
             var xpBefore = user.Xp;
+            var newItems = await SettleLevelsAsync(user, payBananas: true);
             user.Xp += reward.Xp;
             user.Bananas += reward.Bananas;
+            newItems.AddRange(await SettleLevelsAsync(user, payBananas: false));
 
             progress.Attempts++;
             progress.Stars = Math.Max(progress.Stars, stars);
@@ -349,8 +354,53 @@ public class RaceService
                 BestStars = progress.Stars,
                 NewStars = Math.Max(0, stars - previousStars),
                 Reward = RaceReward.Create(xpBefore, user.Xp, user.Bananas, reward.Xp, reward.Bananas,
-                    firstRace: false, saved: true)
+                    firstRace: false, saved: true, newItems)
             };
+        }
+        finally
+        {
+            userLock.Release();
+        }
+    }
+
+    // Lygių prizai. ClaimedLevel – iki kurio lygio jau išduoti bananai. payBananas: true – sumoka bananus už
+    // praleistus lygius (kai lygį pakėlė XP kreivės pakeitimas, o ne šios lenktynės); false – tik užfiksuoja lygį,
+    // nes Progression.RewardFor bananus už kylant lygiui jau įskaičiavo. Daiktų prizai išduodami visada, jei dar
+    // nepriklauso. Kviesti po transakcijos pradžios, užrakinus vartotoją; SaveChanges daro kviečiantysis.
+    // Grąžina naujai išduotus daiktus.
+    public async Task<List<ShopItem>> SettleLevelsAsync(User user, bool payBananas)
+    {
+        var level = Progression.LevelFor(user.Xp);
+        if (payBananas)
+            for (var l = user.ClaimedLevel + 1; l <= level; l++)
+                user.Bananas += Progression.LevelUpBananas(l);
+        user.ClaimedLevel = Math.Max(user.ClaimedLevel, level);
+
+        var due = ShopCatalog.Items.Where(i => i.Source == ItemSource.Level && i.Level <= level).ToList();
+        if (due.Count == 0)
+            return new List<ShopItem>();
+        var dueIds = due.Select(i => i.Id).ToList();
+        var owned = (await _db.UserItems.Where(i => i.UserId == user.Id && dueIds.Contains(i.ItemId))
+            .Select(i => i.ItemId).ToListAsync()).ToHashSet();
+        // dar neišsaugoti (tos pačios operacijos pirmas SettleLevels kvietimas)
+        owned.UnionWith(_db.ChangeTracker.Entries<UserItem>()
+            .Where(e => e.State == EntityState.Added && e.Entity.UserId == user.Id).Select(e => e.Entity.ItemId));
+        var added = due.Where(i => !owned.Contains(i.Id)).ToList();
+        foreach (var item in added)
+            _db.UserItems.Add(new UserItem { UserId = user.Id, ItemId = item.Id });
+        return added;
+    }
+
+    // Profilio atidarymas: išduoda lygių prizus, kurių žaidėjas jau nusipelnė, bet dar negavo (pvz. po XP kreivės pakeitimo)
+    public async Task SettleLevelsForUserAsync(int userId)
+    {
+        var userLock = _userLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        await userLock.WaitAsync();
+        try
+        {
+            var user = await _db.Users.FirstAsync(u => u.Id == userId);
+            await SettleLevelsAsync(user, payBananas: true);
+            await _db.SaveChangesAsync();
         }
         finally
         {
@@ -374,6 +424,7 @@ public sealed class PlayerCard
 {
     public string Username { get; init; }
     public int Level { get; init; }
+    public string Title { get; init; }
     public int Xp { get; init; }
     public int? XpToNext { get; init; }
     public double LevelProgress { get; init; }
@@ -394,6 +445,7 @@ public sealed class PlayerCard
     {
         Username = Username,
         Level = Level,
+        Title = Title,
         LevelProgress = LevelProgress,
         BestWpm = BestWpm,
         AverageWpm = AverageWpm,
@@ -410,6 +462,7 @@ public sealed class PublicPlayerCard
 {
     public string Username { get; init; }
     public int Level { get; init; }
+    public string Title { get; init; }
     public double LevelProgress { get; init; }
     public int BestWpm { get; init; }
     public int AverageWpm { get; init; }
@@ -427,6 +480,9 @@ public sealed class RaceReward
     public int XpGained { get; init; }
     public int BananasGained { get; init; }
     public int Level { get; init; }
+    public string Title { get; init; }
+    // ne null tik kai titulas pasikeitė (pvz. 10 -> 11 lygis: „Pirmokas“)
+    public string NewTitle { get; init; }
     public bool LeveledUp { get; init; }
     public int Xp { get; init; }
     public int? XpToNext { get; init; }
@@ -436,16 +492,23 @@ public sealed class RaceReward
     public bool FirstRace { get; init; }
     // false = svečio hipotetinis apdovanojimas
     public bool Saved { get; init; }
+    // naujai atrakinti lygių prizai (kad naršyklė parodytų „Gavai: ...“)
+    public List<NewItem> NewItems { get; init; } = new();
+
+    public sealed record NewItem(string Id, string Name, string Category, string Rarity);
 
     public static RaceReward Create(int xpBefore, int xp, int bananas,
-        int xpGained, int bananasGained, bool firstRace, bool saved)
+        int xpGained, int bananasGained, bool firstRace, bool saved, IEnumerable<ShopItem> newItems = null)
     {
         var level = Progression.LevelFor(xp);
+        var title = Progression.TitleFor(level);
         return new RaceReward
         {
             XpGained = xpGained,
             BananasGained = bananasGained,
             Level = level,
+            Title = title,
+            NewTitle = title != Progression.TitleFor(Progression.LevelFor(xpBefore)) ? title : null,
             LeveledUp = level > Progression.LevelFor(xpBefore),
             Xp = xp,
             XpToNext = Progression.ToNextLevel(xp),
@@ -453,7 +516,9 @@ public sealed class RaceReward
             LevelProgress = Progression.LevelProgress(xp),
             Bananas = bananas,
             FirstRace = firstRace,
-            Saved = saved
+            Saved = saved,
+            NewItems = (newItems ?? Enumerable.Empty<ShopItem>())
+                .Select(i => new NewItem(i.Id, i.Name, i.Category, i.Rarity)).ToList()
         };
     }
 }

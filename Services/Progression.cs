@@ -17,11 +17,35 @@ public sealed class Reward
 // Visos XP, lygių ir bananų taisyklės vienoje vietoje. Grynos funkcijos, todėl lengvai testuojamos.
 public static class Progression
 {
-    // Kiek XP reikia pasiekti lygį (indeksas 0 = 1 lygis). 10 lygis maksimalus, XP kaupiasi toliau.
-    private static readonly int[] LevelThresholds =
-        { 0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200 };
+    // Kiek XP reikia pasiekti lygį (indeksas 0 = 1 lygis). Maksimalus 100 lygis (~189 000 XP).
+    private static readonly int[] LevelThresholds = BuildThresholds();
+
+    // Pirmi 10 lygių nekeisti (žaidėjų pasiekta pažanga); toliau kiekvienas lygis kainuoja 30 XP daugiau nei
+    // ankstesnis (10 -> 11 lygis 750 XP, 99 -> 100 – 3 400 XP), kaina apvalinama iki 50.
+    private static int[] BuildThresholds()
+    {
+        var thresholds = new int[100];
+        int[] first = { 0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200 };
+        first.CopyTo(thresholds, 0);
+        for (var level = 11; level <= 100; level++)
+            thresholds[level - 1] = thresholds[level - 2] + (int)Math.Round((700 + (level - 10) * 30) / 50.0) * 50;
+        return thresholds;
+    }
 
     public static int MaxLevel => LevelThresholds.Length;
+
+    // Titulas keičiasi kas 10 lygių: 1–10 Naujokas, 11–20 Pirmokas, ... 91–100 Džiunglių Karalius
+    private static readonly string[] Titles =
+    {
+        "Naujokas", "Pirmokas", "Antrokas", "Trečiokas", "Beždžionėlė",
+        "Gorila", "Tigras", "Ilgapirštis", "Pirštų Meistras", "Džiunglių Karalius"
+    };
+
+    public static string TitleFor(int level) => Titles[Math.Clamp((level - 1) / 10, 0, Titles.Length - 1)];
+
+    // Bananai už naują lygį: iki 10 – 20 × lygis (kaip buvo), toliau 60, o kiekvieno dešimtuko pirmas lygis +300
+    public static int LevelUpBananas(int level) =>
+        level <= 10 ? 20 * level : 60 + (level % 10 == 1 ? 300 : 0);
 
     // WPM virš šios ribos laikomas nepatikimu ir apkerpamas
     private const double MaxRewardedWpm = 200;
@@ -91,9 +115,9 @@ public static class Progression
 
         var xpGained = (int)Math.Round(xp);
         var levelAfter = LevelFor(xpBefore + xpGained);
-        // +20 x lygis už kiekvieną pakeltą lygį (pvz. 1 -> 3: 20*2 + 20*3)
+        // bananai už kiekvieną pakeltą lygį (pvz. 1 -> 3: 20*2 + 20*3)
         for (var level = levelBefore + 1; level <= levelAfter; level++)
-            bananas += 20 * level;
+            bananas += LevelUpBananas(level);
 
         return new Reward
         {
@@ -119,7 +143,7 @@ public static class Progression
 
         var levelAfter = LevelFor(xpBefore + xp);
         for (var level = levelBefore + 1; level <= levelAfter; level++)
-            bananas += 20 * level;
+            bananas += LevelUpBananas(level);
 
         return new Reward { Xp = xp, Bananas = bananas, LevelBefore = levelBefore, LevelAfter = levelAfter };
     }

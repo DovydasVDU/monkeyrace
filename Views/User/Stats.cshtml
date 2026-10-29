@@ -35,7 +35,7 @@
             {
                 <div class="profile-xp">
                     <div class="profile-xp-label">
-                        <strong>Lygis @card.Level</strong>
+                        <strong>Lygis @card.Level · @card.Title</strong>
                         <span>@(card.XpToNext == null ? "Maksimalus lygis" : $"Iki {card.Level + 1} lygio: {card.XpToNext} XP")</span>
                     </div>
                     <span class="xp-track" role="progressbar" aria-label="XP iki kito lygio"

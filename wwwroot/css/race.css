@@ -221,13 +221,21 @@ body:has(.countdown:not([hidden])) .text-card {
    ::before lieka tik tuščias takelis; beždžionė (z-index) važiuoja virš užpildo. 26px = 30px takelis be 2px kontūro. */
 .player-track.lane-leaf::before,
 .player-track.lane-banana::before,
-.player-track.lane-water::before {
+.player-track.lane-water::before,
+.player-track.lane-dunes::before,
+.player-track.lane-sunwave::before,
+.player-track.lane-jungle::before,
+.player-track.lane-bananarain::before {
     background: var(--cream-2);
 }
 
 .player-track.lane-leaf::after,
 .player-track.lane-banana::after,
-.player-track.lane-water::after {
+.player-track.lane-water::after,
+.player-track.lane-dunes::after,
+.player-track.lane-sunwave::after,
+.player-track.lane-jungle::after,
+.player-track.lane-bananarain::after {
     border-radius: var(--radius-pill);
     content: "";
     grid-column: 2;
@@ -269,8 +277,45 @@ body:has(.countdown:not([hidden])) .text-card {
 
 .player-track.lane-leaf .player-monkey,
 .player-track.lane-banana .player-monkey,
-.player-track.lane-water .player-monkey {
+.player-track.lane-water .player-monkey,
+.player-track.lane-dunes .player-monkey,
+.player-track.lane-sunwave .player-monkey,
+.player-track.lane-jungle .player-monkey,
+.player-track.lane-bananarain .player-monkey {
     z-index: 1;
+}
+
+/* Prizai už lygius: tos pačios formos, kitos spalvos */
+.player-track.lane-dunes::after {
+    background: linear-gradient(var(--sand), var(--sand-dark));
+    -webkit-mask-image: var(--mask-wave);
+    mask-image: var(--mask-wave);
+    -webkit-mask-size: 40px 26px;
+    mask-size: 40px 26px;
+}
+
+.player-track.lane-sunwave::after {
+    background: linear-gradient(var(--banana-light), var(--sunset));
+    -webkit-mask-image: var(--mask-wave);
+    mask-image: var(--mask-wave);
+    -webkit-mask-size: 40px 26px;
+    mask-size: 40px 26px;
+}
+
+.player-track.lane-jungle::after {
+    background: linear-gradient(var(--leaf-light), var(--leaf-dark));
+    -webkit-mask-image: var(--mask-leaf);
+    mask-image: var(--mask-leaf);
+    -webkit-mask-size: 60px 26px;
+    mask-size: 60px 26px;
+}
+
+.player-track.lane-bananarain::after {
+    background: linear-gradient(var(--banana-light), var(--sunset));
+    -webkit-mask-image: var(--mask-banana);
+    mask-image: var(--mask-banana);
+    -webkit-mask-size: 44px 26px;
+    mask-size: 44px 26px;
 }
 
 .player-monkey {
