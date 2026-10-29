@@ -16,6 +16,36 @@ namespace monkeyrace.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("ChallengeEntry", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Month")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BestErrors")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("BestScore")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("BestSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "Month");
+
+                    b.HasIndex("Month", "BestScore");
+
+                    b.ToTable("ChallengeEntries");
+                });
+
             modelBuilder.Entity("Race", b =>
                 {
                     b.Property<int>("Id")
@@ -592,6 +622,17 @@ namespace monkeyrace.Migrations
                     b.HasKey("UserId", "Word");
 
                     b.ToTable("UserWordMistakes");
+                });
+
+            modelBuilder.Entity("ChallengeEntry", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Race", b =>

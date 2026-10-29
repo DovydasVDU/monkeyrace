@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<UserWordMistake> UserWordMistakes { get; set; }
     public DbSet<UserItem> UserItems { get; set; }
     public DbSet<UserClaim> UserClaims { get; set; }
+    public DbSet<ChallengeEntry> ChallengeEntries { get; set; }
     public DbSet<UserLessonProgress> UserLessonProgresses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -30,6 +31,8 @@ public class AppDbContext : DbContext
         // Ta pati prekė perkama tik kartą (RaceService.EquipItemAsync)
         modelBuilder.Entity<UserItem>().HasKey(i => new { i.UserId, i.ItemId });
         modelBuilder.Entity<UserClaim>().HasKey(c => new { c.UserId, c.Key });
+        modelBuilder.Entity<ChallengeEntry>().HasKey(c => new { c.UserId, c.Month });
+        modelBuilder.Entity<ChallengeEntry>().HasIndex(c => new { c.Month, c.BestScore });
         // Pamokų progresas: viena eilutė žaidėjui ir pamokai (RaceService.SaveLessonResultAsync)
         modelBuilder.Entity<UserLessonProgress>().HasKey(p => new { p.UserId, p.LessonId });
 

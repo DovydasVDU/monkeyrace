@@ -837,3 +837,80 @@ kbd {
     font-size: .9rem;
     margin: 0;
 }
+
+/* Mėnesio iššūkis (Views/Challenge/Index.cshtml) */
+.challenge-card {
+    margin-bottom: 1.5rem;
+}
+
+.challenge-words {
+    font-weight: 700;
+    margin: .5rem 0 1rem;
+    padding-left: 1.4rem;
+    word-break: break-word;
+}
+
+.challenge-stage {
+    margin-top: 1rem;
+}
+
+.challenge-count {
+    color: var(--leaf);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 .5rem;
+    min-height: 2rem;
+}
+
+.challenge-word {
+    font-family: var(--font-mono, monospace);
+    font-size: clamp(1.1rem, 4.5vw, 2rem);
+    font-weight: 700;
+    letter-spacing: .04em;
+    margin: 0 0 .5rem;
+    overflow-wrap: anywhere;
+}
+
+.challenge-word span {
+    color: var(--ink-a60);
+}
+
+.challenge-word .is-done {
+    color: var(--leaf);
+}
+
+.challenge-word .is-current {
+    background: var(--banana-soft);
+    border-radius: 4px;
+    color: var(--ink);
+}
+
+.challenge-word.is-wrong {
+    animation: challenge-shake .2s;
+}
+
+@keyframes challenge-shake {
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .challenge-word.is-wrong {
+        animation: none;
+    }
+}
+
+.challenge-board {
+    display: grid;
+    gap: .4rem;
+    margin: .75rem 0 0;
+    padding-left: 1.4rem;
+}
+
+.challenge-board li span {
+    float: right;
+}
+
+.challenge-board small {
+    color: var(--ink-a60);
+}

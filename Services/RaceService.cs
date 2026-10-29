@@ -502,6 +502,57 @@ public class RaceService
         };
     }
 
+    // Mėnesio iššūkio rezultatas: įrašo, jei geresnis už ankstesnį to mėnesio bandymą; pirmas dalyvavimas mėnesį duoda
+    // vienkartinį XP ir bananus (UserClaims "challenge:{month}"). Tas pats vartotojo užraktas kaip lenktynėse.
+    public async Task<ChallengeSaveResult> SaveChallengeAsync(int userId, string month, double seconds, int errors)
+    {
+        var score = MonthlyChallenge.Score(seconds, errors);
+        var userLock = _userLocks.GetOrAdd(userId, _ => new SemaphoreSlim(1, 1));
+        await userLock.WaitAsync();
+        try
+        {
+            await using var transaction = await _db.Database.BeginTransactionAsync();
+            var user = await _db.Users.FirstAsync(u => u.Id == userId);
+            var entry = await _db.ChallengeEntries.FirstOrDefaultAsync(e => e.UserId == userId && e.Month == month);
+            var isBest = entry == null || score < entry.BestScore;
+            if (entry == null)
+                _db.ChallengeEntries.Add(entry = new ChallengeEntry { UserId = userId, Month = month });
+            entry.Attempts++;
+            entry.UpdatedAt = DateTime.UtcNow;
+            if (isBest)
+            {
+                entry.BestScore = score;
+                entry.BestSeconds = Math.Round(seconds, 2);
+                entry.BestErrors = errors;
+            }
+
+            var notes = new List<string>();
+            var newItems = new List<ShopItem>();
+            var key = $"challenge:{month}";
+            if (!await _db.UserClaims.AnyAsync(c => c.UserId == userId && c.Key == key))
+            {
+                _db.UserClaims.Add(new UserClaim { UserId = userId, Key = key });
+                user.Xp += MonthlyChallenge.ParticipationXp;
+                user.Bananas += MonthlyChallenge.ParticipationBananas;
+                notes.Add($"Mėnesio iššūkis: +{MonthlyChallenge.ParticipationXp} XP ir +{MonthlyChallenge.ParticipationBananas} bananų");
+                newItems.AddRange(await SettleLevelsAsync(user, payBananas: true));
+            }
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            var rank = 1 + await _db.ChallengeEntries.CountAsync(e => e.Month == month && e.BestScore < entry.BestScore);
+            return new ChallengeSaveResult
+            {
+                Seconds = Math.Round(seconds, 2), Errors = errors, Score = score, IsBest = isBest,
+                BestScore = entry.BestScore, Rank = rank, Notes = notes, NewItems = newItems.Select(i => i.Name).ToList()
+            };
+        }
+        finally
+        {
+            userLock.Release();
+        }
+    }
+
     // Profilio atidarymas: išduoda lygių prizus, kurių žaidėjas jau nusipelnė, bet dar negavo (pvz. po XP kreivės pakeitimo)
     public async Task SettleLevelsForUserAsync(int userId)
     {
@@ -637,6 +688,19 @@ public sealed class RaceReward
             Notes = notes ?? new List<string>()
         };
     }
+}
+
+// Mėnesio iššūkio išsaugojimo atsakymas naršyklei
+public sealed class ChallengeSaveResult
+{
+    public double Seconds { get; init; }
+    public int Errors { get; init; }
+    public double Score { get; init; }
+    public bool IsBest { get; init; }
+    public double BestScore { get; init; }
+    public int Rank { get; init; }
+    public List<string> Notes { get; init; } = new();
+    public List<string> NewItems { get; init; } = new();
 }
 
 // Pamokos išsaugojimo atsakymas naršyklei

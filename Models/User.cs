@@ -146,6 +146,21 @@ public class UserWordMistake
     public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
 }
 
+// Models/ChallengeEntry.cs
+// Mėnesio iššūkio geriausias žaidėjo rezultatas (vienas įrašas vienam žaidėjui per mėnesį); Month pvz. "2026-10"
+public class ChallengeEntry
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    public string Month { get; set; } = string.Empty;
+    // geriausias rezultatas: sekundės + bausmė už klaidas (mažiau = geriau)
+    public double BestScore { get; set; }
+    public double BestSeconds { get; set; }
+    public int BestErrors { get; set; }
+    public int Attempts { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
 // Models/UserClaim.cs
 // Vienkartinis prizas jau paimtas (pvz. "module:1", "milestone:10"): Key unikalus vienam žaidėjui, todėl prizas neišduodamas du kartus
 public class UserClaim
