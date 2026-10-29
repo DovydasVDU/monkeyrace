@@ -303,7 +303,7 @@ public class RaceController : Controller
             maxPossibleWpm = snippet.Content.Length / 5d / elapsedMinutes * 1.2;
         }
         if (dto.Wpm < 0 || dto.Wpm > RaceService.MaxWpm || dto.Wpm > maxPossibleWpm ||
-            dto.Accuracy < 0 || dto.Accuracy > 100)
+            dto.Accuracy < 0 || dto.Accuracy > 100 || dto.TimeSeconds < 0 || dto.ErrorCount < 0)
             return BadRequest("Implausible result.");
 
         // Svečias: tik parodome, kiek būtų gavęs. Nieko nesaugome.

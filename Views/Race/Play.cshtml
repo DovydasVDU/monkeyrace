@@ -411,6 +411,7 @@
                     line('reward-next', `${data.seconds.toFixed(2)} s + ${data.errors} klaidų × ${@MonthlyChallenge.ErrorPenaltySeconds} s`);
                     line('reward-next', data.isBest ? 'Naujas geriausias rezultatas!' : `Geriausias liko ${data.bestScore.toFixed(2)} s`);
                     data.notes.forEach(note => line('reward-levelup', note));
+                    data.newItems.forEach(name => line('reward-levelup', `Gavai: ${name}`));
                 })
                 .catch(() => line('reward-muted', 'Rezultato išsaugoti nepavyko (per greitas laikas arba pasibaigė mėnuo).'));
         }

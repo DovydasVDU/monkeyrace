@@ -38,8 +38,10 @@ public sealed class BotSkillProvider
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOptions<BotOptions> _options;
     private readonly object _sync = new object();
-    private readonly Dictionary<string, double> _guestWpm =
-        new Dictionary<string, double>();
+    // svečio greitis pamirštamas po GuestWpmLifetime, kad žodynas neaugtų iki perkrovimo
+    private static readonly TimeSpan GuestWpmLifetime = TimeSpan.FromDays(7);
+    private readonly Dictionary<string, (double Wpm, DateTime At)> _guestWpm =
+        new Dictionary<string, (double Wpm, DateTime At)>();
 
     public BotSkillProvider(
         IServiceScopeFactory scopeFactory,
@@ -80,7 +82,7 @@ public sealed class BotSkillProvider
             {
                 foreach (var player in humanList)
                     if (_guestWpm.TryGetValue(player.PlayerKey, out var value))
-                        remembered.Add(value);
+                        remembered.Add(value.Wpm);
             }
             if (remembered.Count > 0)
                 baseline = remembered.Average();
@@ -99,8 +101,13 @@ public sealed class BotSkillProvider
     {
         if (string.IsNullOrWhiteSpace(playerKey) || !playerKey.StartsWith("guest:"))
             return;
+        var now = DateTime.UtcNow;
         lock (_sync)
-            _guestWpm[playerKey] = wpm;
+        {
+            foreach (var old in _guestWpm.Where(pair => now - pair.Value.At > GuestWpmLifetime).ToList())
+                _guestWpm.Remove(old.Key);
+            _guestWpm[playerKey] = (wpm, now);
+        }
     }
 }
 

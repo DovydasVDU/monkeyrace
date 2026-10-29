@@ -20,7 +20,7 @@ Numeriai iš audito; 1–3 jau sutvarkyti (commit `00a87f1`).
 - [x] 11. SignalR skriptas `_Layout.cshtml` kraunamas visuose puslapiuose ir `MultiPlay` dar kartą → ištrinti iš `_Layout`.
 - [x] 12. Nenaudojami `BotTypingModel` / `BotPlan.Model` ir `AddMemoryCache`, `AddHttpContextAccessor` (`Startup.cs`) → ištrinti.
 - [x] 13. `escapeHtml` kopijos (`Index.cshtml`, `MultiPlay.cshtml`) → naudoti `progressEscape` iš `progress.js`. (`Privacy.cshtml` dabar naudojamas: `/privatumas`.)
-- [ ] 14. `BotSkillProvider._guestWpm` auga iki perkrovimo → `shortcut:` komentaras arba laikyti sesijoje.
-- [ ] Smulkmenos: solo `TimeSeconds`/`ErrorCount` netikrinami (gali būti neigiami); svečio vardas per `?username=` dabar apkerpamas iki 20 simbolių (`PlayerIdentity.GuestName`), bet gali sutapti su registruoto žaidėjo vardu.
+- [x] 14. `BotSkillProvider._guestWpm` auga iki perkrovimo → įrašai senesni nei 7 dienos trinami.
+- [ ] Smulkmenos: solo `TimeSeconds`/`ErrorCount` neigiami atmetami (sutvarkyta); svečio vardas per `?username=` dabar apkerpamas iki 20 simbolių (`PlayerIdentity.GuestName`), bet gali sutapti su registruoto žaidėjo vardu.
 - [x] Idėja: replay paspaudus rezultatą Top 10 → įrašyti lenktynių laiko juostą į DB, puslapis `/race/replay/{resultId}`, replay JS iškelti iš `MultiPlay.cshtml`. Veiktų tik naujoms lenktynėms.
 - [ ] Laukia vartotojo testavimo: ar užtenka vieno sakinio teksto lenktynėms; ką daryti su flags `digits`, `many_caps`, `parens`; bananai žodžių režime nepriklauso nuo trukmės.
