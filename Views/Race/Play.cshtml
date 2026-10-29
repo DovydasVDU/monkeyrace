@@ -162,8 +162,10 @@
 
                 if (startTime === null) {
                     startTime = Date.now();
-                    // mėnesio iššūkis: laiką matuoja serveris nuo pirmo klavišo
-                    if (CHALLENGE) fetch('/challenge/begin', { method: 'POST' }).catch(() => {});
+                    // mėnesio iššūkis: laiką matuoja serveris nuo pirmo klavišo; nepavykus (pvz. sesija baigėsi) – naujas bandymas iškart
+                    if (CHALLENGE) fetch('/challenge/begin', { method: 'POST' })
+                        .then(res => { if (!res.ok) window.location.href = '/menesio-issukis/zaisti'; })
+                        .catch(() => {});
                     timerHandle = setInterval(updateTimer, 200);
                     // telefone vieną kartą starte (pirmas klavišas): teksto kortelė ekrano viršuje, virš klaviatūros
                     if (window.matchMedia('(max-width: 640px)').matches)
