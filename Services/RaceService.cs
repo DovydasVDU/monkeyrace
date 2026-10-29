@@ -380,6 +380,33 @@ public sealed class PlayerCard
     public string HatColor { get; init; }
     public string FurColor { get; init; }
     public string Track { get; init; }
+
+    // Kitiems žaidėjams (API, lenktynių kambarys) – tik tai, kas rodoma kortelėje: be XP, bananų ir lenktynių skaičiaus
+    public PublicPlayerCard ForOthers() => new()
+    {
+        Username = Username,
+        Level = Level,
+        LevelProgress = LevelProgress,
+        BestWpm = BestWpm,
+        AverageWpm = AverageWpm,
+        AverageAccuracy = AverageAccuracy,
+        HatColor = HatColor,
+        FurColor = FurColor,
+        Track = Track
+    };
+}
+
+public sealed class PublicPlayerCard
+{
+    public string Username { get; init; }
+    public int Level { get; init; }
+    public double LevelProgress { get; init; }
+    public int BestWpm { get; init; }
+    public int AverageWpm { get; init; }
+    public double AverageAccuracy { get; init; }
+    public string HatColor { get; init; }
+    public string FurColor { get; init; }
+    public string Track { get; init; }
 }
 
 // Apdovanojimas, siunčiamas į naršyklę (solo SaveResult JSON ir multiplayer RaceFinished)

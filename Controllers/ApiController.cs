@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 //using monkeyrace.Data;
 
@@ -23,17 +24,19 @@ namespace monkeyrace.Controllers
             _raceService = raceService;
         }
 
-        // This makes the endpoint: GET /api/StatsApi/{username}
+        // Savininkas mato visą kortelę (XP, bananai), kiti – tik tai, kas rodoma kortelėje (PlayerCard.ForOthers)
         [HttpGet("{username}")]
+        [EnableRateLimiting("stats")]
         public async Task<IActionResult> GetUserStats(string username)
         {
             var userId = await _db.Users.Where(u => u.Username == username)
                 .Select(u => (int?)u.Id).FirstOrDefaultAsync();
             if (userId == null)
-                return NotFound(new { message = $"User '{username}' not found." });
+                return NotFound(new { message = "Žaidėjas nerastas." });
 
             // ta pati kortelė kaip lenktynėse ir navbar (RaceService.GetPlayerCardAsync)
-            return Ok(await _raceService.GetPlayerCardAsync(userId.Value));
+            var card = await _raceService.GetPlayerCardAsync(userId.Value);
+            return PlayerIdentity.GetUserId(HttpContext) == userId.Value ? Ok(card) : Ok(card.ForOthers());
         }
 
         [HttpGet("top10")]

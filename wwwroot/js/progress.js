@@ -101,8 +101,7 @@ function playerCardHtml(player) {
     }
     return `<div class="pc-head">${name}<span>Lygis ${card.level}</span></div>
         <div class="xp-track"><span style="width:${progressPercent(card.levelProgress)}"></span></div>
-        <p>PB ${card.bestWpm} · vid. ${card.averageWpm} WPM · ${Number(card.averageAccuracy).toFixed(0)}% ·
-            ${card.totalRaces} ${racesWord(card.totalRaces)}</p>`;
+        <p>PB ${card.bestWpm} · vid. ${card.averageWpm} WPM · ${Number(card.averageAccuracy).toFixed(0)}%</p>`;
 }
 
 // Lygis, rodomas ant beždžionėlės (null svečiui)

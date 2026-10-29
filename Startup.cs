@@ -54,6 +54,10 @@ public class Startup
             options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
                 context.Connection.RemoteIpAddress?.ToString() ?? "",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) }));
+            // Žaidėjų kortelės (/api/stats/{vardas}): pagal IP, kad nebūtų galima skenuoti vardų
+            options.AddPolicy("stats", context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1) }));
             // Pamokų raundai: prisijungusiam – pagal vartotoją, svečiui – pagal IP (didesnė riba dėl klasių)
             options.AddPolicy("lessons", context =>
             {

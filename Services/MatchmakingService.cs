@@ -1053,7 +1053,7 @@ public sealed class MatchmakingService
             IsDnf = player.IsDnf,
             Wpm = player.Wpm
             ,IsBot = player.IsBot
-            ,Card = player.Card
+            ,Card = player.Card?.ForOthers()
             ,BotWpm = player.IsBot ? (int)Math.Round(player.TargetWpm) : 0
             ,BotLevel = player.BotLevel?.ToString()
         };
@@ -1162,7 +1162,7 @@ public sealed class RacePlayerState
     public bool IsBot { get; set; }
     public int Wpm { get; set; }
     // null svečiams ir botams
-    public PlayerCard Card { get; set; }
+    public PublicPlayerCard Card { get; set; }
     public int BotWpm { get; set; }
     // null žmonėms ir matchmaking botams
     public string BotLevel { get; set; }
