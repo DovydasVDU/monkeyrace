@@ -57,6 +57,7 @@ public sealed class DeleteAccountTests : IDisposable
             db.UserKeyStats.Add(new UserKeyStat { UserId = userId, Expected = "ą", Typed = "a", Count = 3 });
             db.UserWordMistakes.Add(new UserWordMistake { UserId = userId, Word = "žodis", Misses = 1 });
             db.UserItems.Add(new UserItem { UserId = userId, ItemId = "hat-test" });
+            db.UserClaims.Add(new UserClaim { UserId = userId, Key = "module:1" });
             db.SaveChanges();
         }
 
@@ -75,6 +76,7 @@ public sealed class DeleteAccountTests : IDisposable
             Assert.False(db.UserKeyStats.Any(k => k.UserId == userId));
             Assert.False(db.UserWordMistakes.Any(w => w.UserId == userId));
             Assert.False(db.UserItems.Any(i => i.UserId == userId));
+            Assert.False(db.UserClaims.Any(c => c.UserId == userId));
             var players = System.Text.Json.Nodes.JsonNode.Parse(db.Races.Find(raceId)!.ReplayJson)!["players"]!.AsArray();
             Assert.Equal("Ištrintas žaidėjas", (string)players[0]!["name"]!);
             Assert.Null(players[0]!["userId"]);

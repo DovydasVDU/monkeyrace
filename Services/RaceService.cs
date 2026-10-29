@@ -346,6 +346,9 @@ public class RaceService
                 progress.CompletedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+            var path = await SettleLessonPathAsync(user);
+            newItems.AddRange(path.Items);
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return new LessonSaveResult
@@ -353,8 +356,8 @@ public class RaceService
                 Stars = stars,
                 BestStars = progress.Stars,
                 NewStars = Math.Max(0, stars - previousStars),
-                Reward = RaceReward.Create(xpBefore, user.Xp, user.Bananas, reward.Xp, reward.Bananas,
-                    firstRace: false, saved: true, newItems)
+                Reward = RaceReward.Create(xpBefore, user.Xp, user.Bananas, reward.Xp, reward.Bananas + path.Bananas,
+                    firstRace: false, saved: true, newItems, path.Notes)
             };
         }
         finally
@@ -376,19 +379,67 @@ public class RaceService
                 user.Bananas += Progression.LevelUpBananas(l);
         user.ClaimedLevel = Math.Max(user.ClaimedLevel, level);
 
-        var due = ShopCatalog.Items.Where(i => i.Source == ItemSource.Level && i.Level <= level).ToList();
+        return await GrantItemsAsync(user.Id,
+            ShopCatalog.Items.Where(i => i.Source == ItemSource.Level && i.Level <= level).ToList());
+    }
+
+    // Įrašo į UserItems tik tuos daiktus, kurių žaidėjas dar neturi (įskaitant dar neišsaugotus). SaveChanges daro kviečiantysis.
+    private async Task<List<ShopItem>> GrantItemsAsync(int userId, List<ShopItem> due)
+    {
         if (due.Count == 0)
             return new List<ShopItem>();
         var dueIds = due.Select(i => i.Id).ToList();
-        var owned = (await _db.UserItems.Where(i => i.UserId == user.Id && dueIds.Contains(i.ItemId))
+        var owned = (await _db.UserItems.Where(i => i.UserId == userId && dueIds.Contains(i.ItemId))
             .Select(i => i.ItemId).ToListAsync()).ToHashSet();
         // dar neišsaugoti (tos pačios operacijos pirmas SettleLevels kvietimas)
         owned.UnionWith(_db.ChangeTracker.Entries<UserItem>()
-            .Where(e => e.State == EntityState.Added && e.Entity.UserId == user.Id).Select(e => e.Entity.ItemId));
+            .Where(e => e.State == EntityState.Added && e.Entity.UserId == userId).Select(e => e.Entity.ItemId));
         var added = due.Where(i => !owned.Contains(i.Id)).ToList();
         foreach (var item in added)
-            _db.UserItems.Add(new UserItem { UserId = user.Id, ItemId = item.Id });
+            _db.UserItems.Add(new UserItem { UserId = userId, ItemId = item.Id });
         return added;
+    }
+
+    // Pamokų kelias: bananai už baigtą modulį / visas 3 žvaigždutes ir prizai už įveiktų pamokų skaičių.
+    // Kiekvienas prizas vienkartinis (UserClaims). Kviesti po to, kai pamokos progresas jau išsaugotas (SaveChanges),
+    // viduje to paties vartotojo užrakto ir transakcijos. Bananai pridedami prie user.Bananas.
+    private async Task<(int Bananas, List<ShopItem> Items, List<string> Notes)> SettleLessonPathAsync(User user)
+    {
+        var stars = (await _db.UserLessonProgresses.Where(p => p.UserId == user.Id)
+            .Select(p => new { p.LessonId, p.Stars }).ToListAsync()).ToDictionary(p => p.LessonId, p => p.Stars);
+        var claimed = (await _db.UserClaims.Where(c => c.UserId == user.Id).Select(c => c.Key).ToListAsync()).ToHashSet();
+        var bananas = 0;
+        var notes = new List<string>();
+        var items = new List<ShopItem>();
+
+        bool Claim(string key, int amount, string note)
+        {
+            if (!claimed.Add(key))
+                return false;
+            _db.UserClaims.Add(new UserClaim { UserId = user.Id, Key = key });
+            bananas += amount;
+            notes.Add($"{note}: +{amount} bananų");
+            return true;
+        }
+
+        int Stars(Lesson lesson) => stars.TryGetValue(lesson.Id, out var s) ? s : 0;
+        foreach (var module in LessonCatalog.Modules)
+        {
+            if (module.Lessons.All(l => Stars(l) > 0))
+                Claim($"module:{module.Id}", LessonPath.ModuleBananas, $"Modulis „{module.Title}“ baigtas");
+            if (module.Lessons.All(l => Stars(l) == 3))
+                Claim($"mastery:{module.Id}", LessonPath.MasteryBananas, $"Modulis „{module.Title}“ su trimis žvaigždutėmis");
+        }
+
+        var done = stars.Values.Count(s => s > 0);
+        foreach (var milestone in LessonPath.Milestones.Where(m => done >= m.Lessons))
+        {
+            Claim($"milestone:{milestone.Lessons}", milestone.Bananas, $"{milestone.Lessons} pamokų įveikta");
+            items.AddRange(await GrantItemsAsync(user.Id, new List<ShopItem> { ShopCatalog.Find(milestone.ItemId) }));
+        }
+
+        user.Bananas += bananas;
+        return (bananas, items, notes);
     }
 
     // Profilio atidarymas: išduoda lygių prizus, kurių žaidėjas jau nusipelnė, bet dar negavo (pvz. po XP kreivės pakeitimo)
@@ -494,11 +545,13 @@ public sealed class RaceReward
     public bool Saved { get; init; }
     // naujai atrakinti lygių prizai (kad naršyklė parodytų „Gavai: ...“)
     public List<NewItem> NewItems { get; init; } = new();
+    // papildomi bonusai (pamokų kelias): „Modulis ... baigtas: +40 bananų“
+    public List<string> Notes { get; init; } = new();
 
     public sealed record NewItem(string Id, string Name, string Category, string Rarity);
 
     public static RaceReward Create(int xpBefore, int xp, int bananas,
-        int xpGained, int bananasGained, bool firstRace, bool saved, IEnumerable<ShopItem> newItems = null)
+        int xpGained, int bananasGained, bool firstRace, bool saved, IEnumerable<ShopItem> newItems = null, List<string> notes = null)
     {
         var level = Progression.LevelFor(xp);
         var title = Progression.TitleFor(level);
@@ -518,7 +571,8 @@ public sealed class RaceReward
             FirstRace = firstRace,
             Saved = saved,
             NewItems = (newItems ?? Enumerable.Empty<ShopItem>())
-                .Select(i => new NewItem(i.Id, i.Name, i.Category, i.Rarity)).ToList()
+                .Select(i => new NewItem(i.Id, i.Name, i.Category, i.Rarity)).ToList(),
+            Notes = notes ?? new List<string>()
         };
     }
 }

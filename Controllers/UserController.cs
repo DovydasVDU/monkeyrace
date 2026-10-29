@@ -146,6 +146,7 @@ public class UserController : Controller
             await _db.UserKeyStats.Where(k => k.UserId == user.Id).ExecuteDeleteAsync();
             await _db.UserWordMistakes.Where(w => w.UserId == user.Id).ExecuteDeleteAsync();
             await _db.UserItems.Where(i => i.UserId == user.Id).ExecuteDeleteAsync();
+            await _db.UserClaims.Where(c => c.UserId == user.Id).ExecuteDeleteAsync();
             await _db.UserLessonProgresses.Where(p => p.UserId == user.Id).ExecuteDeleteAsync();
             await _db.Users.Where(u => u.Id == user.Id).ExecuteDeleteAsync();
             await transaction.CommitAsync();

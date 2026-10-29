@@ -67,6 +67,7 @@ function renderReward(container, reward) {
             ? `<p class="reward-levelup" role="status">${progressIcon("star")} Naujas lygis! Dabar esi ${reward.level} lygio.${
                 reward.newTitle ? ` Naujas titulas: <strong>${reward.newTitle}</strong>.` : ""}</p>`
             : ""}
+        ${(reward.notes || []).map(n => `<p class="reward-levelup" role="status">${progressIcon("banana")} ${n}</p>`).join("")}
         ${(reward.newItems || []).length
             ? `<p class="reward-levelup" role="status">${progressIcon("medal")} Atrakinta: ${
                 reward.newItems.map(i => `<strong>${i.name}</strong>`).join(", ")}. Užsidėk profilyje.</p>`

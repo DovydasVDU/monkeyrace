@@ -487,6 +487,22 @@ namespace monkeyrace.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("UserClaim", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ClaimedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "Key");
+
+                    b.ToTable("UserClaims");
+                });
+
             modelBuilder.Entity("UserItem", b =>
                 {
                     b.Property<int>("UserId")
@@ -599,6 +615,17 @@ namespace monkeyrace.Migrations
                         .IsRequired();
 
                     b.Navigation("Race");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("UserClaim", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

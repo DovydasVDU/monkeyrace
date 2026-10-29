@@ -86,10 +86,13 @@
     --sand-dark: #C9A55B;
     --sunset: #EB6834;
     --leaf-dark: #1C5E34;
+    --neon: #27F2F5;
+    --neon-dark: #0A8FA0;
     /* takelių formos: tik silueto kaukės (mask), spalvą duoda background su var(--…) */
     --mask-banana: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='26' viewBox='0 0 44 26'%3E %3Cpath fill='black' d='M2 5 C3 3.5 5.5 3.5 6.5 5 C9 11 15 15 22 15 C29 15 34 11 36.5 6 L36 3 L39.5 2 L41.5 5.5 C39.5 15.5 31 24.5 21 24.5 C11 24.5 4 16.5 2 7 Z'/%3E %3C/svg%3E");
     --mask-leaf: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='26' viewBox='0 0 60 26'%3E %3Cg fill='black' fill-rule='evenodd'%3E %3Cpath id='l' d='M3 13 C8 3 20 2 28 5 C27 13 22 22 8 23 C5 21 3 17 3 13 Z M6.5 19 L21 9.5 L21.4 10.4 L7.4 19.6 Z'/%3E %3Cuse href='%23l' transform='translate(60 26) rotate(180)'/%3E %3C/g%3E%3C/svg%3E");
     --mask-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='26' viewBox='0 0 40 26'%3E %3Cpath fill='black' fill-rule='evenodd' d='M0 9 C5 3 10 3 20 9 C30 15 35 15 40 9 L40 26 L0 26 Z M9 17 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0 Z M27 21 a1.5 1.5 0 1 0 3 0 a1.5 1.5 0 1 0 -3 0 Z'/%3E %3C/svg%3E");
+    --mask-letters: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='26' viewBox='0 0 72 26'%3E %3Cg fill='black' font-family='monospace' font-weight='bold'%3E %3Ctext x='3' y='20' font-size='20'%3EA%3C/text%3E %3Ctext x='26' y='12' font-size='14'%3Ek%3C/text%3E %3Ctext x='41' y='24' font-size='17'%3E%C5%A0%3C/text%3E %3Ctext x='60' y='15' font-size='13'%3El%3C/text%3E %3C/g%3E%3C/svg%3E");
     /* perklausos žaidėjų spalvos = kepurės #replay-monkey-templates (_Replay.cshtml) */
     --player-0: var(--banana);
     --player-1: #E53935;
@@ -1387,7 +1390,8 @@ a.lb-row:hover {
 .track-dunes span,
 .track-sunwave span,
 .track-jungle span,
-.track-bananarain span {
+.track-bananarain span,
+.track-letters span {
     -webkit-mask-position: 0 50%;
     mask-position: 0 50%;
     -webkit-mask-repeat: repeat-x;
@@ -1448,6 +1452,14 @@ a.lb-row:hover {
     mask-image: var(--mask-banana);
     -webkit-mask-size: 44px 26px;
     mask-size: 44px 26px;
+}
+
+.track-letters span {
+    background: linear-gradient(var(--neon), var(--neon-dark));
+    -webkit-mask-image: var(--mask-letters);
+    mask-image: var(--mask-letters);
+    -webkit-mask-size: 72px 26px;
+    mask-size: 72px 26px;
 }
 
 .shop-note {

@@ -225,7 +225,8 @@ body:has(.countdown:not([hidden])) .text-card {
 .player-track.lane-dunes::before,
 .player-track.lane-sunwave::before,
 .player-track.lane-jungle::before,
-.player-track.lane-bananarain::before {
+.player-track.lane-bananarain::before,
+.player-track.lane-letters::before {
     background: var(--cream-2);
 }
 
@@ -235,7 +236,8 @@ body:has(.countdown:not([hidden])) .text-card {
 .player-track.lane-dunes::after,
 .player-track.lane-sunwave::after,
 .player-track.lane-jungle::after,
-.player-track.lane-bananarain::after {
+.player-track.lane-bananarain::after,
+.player-track.lane-letters::after {
     border-radius: var(--radius-pill);
     content: "";
     grid-column: 2;
@@ -281,7 +283,8 @@ body:has(.countdown:not([hidden])) .text-card {
 .player-track.lane-dunes .player-monkey,
 .player-track.lane-sunwave .player-monkey,
 .player-track.lane-jungle .player-monkey,
-.player-track.lane-bananarain .player-monkey {
+.player-track.lane-bananarain .player-monkey,
+.player-track.lane-letters .player-monkey {
     z-index: 1;
 }
 
@@ -316,6 +319,15 @@ body:has(.countdown:not([hidden])) .text-card {
     mask-image: var(--mask-banana);
     -webkit-mask-size: 44px 26px;
     mask-size: 44px 26px;
+}
+
+/* Pamokų kelio prizas: raidžių kaukė, tik pamokomis uždirbamas takelis */
+.player-track.lane-letters::after {
+    background: linear-gradient(var(--neon), var(--neon-dark));
+    -webkit-mask-image: var(--mask-letters);
+    mask-image: var(--mask-letters);
+    -webkit-mask-size: 72px 26px;
+    mask-size: 72px 26px;
 }
 
 .player-monkey {

@@ -308,4 +308,61 @@ public sealed class RaceServiceRewardTests : IDisposable
         Assert.Contains("nusipirkti negalima", await new RaceService(ctx).EquipItemAsync(userId, "hat-king"));
     }
 
+
+    private async Task<LessonSaveResult> SaveLesson(int userId, string lessonId, int stars)
+    {
+        using var db = NewContext();
+        return await new RaceService(db).SaveLessonResultAsync(userId, lessonId, stars, 99, 40);
+    }
+
+    [Fact]
+    public async Task LessonPath_ModuleBonusAndMilestonePrizes_AreGivenOnlyOnce()
+    {
+        var (userId, _) = Seed(0);
+        var first = LessonCatalog.Modules[0];
+
+        // visi pirmo modulio pamokos su 3 žvaigždutėmis: baigtas modulis + visos žvaigždutės
+        LessonSaveResult last = null;
+        foreach (var lesson in first.Lessons)
+            last = await SaveLesson(userId, lesson.Id, 3);
+        Assert.Equal(2, last.Reward.Notes.Count);
+        using (var db = NewContext())
+        {
+            var claims = db.UserClaims.Where(c => c.UserId == userId).Select(c => c.Key).ToHashSet();
+            Assert.Equal(new[] { "module:1", "mastery:1" }.ToHashSet(), claims);
+        }
+
+        // pakartojimas nieko nebeduoda
+        var again = await SaveLesson(userId, first.Lessons[0].Id, 3);
+        Assert.Empty(again.Reward.Notes);
+
+        // 10-a įveikta pamoka atrakina neoninį foną
+        var next = LessonCatalog.All.Skip(first.Lessons.Count).Take(LessonPath.Milestones[0].Lessons - first.Lessons.Count).ToList();
+        foreach (var lesson in next)
+            last = await SaveLesson(userId, lesson.Id, 1);
+        Assert.Contains(last.Reward.NewItems, i => i.Id == "bg-neon");
+        using (var db = NewContext())
+            Assert.Contains(db.UserItems, i => i.UserId == userId && i.ItemId == "bg-neon");
+        Assert.Contains(last.Reward.Notes, n => n.StartsWith("10 pamokų"));
+        Assert.Null(await EquipAs(userId, "bg-neon"));
+    }
+
+    private async Task<string> EquipAs(int userId, string itemId)
+    {
+        using var db = NewContext();
+        return await new RaceService(db).EquipItemAsync(userId, itemId);
+    }
+
+    [Fact]
+    public void LessonPath_MilestonesMatchCatalogAndShopItems()
+    {
+        Assert.Equal(LessonCatalog.All.Count, LessonPath.Milestones[^1].Lessons);
+        foreach (var milestone in LessonPath.Milestones)
+        {
+            var item = ShopCatalog.Find(milestone.ItemId);
+            Assert.Equal(ItemSource.Lesson, item.Source);
+            Assert.Equal(milestone.Lessons, item.Lessons);
+        }
+    }
+
 }

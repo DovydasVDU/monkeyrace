@@ -5,6 +5,10 @@
     bool loggedIn = ViewBag.LoggedIn == true;
     var total = LessonCatalog.All.Count;
     var done = Model.Values.Count(p => p.Stars > 0);
+    string RarityLabel(string rarity) => rarity switch
+    {
+        "legendary" => "legendinis", "epic" => "epinis", "rare" => "retas", _ => "paprastas"
+    };
     int Stars(string id) => Model.TryGetValue(id, out var p) ? p.Stars : 0;
     // prisijungusiam: atrakinta, kai praėjo ankstesnę pamoką; svečiui: pirmos nemokamos
     bool Unlocked(Lesson lesson) => loggedIn
@@ -51,7 +55,7 @@
             <li><strong>Rašyk naujas raides.</strong> @LessonCatalog.Modules.Count modulių, @total pamokų: nuo pagrindinės eilutės iki skaičių ir ženklų. Kiekviena pamoka – keli trumpi raundai su klavišais, kuriuos treniruoji.</li>
             <li><strong>Rink žvaigždutes.</strong> Žvaigždutės rodo tikslumą, ne greitį: pirmą gauni pasiekęs pamokos ribą, antrą – nuo 95 %, trečią – nuo 98 %.</li>
             <li><strong>Atrakink kitą pamoką.</strong> Kita pamoka atsidaro, kai praėjusioje gauni bent vieną žvaigždutę.</li>
-            <li><strong>Rink prizus.</strong> Už kiekvieną naują žvaigždutę gauni XP ir bananų. Kartoti jau įveiktą pamoką galima bet kada, bet prizas duodamas tik už naujas žvaigždutes.</li>
+            <li><strong>Rink prizus.</strong> Už kiekvieną naują žvaigždutę gauni XP ir bananų, už baigtus modulius ir įveiktų pamokų skaičių – papildomų bananų ir daiktų, kurių parduotuvėje nusipirkti negalima. Kartoti jau įveiktą pamoką galima bet kada, bet prizas duodamas tik už naujus pasiekimus.</li>
         </ol>
         <div class="how-notes">
             <p><strong>Kodėl tekstas keičiasi?</strong> Pamoka stebi tavo tikslumą ir tempą. Dažnai klystant, žodžiai paprastėja; rašant labai tiksliai – sunkėja. Tai normalu: svarbiausia tikslumas, greitis ateina pats.</p>
@@ -61,7 +65,26 @@
 
     @if (loggedIn)
     {
-        <p class="lessons-progress"><strong>@done</strong> iš @total pamokų įveikta</p>
+        <section class="card lessons-path" aria-labelledby="path-title">
+            <h2 id="path-title">Pamokų kelias</h2>
+            <p class="lessons-progress"><strong>@done</strong> iš @total pamokų įveikta</p>
+            <div class="xp-track" role="progressbar" aria-label="Įveiktos pamokos" aria-valuemin="0"
+                 aria-valuemax="@total" aria-valuenow="@done">
+                <span style="width:@(total == 0 ? 0 : done * 100 / total)%"></span>
+            </div>
+            <ol class="path-prizes">
+                @foreach (var milestone in LessonPath.Milestones)
+                {
+                    var prize = ShopCatalog.Find(milestone.ItemId);
+                    var reached = done >= milestone.Lessons;
+                    <li class="@(reached ? "is-reached" : "")">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#icon-@(reached ? "star" : "lock")"></use></svg>
+                        <span><strong>@milestone.Lessons pamokų:</strong> @prize.Name <small>(@RarityLabel(prize.Rarity), +@milestone.Bananas bananų)</small></span>
+                    </li>
+                }
+            </ol>
+            <p class="path-note">Be to, už kiekvieną baigtą modulį gauni @LessonPath.ModuleBananas bananų, o už visas jo pamokas su trimis žvaigždutėmis dar @LessonPath.MasteryBananas.</p>
+        </section>
     }
     else
     {

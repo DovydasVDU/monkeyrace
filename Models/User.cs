@@ -134,6 +134,16 @@ public class UserWordMistake
     public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
 }
 
+// Models/UserClaim.cs
+// Vienkartinis prizas jau paimtas (pvz. "module:1", "milestone:10"): Key unikalus vienam žaidėjui, todėl prizas neišduodamas du kartus
+public class UserClaim
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    public string Key { get; set; } = string.Empty;
+    public DateTime ClaimedAt { get; set; } = DateTime.UtcNow;
+}
+
 // Models/UserItem.cs
 // Nupirkta prekė (ShopCatalog Id). Nemokamų prekių čia nėra – jos priklauso visiems.
 public class UserItem

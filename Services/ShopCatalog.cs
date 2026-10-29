@@ -9,7 +9,7 @@ public enum ItemSource { Default, Shop, Level, Lesson, Achievement }
 // takeliui – lenktynių juostos stilius (race.css .lane-*).
 // Unlock: kaip gauti daiktą, kai jis neperkamas (rodoma parduotuvėje)
 public sealed record ShopItem(string Id, string Category, string Name, string Value, int Price,
-    ItemSource Source = ItemSource.Shop, string Rarity = "common", string Unlock = null, int Level = 0)
+    ItemSource Source = ItemSource.Shop, string Rarity = "common", string Unlock = null, int Level = 0, int Lessons = 0)
 {
     public bool IsDefault => Source == ItemSource.Default;
     public bool IsPurchasable => Source == ItemSource.Shop;
@@ -65,8 +65,16 @@ public static class ShopCatalog
         ForLevel(90, "frame-gold", Frames, "Auksinis rėmelis", "#D9A400", "legendary"),
         ForLevel(95, "hat-laurel", Hats, "Laurų vainikas", "#5BA05B", "legendary"),
         ForLevel(100, "hat-king", Hats, "Džiunglių karūna", "#FFD700", "legendary"),
-        ForLevel(100, "fur-royal", Furs, "Karališkas kailis", "#C9A227", "legendary")
+        ForLevel(100, "fur-royal", Furs, "Karališkas kailis", "#C9A227", "legendary"),
+        // Prizai už pamokų kelią (LessonPath.Milestones): pirma trečdalis, pusė, du trečdaliai ir visos pamokos
+        ForLessons(10, "bg-neon", Backgrounds, "Neoninis fonas", "rgba(39, 242, 245, 0.5)", "rare"),
+        ForLessons(15, "hat-keycap", Hats, "Klavišo kepurė", "#3A4A6B", "rare"),
+        ForLessons(20, "track-letters", Tracks, "Raidžių lietus", "letters", "epic"),
+        ForLessons(29, "frame-neon", Frames, "Neoninis rėmelis", "#27F2F5", "legendary")
     };
+
+    private static ShopItem ForLessons(int lessons, string id, string category, string name, string value, string rarity) =>
+        new(id, category, name, value, 0, ItemSource.Lesson, rarity, $"Įveik {lessons} pamokų", Lessons: lessons);
 
     private static ShopItem ForLevel(int level, string id, string category, string name, string value, string rarity) =>
         new(id, category, name, value, 0, ItemSource.Level, rarity, $"Pasiek {level} lygį", level);

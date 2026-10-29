@@ -787,3 +787,53 @@ kbd {
         transition: none;
     }
 }
+
+.lessons-path {
+    margin-bottom: 1.5rem;
+}
+
+.lessons-path h2 {
+    margin: 0 0 .25rem;
+}
+
+.lessons-path .lessons-progress {
+    color: var(--ink);
+    margin-bottom: .5rem;
+}
+
+.lessons-path .lessons-progress strong {
+    color: var(--leaf);
+}
+
+.path-prizes {
+    display: grid;
+    gap: .4rem;
+    list-style: none;
+    margin: 1rem 0 .75rem;
+    padding: 0;
+}
+
+.path-prizes li {
+    align-items: center;
+    color: var(--ink-a60);
+    display: flex;
+    gap: .5rem;
+}
+
+.path-prizes li.is-reached {
+    color: var(--ink);
+}
+
+.path-prizes li.is-reached .ui-icon {
+    color: var(--banana-shadow);
+}
+
+.path-prizes small {
+    color: var(--ink-a60);
+}
+
+.path-note {
+    color: var(--ink-a60);
+    font-size: .9rem;
+    margin: 0;
+}
