@@ -15,6 +15,7 @@ public class UserProfileViewModel
     public HashSet<string> OwnedItems { get; set; } = new HashSet<string>();
     // Įvykdytų pasiekimų raktai (Achievements.All)
     public HashSet<string> UnlockedAchievements { get; set; } = new HashSet<string>();
+    public ProfileVisibility Visibility { get; set; }
     public HashSet<string> EquippedItems { get; set; } = new HashSet<string>();
 }
 // lygiai taspats, tik surenkama buvusių naudotojo žaidimų istorija

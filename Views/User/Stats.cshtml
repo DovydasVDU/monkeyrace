@@ -176,6 +176,26 @@
         </ul>
     </section>
 
+    <section class="card visibility" id="visibility" aria-labelledby="visibility-title">
+        <h2 id="visibility-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>Viešas profilis ir paieška</h2>
+        <p>Tavo viešas profilis: <a href="/u/@Model.Username">/u/@Model.Username</a>. Jame rodomas titulas, lygis, WPM, tikslumas, pamokų progresas, pasiekimai ir daiktai. Bananų, tikslaus XP ir lenktynių skaičiaus kiti nemato.</p>
+        <form method="post" action="/User/Visibility" asp-antiforgery="true" class="visibility-form">
+            <fieldset>
+                <legend>Kas gali matyti ir rasti mano profilį</legend>
+                @foreach (var (value, label) in new[] { (ProfileVisibility.Members, "Tik prisijungę žaidėjai"), (ProfileVisibility.Public, "Visi"), (ProfileVisibility.Private, "Niekas") })
+                {
+                    <label><input type="radio" name="visibility" value="@((int)value)" checked="@(Model.Visibility == value)"> @label</label>
+                }
+            </fieldset>
+            <button class="btn btn-s" type="submit">Išsaugoti</button>
+        </form>
+        <label class="friends-field" for="player-search">Ieškoti žaidėjų (bent 3 raidės)
+            <input id="player-search" type="search" minlength="3" maxlength="30" autocomplete="off">
+        </label>
+        <ul class="player-results" id="player-results" aria-live="polite"></ul>
+    </section>
+    <script src="~/js/playersearch.js" asp-append-version="true"></script>
+
     <section class="card mistakes" aria-labelledby="mistakes-title">
         <div class="shop-head">
             <h2 id="mistakes-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg>Klaidų analizė</h2>

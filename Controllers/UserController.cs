@@ -61,6 +61,7 @@ public class UserController : Controller
             UnlockedAchievements = (await _db.UserClaims
                 .Where(c => c.UserId == userId && c.Key.StartsWith(Achievements.ClaimPrefix))
                 .Select(c => c.Key).ToListAsync()).Select(k => k.Substring(Achievements.ClaimPrefix.Length)).ToHashSet(),
+            Visibility = user.ProfileVisibility,
             EquippedItems = new[]
             {
                 ShopCatalog.Equipped(user.HatId, ShopCatalog.Hats).Id,
@@ -118,6 +119,22 @@ public class UserController : Controller
         TempData["ShopMessage"] = error ?? $"Užsidėta: {item.Name}.";
         TempData["ShopError"] = error != null;
         return Redirect($"/User/Stats?tab={item?.Category}#shop");
+    }
+
+    // Kas mato mano viešą profilį (forma Stats.cshtml, skyrius „Matomumas“)
+    [HttpPost("/User/Visibility")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Visibility(ProfileVisibility visibility)
+    {
+        var userId = PlayerIdentity.GetUserId(HttpContext);
+        if (userId == null)
+            return Redirect("/");
+        if (!Enum.IsDefined(visibility))
+            return BadRequest();
+        await _db.Users.Where(u => u.Id == userId.Value)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.ProfileVisibility, visibility));
+        return Redirect("/User/Stats#visibility");
     }
 
     // Paskyros ištrynimas (privatumo puslapis /privatumas): reikia dar kartą įvesti slaptažodį

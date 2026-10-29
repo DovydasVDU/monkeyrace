@@ -470,6 +470,9 @@ namespace monkeyrace.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ProfileVisibility")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("TrackId")
                         .HasColumnType("TEXT");
 

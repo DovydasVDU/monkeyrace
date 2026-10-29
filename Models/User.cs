@@ -4,6 +4,16 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 
+// Kas mato žaidėjo viešą profilį (/u/{vardas}, /api/user/{vardas}) ir randa jį paieškoje
+public enum ProfileVisibility
+{
+    // tik prisijungę žaidėjai (numatyta)
+    Members = 0,
+    Public = 1,
+    // niekas, tik pats žaidėjas
+    Private = 2
+}
+
 // duomenų bazės lentelės
 public class User
 {
@@ -26,6 +36,8 @@ public class User
 
     // Iki kurio lygio jau išdalinti bananai už lygių pakilimą (RaceService.SettleLevels); naujam žaidėjui – 1
     public int ClaimedLevel { get; set; } = 1;
+
+    public ProfileVisibility ProfileVisibility { get; set; } = ProfileVisibility.Members;
 
     // Foreign key į RaceResult, kad galėtume matyti žaidimus, kuriuose dalyvavo
     public ICollection<RaceResult> RaceResults { get; set; } = new List<RaceResult>();

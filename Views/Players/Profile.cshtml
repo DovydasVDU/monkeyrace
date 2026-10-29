@@ -1,0 +1,86 @@
+@model PublicProfile
+
+@{
+    var card = Model.Card;
+    ViewData["Title"] = $"{card.Username} - MonkeyRace";
+    var xpPercent = (int)Math.Round(card.LevelProgress * 100);
+    string RarityLabel(string rarity) => rarity switch
+    {
+        "legendary" => "legendinis", "epic" => "epinis", "rare" => "retas", _ => "paprastas"
+    };
+}
+
+<div class="profile-page">
+    <section class="card profile-hero" aria-labelledby="profile-title">
+        <div class="profile-hero-head">
+            <span class="profile-hero-monkey" aria-hidden="true">
+                @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = card.HatColor, BodyColor = card.FurColor, BackgroundColor = card.BackgroundColor, FrameColor = card.FrameColor, Level = card.Level })
+            </span>
+            <div>
+                <p class="eyebrow">Žaidėjo profilis</p>
+                <h1 id="profile-title">@card.Username</h1>
+            </div>
+        </div>
+
+        <div class="profile-xp">
+            <div class="profile-xp-label">
+                <strong>Lygis @card.Level · @card.Title</strong>
+            </div>
+            <span class="xp-track" role="progressbar" aria-label="XP iki kito lygio"
+                  aria-valuemin="0" aria-valuemax="100" aria-valuenow="@xpPercent">
+                <span style="width:@(xpPercent)%"></span>
+            </span>
+        </div>
+
+        <div class="profile-stats">
+            <div class="result-metric"><span>Vidutinis WPM</span><strong>@card.AverageWpm</strong></div>
+            <div class="result-metric"><span>Tikslumas</span><strong>@card.AverageAccuracy.ToString("0.0")%</strong></div>
+            <div class="result-metric"><span>Geriausias WPM</span><strong>@card.BestWpm</strong></div>
+            <div class="result-metric"><span>Pamokos</span><strong>@Model.LessonsDone / @Model.LessonsTotal</strong></div>
+        </div>
+    </section>
+
+    <section class="card achievements" aria-labelledby="achievements-title">
+        <div class="shop-head">
+            <h2 id="achievements-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>Pasiekimai</h2>
+            <span class="pill">@Model.Achievements.Count / @Model.AchievementsTotal</span>
+        </div>
+        @if (Model.Achievements.Count == 0)
+        {
+            <p class="shop-note">Pasiekimų dar nėra.</p>
+        }
+        else
+        {
+            <ul class="achievement-grid">
+                @foreach (var achievement in Model.Achievements)
+                {
+                    <li class="achievement is-unlocked">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#icon-medal"></use></svg>
+                        <div><strong>@achievement.Title</strong></div>
+                        <span class="achievement-xp">+@achievement.Xp XP</span>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+
+    <section class="card" aria-labelledby="items-title">
+        <div class="shop-head">
+            <h2 id="items-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-shop"></use></svg>Daiktai</h2>
+            <span class="pill">@Model.Items.Count</span>
+        </div>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="shop-note">Daiktų dar nėra.</p>
+        }
+        else
+        {
+            <ul class="item-chips">
+                @foreach (var item in Model.Items)
+                {
+                    <li class="pill rarity-@item.Rarity">@item.Name <small>(@RarityLabel(item.Rarity))</small></li>
+                }
+            </ul>
+        }
+    </section>
+</div>

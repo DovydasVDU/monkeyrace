@@ -267,3 +267,44 @@
     font-weight: 800;
     white-space: nowrap;
 }
+
+/* Viešo profilio daiktų sąrašas (Views/Players/Profile.cshtml) */
+.item-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+}
+
+.item-chips small {
+    color: var(--ink-a60);
+}
+
+/* Viešo profilio matomumas ir žaidėjų paieška (Stats.cshtml) */
+.visibility-form {
+    margin: 1rem 0;
+}
+
+.visibility-form fieldset {
+    border: 0;
+    display: grid;
+    gap: .4rem;
+    margin: 0 0 .75rem;
+    padding: 0;
+}
+
+.visibility-form legend {
+    font-weight: 800;
+    margin-bottom: .4rem;
+    padding: 0;
+}
+
+.player-results {
+    display: grid;
+    gap: .35rem;
+    list-style: none;
+    margin: .75rem 0 0;
+    padding: 0;
+}
