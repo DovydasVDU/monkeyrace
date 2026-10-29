@@ -21,6 +21,12 @@ function monkeyTemplate(colorIndex, level, look) {
         svg.querySelectorAll(".monkey-fur").forEach(part => part.setAttribute(
             part.getAttribute("fill") === "none" ? "stroke" : "fill", look.furColor));
         svg.querySelectorAll(".monkey-hat").forEach(part => part.setAttribute("fill", look.hatColor));
+        if (look.backgroundColor && look.backgroundColor !== "none")
+            svg.insertAdjacentHTML("afterbegin",
+                `<circle class="monkey-bg" cx="80" cy="80" r="78" fill="${progressEscape(look.backgroundColor)}"/>`);
+        if (look.frameColor && look.frameColor !== "none")
+            svg.insertAdjacentHTML("beforeend",
+                `<circle class="monkey-frame" cx="80" cy="80" r="76" fill="none" stroke="${progressEscape(look.frameColor)}" stroke-width="5"/>`);
     }
     if (level != null)
         svg.insertAdjacentHTML("beforeend",

@@ -443,6 +443,9 @@ namespace monkeyrace.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BackgroundId")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Bananas")
                         .HasColumnType("INTEGER");
 
@@ -450,6 +453,9 @@ namespace monkeyrace.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FrameId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FurId")

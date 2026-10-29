@@ -239,7 +239,7 @@ public class RaceService
     public async Task<PlayerCard> GetPlayerCardAsync(int userId)
     {
         var user = await _db.Users.Where(u => u.Id == userId)
-            .Select(u => new { u.Username, u.Xp, u.Bananas, u.HatId, u.FurId, u.TrackId })
+            .Select(u => new { u.Username, u.Xp, u.Bananas, u.HatId, u.FurId, u.TrackId, u.BackgroundId, u.FrameId })
             .FirstOrDefaultAsync();
         if (user == null)
             return null;
@@ -261,7 +261,9 @@ public class RaceService
             AverageAccuracy = Math.Round(await results.AverageAsync(r => (double?)r.Accuracy) ?? 0, 2),
             HatColor = ShopCatalog.Equipped(user.HatId, ShopCatalog.Hats).Value,
             FurColor = ShopCatalog.Equipped(user.FurId, ShopCatalog.Furs).Value,
-            Track = ShopCatalog.Equipped(user.TrackId, ShopCatalog.Tracks).Value
+            Track = ShopCatalog.Equipped(user.TrackId, ShopCatalog.Tracks).Value,
+            BackgroundColor = ShopCatalog.Equipped(user.BackgroundId, ShopCatalog.Backgrounds).Value,
+            FrameColor = ShopCatalog.Equipped(user.FrameId, ShopCatalog.Frames).Value
         };
     }
 
@@ -279,10 +281,12 @@ public class RaceService
         try
         {
             var user = await _db.Users.FirstAsync(u => u.Id == userId);
-            var owned = item.Price == 0 ||
+            var owned = item.IsDefault ||
                 await _db.UserItems.AnyAsync(i => i.UserId == userId && i.ItemId == item.Id);
             if (!owned)
             {
+                if (!item.IsPurchasable)
+                    return $"Šio daikto nusipirkti negalima. {item.Unlock}".Trim();
                 if (user.Bananas < item.Price)
                     return $"Trūksta {item.Price - user.Bananas} bananų.";
                 user.Bananas -= item.Price;
@@ -293,6 +297,8 @@ public class RaceService
             {
                 case ShopCatalog.Hats: user.HatId = item.Id; break;
                 case ShopCatalog.Furs: user.FurId = item.Id; break;
+                case ShopCatalog.Backgrounds: user.BackgroundId = item.Id; break;
+                case ShopCatalog.Frames: user.FrameId = item.Id; break;
                 default: user.TrackId = item.Id; break;
             }
             await _db.SaveChangesAsync();
@@ -380,6 +386,8 @@ public sealed class PlayerCard
     public string HatColor { get; init; }
     public string FurColor { get; init; }
     public string Track { get; init; }
+    public string BackgroundColor { get; init; }
+    public string FrameColor { get; init; }
 
     // Kitiems žaidėjams (API, lenktynių kambarys) – tik tai, kas rodoma kortelėje: be XP, bananų ir lenktynių skaičiaus
     public PublicPlayerCard ForOthers() => new()
@@ -392,7 +400,9 @@ public sealed class PlayerCard
         AverageAccuracy = AverageAccuracy,
         HatColor = HatColor,
         FurColor = FurColor,
-        Track = Track
+        Track = Track,
+        BackgroundColor = BackgroundColor,
+        FrameColor = FrameColor
     };
 }
 
@@ -407,6 +417,8 @@ public sealed class PublicPlayerCard
     public string HatColor { get; init; }
     public string FurColor { get; init; }
     public string Track { get; init; }
+    public string BackgroundColor { get; init; }
+    public string FrameColor { get; init; }
 }
 
 // Apdovanojimas, siunčiamas į naršyklę (solo SaveResult JSON ir multiplayer RaceFinished)

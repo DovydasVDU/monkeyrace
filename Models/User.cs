@@ -21,6 +21,8 @@ public class User
     public string HatId { get; set; }
     public string FurId { get; set; }
     public string TrackId { get; set; }
+    public string BackgroundId { get; set; }
+    public string FrameId { get; set; }
 
     // Foreign key į RaceResult, kad galėtume matyti žaidimus, kuriuose dalyvavo
     public ICollection<RaceResult> RaceResults { get; set; } = new List<RaceResult>();

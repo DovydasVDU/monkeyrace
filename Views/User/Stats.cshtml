@@ -12,7 +12,7 @@
     // po pirkimo grįžtam į tą pačią kategoriją (UserController.Equip)
     var shopTab = ShopCatalog.Items.Any(item => item.Category == Context.Request.Query["tab"])
         ? Context.Request.Query["tab"].ToString() : ShopCatalog.Hats;
-    var shopTabs = new[] { (ShopCatalog.Hats, "Kepurės"), (ShopCatalog.Furs, "Spalvos"), (ShopCatalog.Tracks, "Takeliai") };
+    var shopTabs = new[] { (ShopCatalog.Hats, "Kepurės"), (ShopCatalog.Furs, "Spalvos"), (ShopCatalog.Tracks, "Takeliai"), (ShopCatalog.Backgrounds, "Fonai"), (ShopCatalog.Frames, "Rėmeliai") };
     var mistakes = Model.Mistakes;
     string KeyLabel(string key) => key == " " ? "tarpas" : key;
     bool IsLithuanian(string key) => "ąčęėįšųūž".Contains(key.ToLowerInvariant());
@@ -23,7 +23,7 @@
         <section class="card profile-hero" aria-labelledby="profile-title">
             <div class="profile-hero-head">
                 <span class="profile-hero-monkey" aria-hidden="true">
-                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = card?.HatColor, BodyColor = card?.FurColor, Level = card?.Level })
+                    @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = card?.HatColor, BodyColor = card?.FurColor, BackgroundColor = card?.BackgroundColor, FrameColor = card?.FrameColor, Level = card?.Level })
                 </span>
                 <div>
                     <p class="eyebrow">Žaidėjo profilis</p>
@@ -95,7 +95,7 @@
                 <div class="shop-grid" data-shop-panel="@category" hidden="@(category != shopTab)">
                     @foreach (var item in ShopCatalog.Items.Where(item => item.Category == category))
                     {
-                        var owned = item.Price == 0 || Model.OwnedItems.Contains(item.Id);
+                        var owned = item.IsDefault || Model.OwnedItems.Contains(item.Id);
                         <article class="shop-item @(Model.EquippedItems.Contains(item.Id) ? "is-equipped" : "")">
                             @if (category == ShopCatalog.Tracks)
                             {
@@ -107,13 +107,19 @@
                                 <span class="shop-preview" aria-hidden="true">@await Html.PartialAsync("_Monkey", new MonkeyViewModel
                                     {
                                         HatColor = category == ShopCatalog.Hats ? item.Value : card?.HatColor,
-                                        BodyColor = category == ShopCatalog.Furs ? item.Value : card?.FurColor
+                                        BodyColor = category == ShopCatalog.Furs ? item.Value : card?.FurColor,
+                                        BackgroundColor = category == ShopCatalog.Backgrounds ? item.Value : card?.BackgroundColor,
+                                        FrameColor = category == ShopCatalog.Frames ? item.Value : card?.FrameColor
                                     })</span>
                             }
                             <h3>@item.Name</h3>
                             @if (owned)
                             {
-                                <p class="shop-price">@(item.Price == 0 ? "Nemokama" : "Nupirkta")</p>
+                                <p class="shop-price">@(item.IsDefault ? "Nemokama" : item.IsPurchasable ? "Nupirkta" : "Gauta")</p>
+                            }
+                            else if (!item.IsPurchasable)
+                            {
+                                <p class="shop-price shop-unlock"><svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg> @item.Unlock</p>
                             }
                             else
                             {
@@ -122,6 +128,10 @@
                             @if (Model.EquippedItems.Contains(item.Id))
                             {
                                 <span class="pill shop-equipped">Užsidėta</span>
+                            }
+                            else if (!owned && !item.IsPurchasable)
+                            {
+                                <button class="btn btn-s" type="button" disabled>Užrakinta</button>
                             }
                             else if (owned || bananas >= item.Price)
                             {

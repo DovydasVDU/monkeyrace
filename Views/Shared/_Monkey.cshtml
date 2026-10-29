@@ -5,10 +5,16 @@
     // HatColor = "none" arba "" – be kepurės
     var hatColor = Model?.HatColor;
     var hasHat = !string.IsNullOrEmpty(hatColor) && hatColor != "none";
+    var bg = Model?.BackgroundColor;
+    var frame = Model?.FrameColor;
 }
 @* viewBox 160 ir lygio ženkliukas cx=134 turi sutapti su monkeyTemplate() (replay.js); .monkey-fur ir .monkey-hat ten perdažomi pagal parduotuvę *@
 <svg class="monkey-svg monkey-mood-@mood" viewBox="0 0 160 160" role="img"
      aria-label="MonkeyRace beždžionėlė" xmlns="http://www.w3.org/2000/svg">
+    @if (!string.IsNullOrEmpty(bg) && bg != "none")
+    {
+        <circle class="monkey-bg" cx="80" cy="80" r="78" fill="@bg" />
+    }
     <path class="monkey-tail monkey-fur" d="M110 132 Q150 136 148 104 Q146 84 128 90" fill="none"
           stroke="@bodyColor" stroke-width="9" stroke-linecap="round" />
     <path class="monkey-arm monkey-arm-left monkey-fur" d="M46 118 Q22 132 32 152" fill="none"
@@ -34,6 +40,10 @@
         <path class="monkey-hat" d="M36 50 Q80 0 124 50 Q80 36 36 50 Z" fill="@hatColor"
               stroke="#123524" stroke-width="3" stroke-linejoin="round" />
         <circle class="monkey-hat" cx="80" cy="16" r="8" fill="@hatColor" stroke="#123524" stroke-width="3" />
+    }
+    @if (!string.IsNullOrEmpty(frame) && frame != "none")
+    {
+        <circle class="monkey-frame" cx="80" cy="80" r="76" fill="none" stroke="@frame" stroke-width="5" />
     }
     @if (Model?.Level != null)
     {

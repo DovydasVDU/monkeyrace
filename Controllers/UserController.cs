@@ -61,7 +61,9 @@ public class UserController : Controller
             {
                 ShopCatalog.Equipped(user.HatId, ShopCatalog.Hats).Id,
                 ShopCatalog.Equipped(user.FurId, ShopCatalog.Furs).Id,
-                ShopCatalog.Equipped(user.TrackId, ShopCatalog.Tracks).Id
+                ShopCatalog.Equipped(user.TrackId, ShopCatalog.Tracks).Id,
+                ShopCatalog.Equipped(user.BackgroundId, ShopCatalog.Backgrounds).Id,
+                ShopCatalog.Equipped(user.FrameId, ShopCatalog.Frames).Id
             }.ToHashSet()
         };
 

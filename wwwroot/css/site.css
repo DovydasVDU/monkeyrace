@@ -1351,6 +1351,12 @@ a.lb-row:hover {
     gap: .3rem;
 }
 
+.shop-unlock {
+    font-size: .8rem;
+    line-height: 1.25;
+    text-align: center;
+}
+
 .shop-track {
     align-self: center;
     background: var(--cream-2);

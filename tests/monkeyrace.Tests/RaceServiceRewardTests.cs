@@ -210,6 +210,39 @@ public sealed class RaceServiceRewardTests : IDisposable
         Assert.Equal(("#FFC93C", "#8B5E3C", "classic"), (card.HatColor, card.FurColor, card.Track));
     }
 
+    [Fact]
+    public async Task Shop_BackgroundAndFrame_BuyEquipAndAppearOnCard()
+    {
+        var (userId, _) = Seed(0);
+        using (var db = NewContext())
+        {
+            db.Users.Single(u => u.Id == userId).Bananas = 300;
+            db.SaveChanges();
+        }
+        async Task<string> Equip(string itemId)
+        {
+            using var db = NewContext();
+            return await new RaceService(db).EquipItemAsync(userId, itemId);
+        }
+
+        Assert.Null(await Equip("bg-mint"));
+        Assert.Equal("Trūksta 500 bananų.", await Equip("frame-leaf"));
+        using var ctx = NewContext();
+        Assert.Equal(100, ctx.Users.Single(u => u.Id == userId).Bananas);
+        var card = await new RaceService(ctx).GetPlayerCardAsync(userId);
+        Assert.Equal(("rgba(127, 191, 147, 0.55)", "none"), (card.BackgroundColor, card.FrameColor));
+        Assert.Null(await Equip("bg-none")); // numatytasis – nemokamai
+    }
+
+    [Fact]
+    public void Catalog_EveryCategoryHasOneDefault_AndNonShopItemsExplainHowToGetThem()
+    {
+        foreach (var group in ShopCatalog.Items.GroupBy(item => item.Category))
+            Assert.Single(group, item => item.IsDefault);
+        Assert.All(ShopCatalog.Items.Where(item => !item.IsPurchasable && !item.IsDefault),
+            item => Assert.False(string.IsNullOrWhiteSpace(item.Unlock)));
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

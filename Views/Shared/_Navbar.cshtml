@@ -38,7 +38,7 @@
             <div class="user-menu" onmouseenter="openMenu()" onmouseleave="closeMenu()">
                 <a class="profile-card" href="/User/Stats" aria-label="Profilis: @username, lygis @(card?.Level)">
                     <span class="profile-avatar">
-                        @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = card?.HatColor ?? "#2E8B4F", BodyColor = card?.FurColor ?? "#8D5A2B" })
+                        @await Html.PartialAsync("_Monkey", new MonkeyViewModel { HatColor = card?.HatColor ?? "#2E8B4F", BodyColor = card?.FurColor ?? "#8D5A2B", BackgroundColor = card?.BackgroundColor, FrameColor = card?.FrameColor })
                         @if (card != null)
                         {
                             <span class="level-badge">@card.Level</span>
