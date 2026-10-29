@@ -134,7 +134,7 @@ public class UserController : Controller
             return BadRequest();
         await _db.Users.Where(u => u.Id == userId.Value)
             .ExecuteUpdateAsync(s => s.SetProperty(u => u.ProfileVisibility, visibility));
-        return Redirect("/User/Stats#visibility");
+        return Redirect("/User/Stats#visibility"); // skiltis „Paskyra“
     }
 
     // Paskyros ištrynimas (privatumo puslapis /privatumas): reikia dar kartą įvesti slaptažodį

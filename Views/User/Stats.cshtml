@@ -19,6 +19,17 @@
 }
 
 <div class="profile-page">
+    <div class="player-search" role="search" aria-label="Žaidėjų paieška">
+        <label for="player-search">
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>
+            Surask žaidėją ir pažiūrėk jo profilį
+        </label>
+        <input id="player-search" type="search" minlength="3" maxlength="30" autocomplete="off"
+               placeholder="Įrašyk bent 3 vardo raides">
+        <ul class="player-results" id="player-results" aria-live="polite"></ul>
+    </div>
+    <script src="~/js/playersearch.js" asp-append-version="true"></script>
+
     <div class="profile-grid">
         <section class="card profile-hero" aria-labelledby="profile-title">
             <div class="profile-hero-head">
@@ -176,26 +187,6 @@
         </ul>
     </section>
 
-    <section class="card visibility" id="visibility" aria-labelledby="visibility-title">
-        <h2 id="visibility-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>Viešas profilis ir paieška</h2>
-        <p>Tavo viešas profilis: <a href="/u/@Model.Username">/u/@Model.Username</a>. Jame rodomas titulas, lygis, WPM, tikslumas, pamokų progresas, pasiekimai ir daiktai. Bananų, tikslaus XP ir lenktynių skaičiaus kiti nemato.</p>
-        <form method="post" action="/User/Visibility" asp-antiforgery="true" class="visibility-form">
-            <fieldset>
-                <legend>Kas gali matyti ir rasti mano profilį</legend>
-                @foreach (var (value, label) in new[] { (ProfileVisibility.Members, "Tik prisijungę žaidėjai"), (ProfileVisibility.Public, "Visi"), (ProfileVisibility.Private, "Niekas") })
-                {
-                    <label><input type="radio" name="visibility" value="@((int)value)" checked="@(Model.Visibility == value)"> @label</label>
-                }
-            </fieldset>
-            <button class="btn btn-s" type="submit">Išsaugoti</button>
-        </form>
-        <label class="friends-field" for="player-search">Ieškoti žaidėjų (bent 3 raidės)
-            <input id="player-search" type="search" minlength="3" maxlength="30" autocomplete="off">
-        </label>
-        <ul class="player-results" id="player-results" aria-live="polite"></ul>
-    </section>
-    <script src="~/js/playersearch.js" asp-append-version="true"></script>
-
     <section class="card mistakes" aria-labelledby="mistakes-title">
         <div class="shop-head">
             <h2 id="mistakes-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-target"></use></svg>Klaidų analizė</h2>
@@ -317,6 +308,20 @@
 
     <section class="card profile-account" id="account" aria-labelledby="account-title">
         <h2 id="account-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-user"></use></svg>Paskyra</h2>
+        <div class="account-visibility" id="visibility">
+            <h3>Viešas profilis</h3>
+            <p>Tavo viešas profilis: <a href="/u/@Model.Username">/u/@Model.Username</a>. Jame rodomas titulas, lygis, WPM, tikslumas, pamokų progresas, pasiekimai ir daiktai. Bananų, tikslaus XP ir lenktynių skaičiaus kiti nemato.</p>
+            <form method="post" action="/User/Visibility" asp-antiforgery="true" class="visibility-form">
+                <fieldset>
+                    <legend>Kas gali matyti ir rasti mano profilį</legend>
+                    @foreach (var (value, label) in new[] { (ProfileVisibility.Members, "Tik prisijungę žaidėjai"), (ProfileVisibility.Public, "Visi"), (ProfileVisibility.Private, "Niekas") })
+                    {
+                        <label><input type="radio" name="visibility" value="@((int)value)" checked="@(Model.Visibility == value)"> @label</label>
+                    }
+                </fieldset>
+                <button class="btn btn-s" type="submit">Išsaugoti</button>
+            </form>
+        </div>
         @* <details> – patvirtinimo žingsnis be JS *@
         <details class="account-delete" open="@(TempData["DeleteError"] != null)">
             <summary class="btn btn-s">Ištrinti paskyrą</summary>

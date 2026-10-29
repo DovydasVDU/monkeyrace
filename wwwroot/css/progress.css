@@ -282,9 +282,75 @@
     color: var(--ink-a60);
 }
 
-/* Viešo profilio matomumas ir žaidėjų paieška (Stats.cshtml) */
+/* Žaidėjų paieška profilio viršuje (Stats.cshtml, playersearch.js) */
+.player-search {
+    background: var(--cream);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    color: var(--ink);
+    display: grid;
+    gap: .6rem;
+    padding: 1rem 1.25rem;
+}
+
+.player-search label {
+    align-items: center;
+    display: flex;
+    font-weight: 800;
+    gap: .5rem;
+}
+
+.player-search input {
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    color: var(--ink);
+    font-size: 1rem;
+    min-height: 48px;
+    padding: .6rem 1.1rem;
+    width: 100%;
+}
+
+.player-search input:focus-visible {
+    outline: 3px solid var(--banana);
+    outline-offset: 2px;
+}
+
+.player-results {
+    display: grid;
+    gap: .35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.player-results:empty {
+    display: none;
+}
+
+.player-results li {
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-ctl);
+    padding: .5rem .9rem;
+}
+
+.player-results a {
+    font-weight: 800;
+}
+
+/* Viešo profilio matomumas skiltyje „Paskyra“ (Stats.cshtml) */
+.account-visibility h3 {
+    margin: 0 0 .4rem;
+}
+
+.account-visibility p {
+    margin: 0 0 .75rem;
+}
+
 .visibility-form {
-    margin: 1rem 0;
+    margin: 0;
 }
 
 .visibility-form fieldset {
@@ -301,10 +367,14 @@
     padding: 0;
 }
 
-.player-results {
-    display: grid;
-    gap: .35rem;
-    list-style: none;
-    margin: .75rem 0 0;
-    padding: 0;
+.visibility-form label {
+    align-items: center;
+    display: flex;
+    gap: .5rem;
+}
+
+.visibility-form input[type="radio"] {
+    accent-color: var(--leaf);
+    height: 1.1rem;
+    width: 1.1rem;
 }
